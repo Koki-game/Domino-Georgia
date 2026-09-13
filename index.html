@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
+>
 
 <link rel="manifest" href="./manifest.json">
 
-<meta name="theme-color" content="#2b1208">
+<meta name="theme-color" content="#160b05">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,463 +19,654 @@ content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
 <style>
 
-/* =========================================
-   DOMINO GEORGIA V3
-   PART 1/4 — PREMIUM TABLE
-========================================= */
+/* =========================================================
+   DOMINO GEORGIA
+   1536 × 1024 MASTER DESIGN
+   PART 1/4
+========================================================= */
 
 *{
   box-sizing:border-box;
-  margin:0;
-  padding:0;
   -webkit-tap-highlight-color:transparent;
 }
 
-html,body{
+html,
+body{
+  margin:0;
   width:100%;
   height:100%;
   overflow:hidden;
-  background:#050505;
-  color:#fff;
-  font-family:Arial,"Noto Sans Georgian",sans-serif;
+  background:#050403;
+
+  font-family:
+    Arial,
+    "Noto Sans Georgian",
+    sans-serif;
+
+  user-select:none;
+  touch-action:manipulation;
 }
 
 button{
   font-family:inherit;
-  cursor:pointer;
 }
 
-button:active{
-  transform:scale(.97);
-}
 
-#game{
+/* =========================================================
+   VIEWPORT
+========================================================= */
+
+#viewport{
   position:fixed;
   inset:0;
+
   overflow:hidden;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
   background:
-    radial-gradient(circle at center,#32180d,#080503 78%);
+    radial-gradient(
+      ellipse at center,
+      #25140b 0%,
+      #080504 70%,
+      #000 100%
+    );
 }
 
 
-/* =========================================
-   WOOD SHELL
-========================================= */
+/* =========================================================
+   MASTER SCENE
+   Exact design coordinate system: 1536 × 1024
+========================================================= */
 
-.shell{
+#scene{
   position:absolute;
-  inset:0;
-  overflow:hidden;
 
-  border:5px solid #160905;
+  left:50%;
+  top:50%;
+
+  width:1536px;
+  height:1024px;
+
+  transform-origin:center center;
+
+  overflow:hidden;
 
   background:
     linear-gradient(
       90deg,
-      #281006,
-      #713817 5%,
-      #351408 11%,
-      #6a3114 19%,
-      #2d1006 31%,
-      #6d3416 48%,
-      #301107 63%,
-      #703617 80%,
-      #301106 92%,
-      #783c1a
+      #281208 0%,
+      #5b2b13 2%,
+      #311509 7%,
+      #1c0d07 50%,
+      #311509 93%,
+      #5b2b13 98%,
+      #281208 100%
     );
 
   box-shadow:
-    inset 0 0 0 3px #a25b2d,
-    inset 0 0 35px #000;
+    0 0 70px #000;
 }
 
-.shell::before{
+
+/* outer carved wood */
+
+#scene::before{
   content:"";
+
   position:absolute;
   inset:0;
+
+  z-index:1;
+
   pointer-events:none;
+
+  border:10px solid #713817;
+
+  box-shadow:
+    inset 0 0 0 4px #b56b35,
+    inset 0 0 0 10px #2b1208,
+    inset 0 0 40px #000,
+    0 0 30px #000;
+}
+
+
+/* wood texture */
+
+#scene::after{
+  content:"";
+
+  position:absolute;
+  inset:0;
+
+  z-index:2;
+
+  pointer-events:none;
+
+  opacity:.20;
 
   background:
     repeating-linear-gradient(
-      3deg,
+      2deg,
       transparent 0,
-      transparent 8px,
-      rgba(255,205,135,.09) 9px,
-      transparent 11px
+      transparent 7px,
+      rgba(255,184,104,.16) 8px,
+      transparent 10px
     );
-
-  opacity:.75;
 }
 
 
-/* =========================================
-   TOP PANEL
-========================================= */
+/* =========================================================
+   TOP AREA
+========================================================= */
 
-.top-panel{
+#topArea{
   position:absolute;
 
-  left:.8%;
-  right:.8%;
-  top:.8%;
+  left:15px;
+  top:12px;
 
-  height:20.5%;
-
-  display:grid;
-  grid-template-columns:
-    minmax(0,1fr)
-    31%
-    minmax(0,1fr);
-
-  gap:8px;
+  width:1506px;
+  height:202px;
 
   z-index:20;
+
+  display:grid;
+
+  grid-template-columns:
+    515px
+    476px
+    515px;
 }
 
 
-/* =========================================
-   CHOTKA / TEAM SCORE
-========================================= */
+/* =========================================================
+   TEAM SCORE PANELS
+========================================================= */
 
-.team-score{
+.score-panel{
   position:relative;
+
+  height:202px;
+
   overflow:hidden;
 
-  border:3px solid #3a1609;
-  border-radius:13px;
+  color:#f8e3b5;
 
   background:
     linear-gradient(
       180deg,
-      rgba(92,43,19,.97),
-      rgba(29,13,7,.98)
+      #542711 0%,
+      #2c1208 28%,
+      #170b06 100%
     );
 
+  border:3px solid #6e3518;
+
   box-shadow:
-    inset 0 0 0 2px #8c4c27,
-    inset 0 0 20px #000,
-    0 4px 8px rgba(0,0,0,.8);
+    inset 0 0 0 2px #a75d2c,
+    inset 0 0 25px rgba(0,0,0,.8),
+    0 5px 12px rgba(0,0,0,.75);
+}
+
+.score-panel.left{
+  border-radius:22px 5px 5px 22px;
+}
+
+.score-panel.right{
+  border-radius:5px 22px 22px 5px;
 }
 
 .team-title{
-  height:25%;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  color:#f6dfb1;
-
-  font-size:clamp(13px,1.45vw,24px);
-  font-weight:900;
-
-  text-shadow:0 2px 2px #000;
-
-  border-bottom:2px solid #4a2412;
-
-  background:
-    linear-gradient(
-      #49210f,
-      #241008
-    );
-}
-
-.score-body{
-  height:75%;
-
-  display:grid;
-  grid-template-columns:76% 24%;
-
-  align-items:center;
-}
-
-.abacus{
-  height:94%;
-
-  padding:4px 7px;
-
-  display:grid;
-  grid-template-rows:repeat(5,1fr);
-
-  gap:1px;
-}
-
-.abacus-row{
-  position:relative;
-
-  display:flex;
-  align-items:center;
-
-  padding-left:35px;
-}
-
-.abacus-label{
-  position:absolute;
-  left:2px;
-
-  width:30px;
-
-  color:#f6d89c;
-
-  font-size:clamp(9px,.9vw,15px);
-  font-weight:bold;
-}
-
-.rail{
-  position:relative;
-
-  width:100%;
-  height:3px;
-
-  border-radius:3px;
-
-  background:#b26a37;
-
-  box-shadow:
-    0 1px 0 #2a1008,
-    inset 0 1px rgba(255,255,255,.25);
-}
-
-.beads{
   position:absolute;
 
   left:0;
   right:0;
-  top:50%;
+  top:8px;
 
-  transform:translateY(-50%);
+  height:37px;
+
+  text-align:center;
+
+  color:#f7e5bf;
+
+  font-size:25px;
+  line-height:37px;
+  font-weight:900;
+
+  text-shadow:
+    0 3px 2px #000;
+}
+
+
+/* =========================================================
+   OLD STYLE CHOTKA
+========================================================= */
+
+.chotka{
+  position:absolute;
+
+  left:18px;
+  top:50px;
+
+  width:355px;
+  height:138px;
+
+  padding:
+    4px
+    4px
+    4px
+    52px;
+}
+
+.chotka-row{
+  position:relative;
+
+  width:290px;
+  height:26px;
+}
+
+.chotka-label{
+  position:absolute;
+
+  left:-46px;
+  top:2px;
+
+  width:40px;
+
+  color:#e9d7ad;
+
+  font-size:17px;
+  font-weight:900;
+
+  text-align:right;
+
+  text-shadow:
+    0 2px 2px #000;
+}
+
+.chotka-rail{
+  position:absolute;
+
+  left:0;
+  right:0;
+  top:12px;
+
+  height:4px;
+
+  border-radius:4px;
+
+  background:
+    linear-gradient(
+      #d3945d,
+      #67381d
+    );
+
+  box-shadow:
+    0 1px 2px #000;
+}
+
+.chotka-beads{
+  position:absolute;
+
+  left:3px;
+  right:3px;
+  top:1px;
+
+  height:24px;
 
   display:flex;
-  gap:2px;
+  align-items:center;
+
+  gap:3px;
 }
 
 .bead{
-  width:12px;
-  height:18px;
+  width:14px;
+  height:23px;
+
+  flex:0 0 14px;
 
   border-radius:50%;
-
-  border:1px solid #3a180b;
 
   background:
     linear-gradient(
       90deg,
-      #54240e,
-      #d58a47 42%,
-      #f2b66c 52%,
-      #733214 78%,
-      #321309
+      #6c3518,
+      #c47b3d 35%,
+      #e5a55f 50%,
+      #8b461f 75%,
+      #3e1d0e
     );
 
-  box-shadow:
-    inset 1px 0 rgba(255,255,255,.35),
-    0 1px 2px #000;
+  border:
+    1px solid #5b2b15;
 
-  transition:
-    transform .25s ease,
-    filter .25s ease;
+  box-shadow:
+    inset 1px 0 1px rgba(255,255,255,.35),
+    1px 2px 2px rgba(0,0,0,.7);
 }
 
 .bead.off{
-  filter:brightness(.38);
-}
-
-.team-total{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  height:100%;
-
-  color:#ffe0a0;
-
-  font-family:Georgia,serif;
-
-  font-size:clamp(16px,1.8vw,30px);
-  font-weight:900;
-
-  text-shadow:0 3px 4px #000;
-}
-
-
-/* =========================================
-   CENTER LOGO
-========================================= */
-
-.logo{
-  position:relative;
-
-  z-index:25;
-
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-
-  overflow:hidden;
-
-  border:4px solid #321308;
-  border-radius:0 0 18px 18px;
-
   background:
-    radial-gradient(
-      ellipse at 50% 20%,
-      #8b421e,
-      #52230f 48%,
-      #2b1007 100%
+    linear-gradient(
+      90deg,
+      #17100d,
+      #39251a 45%,
+      #110c09
     );
 
-  box-shadow:
-    inset 0 0 0 3px rgba(181,101,49,.55),
-    inset 0 -15px 25px rgba(0,0,0,.55),
-    0 7px 12px #000;
+  border-color:#352419;
+
+  opacity:.72;
 }
 
-.logo::after{
-  content:"";
 
+/* =========================================================
+   EXACT NUMERIC SCORE
+========================================================= */
+
+.numeric-score{
   position:absolute;
-  inset:0;
 
-  pointer-events:none;
+  right:15px;
+  top:93px;
 
-  background:
-    repeating-linear-gradient(
-      5deg,
-      transparent 0,
-      transparent 8px,
-      rgba(255,215,150,.05) 9px,
-      transparent 11px
-    );
-}
+  width:130px;
 
-.logo-main{
-  position:relative;
-  z-index:2;
+  text-align:center;
 
-  color:#ffe5ad;
+  color:#ffe1a2;
 
-  font-family:Georgia,serif;
-  font-size:clamp(30px,3.7vw,58px);
+  font-family:
+    Georgia,
+    serif;
+
+  font-size:31px;
+  line-height:40px;
   font-weight:900;
 
-  letter-spacing:2px;
-  line-height:.95;
+  white-space:nowrap;
 
   text-shadow:
-    0 3px 0 #6a3215,
-    0 6px 7px #000;
+    0 3px 2px #000,
+    0 0 9px rgba(255,184,73,.15);
 }
 
-.logo-sub{
-  position:relative;
-  z-index:2;
 
-  margin-top:7px;
+/* =========================================================
+   CENTER DOMINO GEORGIA LOGO
+========================================================= */
+
+#logoPanel{
+  position:relative;
+
+  height:202px;
+
+  overflow:hidden;
+
+  text-align:center;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      #603018 0%,
+      #351609 57%,
+      #180b06 100%
+    );
+
+  border-top:
+    3px solid #6f3618;
+
+  border-bottom:
+    3px solid #6f3618;
+
+  box-shadow:
+    inset 0 0 0 2px #9b572d,
+    inset 0 0 28px #000;
+}
+
+#logoMain{
+  margin-top:15px;
+
+  color:#ffe2a0;
+
+  font-family:
+    Georgia,
+    serif;
+
+  font-size:59px;
+  line-height:65px;
+  font-weight:900;
+
+  letter-spacing:4px;
+
+  text-shadow:
+    0 5px 3px #000,
+    0 0 8px rgba(255,204,113,.35);
+}
+
+#logoSub{
+  height:43px;
 
   display:flex;
   align-items:center;
   justify-content:center;
 
-  gap:15px;
+  gap:25px;
 
-  color:#ffe4ad;
+  color:#f5d99f;
 
-  font-family:Georgia,serif;
+  font-family:
+    Georgia,
+    serif;
 
-  font-size:clamp(14px,1.8vw,28px);
+  font-size:28px;
 
-  letter-spacing:8px;
+  letter-spacing:12px;
+
+  text-shadow:
+    0 3px 2px #000;
 }
 
-.logo-flag{
+.flag{
+  font-size:32px;
   letter-spacing:0;
-  font-size:clamp(16px,2vw,30px);
+}
+
+#logoMotto{
+  margin-top:3px;
+
+  color:#c6a97e;
+
+  font-size:13px;
+  letter-spacing:1px;
 }
 
 
-/* =========================================
-   GREEN PLAYING TABLE
+/* =========================================================
+   MAIN AREA
+========================================================= */
 
-   IMPORTANT:
-   boardViewport is the HARD boundary.
-   Dominoes will never leave this area.
-========================================= */
-
-.table-area{
+#mainArea{
   position:absolute;
 
-  left:14.2%;
-  right:14.2%;
+  left:15px;
+  top:214px;
 
-  top:24%;
-  bottom:17%;
+  width:1506px;
+  height:684px;
 
-  z-index:5;
-
-  overflow:hidden;
-
-  border:5px solid #32150b;
-  border-radius:4px;
-
-  outline:2px solid #92502a;
+  z-index:10;
 
   background:
-    radial-gradient(
-      ellipse at 50% 48%,
-      #126743 0%,
-      #075033 55%,
-      #033620 100%
+    linear-gradient(
+      90deg,
+      #3c1c0e 0%,
+      #2b130a 14%,
+      #160b06 15%,
+      #160b06 85%,
+      #2b130a 86%,
+      #3c1c0e 100%
+    );
+}
+
+
+/* =========================================================
+   GREEN TABLE FRAME
+========================================================= */
+
+#tableFrame{
+  position:absolute;
+
+  left:195px;
+  top:34px;
+
+  width:1116px;
+  height:548px;
+
+  padding:10px;
+
+  border-radius:20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #82471f,
+      #2a1208 45%,
+      #8d5027
     );
 
   box-shadow:
-    inset 0 0 70px rgba(0,0,0,.65),
-    inset 0 0 8px rgba(255,255,255,.12),
-    0 5px 15px #000;
+    inset 0 0 0 3px #a66535,
+    0 8px 18px rgba(0,0,0,.85);
 }
 
-.table-area::before{
+
+/* =========================================================
+   GREEN FELT
+========================================================= */
+
+#felt{
+  position:relative;
+
+  width:100%;
+  height:100%;
+
+  overflow:hidden;
+
+  border-radius:11px;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      #126344 0%,
+      #0c563a 50%,
+      #063b29 100%
+    );
+
+  border:
+    3px solid #092b1f;
+
+  box-shadow:
+    inset 0 0 55px rgba(0,0,0,.55),
+    inset 0 0 0 2px rgba(255,255,255,.035);
+}
+
+
+/* felt texture */
+
+#felt::before{
   content:"";
 
   position:absolute;
   inset:0;
 
   pointer-events:none;
+
+  opacity:.18;
 
   background:
     repeating-linear-gradient(
       35deg,
-      rgba(255,255,255,.014) 0,
-      rgba(255,255,255,.014) 1px,
+      rgba(255,255,255,.025) 0,
+      rgba(255,255,255,.025) 1px,
       transparent 1px,
       transparent 5px
     );
 }
 
 
-/* Board safety zone */
+/* =========================================================
+   TABLE WATERMARK
+========================================================= */
 
-#boardViewport{
+#watermark{
   position:absolute;
 
-  left:4%;
-  right:4%;
-  top:16%;
-  bottom:17%;
+  left:50%;
+  top:52%;
 
-  overflow:hidden;
+  transform:
+    translate(-50%,-50%);
 
-  z-index:10;
+  z-index:1;
+
+  text-align:center;
+
+  color:
+    rgba(170,214,186,.10);
 
   pointer-events:none;
 }
 
+#watermarkCrown{
+  font-size:105px;
+  line-height:90px;
+}
 
-/*
-  PART 3 will automatically scale
-  this entire layer when the domino
-  layout grows.
-*/
+#watermarkText{
+  margin-top:5px;
+
+  font-family:
+    Georgia,
+    serif;
+
+  font-size:23px;
+
+  letter-spacing:8px;
+
+  line-height:32px;
+}
+
+
+/* =========================================================
+   DOMINO BOARD AREA
+
+   New engine will support:
+   - multiple active ends
+   - stake / სტავკა
+   - four stake ports
+   - proportional scale-to-fit
+========================================================= */
+
+#boardViewport{
+  position:absolute;
+
+  left:42px;
+  top:72px;
+
+  width:1010px;
+  height:360px;
+
+  z-index:20;
+
+  overflow:visible;
+
+  pointer-events:auto;
+}
 
 #dominoBoard{
   position:absolute;
@@ -481,5915 +674,477 @@ button:active{
   left:50%;
   top:50%;
 
-  width:1000px;
-  height:600px;
+  width:1200px;
+  height:700px;
 
   transform:
     translate(-50%,-50%)
     scale(1);
 
-  transform-origin:center center;
-
-  pointer-events:none;
+  transform-origin:
+    center center;
 }
 
 
-/* =========================================
-   WATERMARK
-========================================= */
+/* =========================================================
+   LEFT ROOM PANEL
+========================================================= */
 
-.watermark{
+#roomPanel{
   position:absolute;
 
-  left:50%;
-  top:52%;
+  left:0;
+  top:34px;
 
-  transform:translate(-50%,-50%);
+  width:188px;
+  height:208px;
 
-  text-align:center;
+  z-index:40;
 
-  color:rgba(211,201,133,.075);
+  padding:18px 14px;
 
-  pointer-events:none;
-}
-
-.crown{
-  font-size:clamp(48px,7vw,105px);
-  line-height:.8;
-}
-
-.watermark-text{
-  margin-top:18px;
-
-  font-family:Georgia,serif;
-
-  font-size:clamp(12px,1.3vw,20px);
-
-  letter-spacing:6px;
-}
-
-
-/* =========================================
-   ROOM INFO
-========================================= */
-
-.room-info{
-  position:absolute;
-
-  left:.7%;
-  top:24%;
-
-  width:12.5%;
-  height:22%;
-
-  z-index:10;
-
-  padding:9px 8px;
-
-  border-top:3px solid #5c2b15;
-  border-bottom:3px solid #321208;
+  color:#ddd2c3;
 
   background:
     linear-gradient(
-      90deg,
-      rgba(15,10,7,.97),
-      rgba(31,17,10,.94)
+      145deg,
+      rgba(18,13,10,.98),
+      rgba(35,19,11,.96)
     );
 
+  border:
+    2px solid #3f2618;
+
+  border-left:0;
+
   box-shadow:
-    inset -10px 0 20px rgba(0,0,0,.45);
+    4px 5px 12px rgba(0,0,0,.75);
 }
 
-.room-info small{
-  display:block;
-
-  color:#d7c9b2;
-
-  font-size:clamp(8px,.8vw,14px);
-
+.room-label{
   margin-bottom:4px;
+
+  color:#b6a998;
+
+  font-size:14px;
 }
 
-.room-info strong{
-  display:block;
+.room-value{
+  margin-bottom:13px;
 
-  color:#fff3d2;
+  color:#f1e4cd;
 
-  font-size:clamp(10px,1vw,17px);
-
-  margin-bottom:7px;
+  font-size:18px;
+  font-weight:900;
 }
 
-.online{
-  color:#25ef61;
+#onlineStatus{
+  margin-top:7px;
 
-  font-size:clamp(9px,.9vw,15px);
+  color:#28e37e;
+
+  font-size:16px;
+  font-weight:bold;
 }
 
 
-/* =========================================
-   RIGHT NOTE
-========================================= */
+/* =========================================================
+   RIGHT QUOTE
+========================================================= */
 
-.side-note{
+#quotePanel{
   position:absolute;
 
-  right:.7%;
-  top:24%;
+  right:0;
+  top:34px;
 
-  width:11.5%;
-  height:18%;
+  width:188px;
+  height:175px;
 
-  z-index:10;
+  z-index:40;
 
   display:flex;
   align-items:center;
   justify-content:center;
 
-  padding:10px;
+  padding:18px;
 
-  color:#e9e4d9;
-
-  font-family:Georgia,serif;
-  font-style:italic;
-
-  font-size:clamp(8px,.9vw,15px);
+  color:#d8d1c8;
 
   text-align:center;
 
-  border:2px solid #34302b;
-  border-radius:12px 0 0 12px;
+  font-family:
+    Georgia,
+    serif;
+
+  font-size:16px;
+  font-style:italic;
+
+  line-height:24px;
 
   background:
     linear-gradient(
       145deg,
-      #161616,
-      #080808
+      #151513,
+      #090a09
     );
 
+  border:
+    2px solid #44382d;
+
+  border-right:0;
+
   box-shadow:
-    0 5px 12px #000,
-    inset 0 0 15px rgba(255,255,255,.04);
+    -4px 5px 12px rgba(0,0,0,.75);
 }
 
 
-/* =========================================
+/* =========================================================
    PLAYER AVATARS
-
-   Names are NOT permanently visible.
-========================================= */
+   ONLY AVATARS ARE PERMANENTLY VISIBLE
+========================================================= */
 
 .player{
   position:absolute;
 
-  z-index:90;
+  z-index:100;
 
-  width:62px;
-  height:62px;
+  width:92px;
+  height:92px;
 
-  pointer-events:auto;
+  cursor:pointer;
 }
 
 .avatar{
   position:relative;
 
-  width:62px;
-  height:62px;
+  width:92px;
+  height:92px;
 
   display:flex;
   align-items:center;
   justify-content:center;
 
+  overflow:visible;
+
   border-radius:50%;
 
-  border:4px solid #e5b957;
+  color:#fff;
+
+  font-size:47px;
 
   background:
     radial-gradient(
       circle,
-      #4c6267,
-      #101719
+      #314b45,
+      #101918
     );
 
+  border:
+    5px solid #d19a4c;
+
   box-shadow:
-    0 0 0 2px #3c210d,
-    0 5px 10px #000;
-
-  font-size:32px;
-
-  cursor:pointer;
-
-  transition:
-    transform .15s ease,
-    box-shadow .15s ease;
+    0 0 0 4px #432410,
+    0 8px 15px rgba(0,0,0,.75);
 }
-
-.avatar:active{
-  transform:scale(.94);
-}
-
-
-/* current player */
 
 .player.active .avatar{
+  border-color:#ffe170;
+
   box-shadow:
-    0 0 0 2px #3c210d,
-    0 0 18px #ffe164,
-    0 5px 10px #000;
+    0 0 0 4px #55300f,
+    0 0 18px rgba(255,221,89,.75),
+    0 8px 15px rgba(0,0,0,.75);
 }
 
 .online-dot{
   position:absolute;
 
   right:-1px;
-  bottom:1px;
+  bottom:4px;
 
-  width:17px;
-  height:17px;
+  width:24px;
+  height:24px;
 
   border-radius:50%;
 
-  border:3px solid #dfffe5;
+  background:#19e86d;
 
-  background:#1ff04d;
-
-  box-shadow:
-    0 0 8px #22ff54;
-}
-
-
-/* positions */
-
-.player-top{
-  left:50%;
-  top:20.8%;
-
-  transform:translateX(-50%);
-}
-
-.player-left{
-  left:10.8%;
-  top:53%;
-
-  transform:translateY(-50%);
-}
-
-.player-right{
-  right:10.8%;
-  top:53%;
-
-  transform:translateY(-50%);
-}
-
-.player-bottom{
-  left:50%;
-  bottom:23%;
-
-  transform:translateX(-50%);
-}
-
-
-/* =========================================
-   PLAYER INFO POPUP
-========================================= */
-
-.player-popup{
-  position:fixed;
-
-  z-index:1000;
-
-  display:none;
-
-  min-width:175px;
-
-  padding:11px 14px;
-
-  border:2px solid #9b6a34;
-  border-radius:13px;
-
-  color:#eee5d5;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(16,35,29,.98),
-      rgba(5,15,13,.98)
-    );
+  border:4px solid white;
 
   box-shadow:
-    0 12px 28px rgba(0,0,0,.85);
-}
-
-.player-popup.show{
-  display:block;
-}
-
-.player-popup-name{
-  color:#fff2cf;
-
-  font-size:16px;
-  font-weight:900;
-}
-
-.player-popup-rating{
-  margin-top:5px;
-
-  color:#ffd565;
-
-  font-weight:bold;
-}
-
-.player-popup-stats{
-  margin-top:8px;
-
-  color:#cfc6b6;
-
-  font-size:12px;
-
-  line-height:1.55;
+    0 0 8px #17ff74;
 }
 
 
-/* =========================================
-   HIDDEN OPPONENT TILES
-========================================= */
+/* exact positions based on target */
+
+#player0{
+  left:722px;
+  top:187px;
+}
+
+#player3{
+  left:91px;
+  top:425px;
+}
+
+#player1{
+  right:91px;
+  top:425px;
+}
+
+#player2{
+  left:722px;
+  top:682px;
+}
+
+
+/* =========================================================
+   OPPONENT HIDDEN HANDS
+========================================================= */
 
 .hidden-hand{
   position:absolute;
 
+  z-index:80;
+
   display:flex;
-  gap:2px;
 
-  z-index:15;
-
-  pointer-events:none;
+  gap:5px;
 }
 
 .hidden-top{
-  left:50%;
-  top:29%;
-
-  transform:translateX(-50%);
+  left:650px;
+  top:269px;
 }
 
 .hidden-left{
-  left:14.7%;
-  top:43%;
+  left:219px;
+  top:400px;
 
   flex-direction:column;
 }
 
 .hidden-right{
-  right:14.7%;
-  top:43%;
+  right:219px;
+  top:400px;
 
   flex-direction:column;
 }
 
-.hidden-bottom{
-  display:none;
-}
-
 .tile-back{
-  width:35px;
-  height:46px;
+  width:61px;
+  height:58px;
 
-  border-radius:5px;
-
-  border:2px solid #111;
+  border-radius:7px;
 
   background:
     repeating-linear-gradient(
       45deg,
-      #111 0,
-      #111 3px,
-      #2d2d2d 3px,
-      #2d2d2d 5px
+      #141718 0,
+      #141718 3px,
+      #292d2e 3px,
+      #292d2e 6px
     );
 
+  border:
+    3px solid #111;
+
   box-shadow:
-    inset 0 0 0 2px #4d4d4d,
-    0 4px 5px rgba(0,0,0,.75);
+    inset 0 0 0 2px #454849,
+    0 4px 5px rgba(0,0,0,.7);
+}
+
+.hidden-left .tile-back,
+.hidden-right .tile-back{
+  width:58px;
+  height:61px;
 }
 
 
-/* =========================================
+/* =========================================================
+   PLAYER INFO POPUP
+========================================================= */
+
+#playerPopup{
+  position:absolute;
+
+  z-index:1000;
+
+  display:none;
+
+  width:205px;
+
+  padding:14px;
+
+  border-radius:13px;
+
+  color:#eee6d7;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(28,27,23,.98),
+      rgba(7,10,8,.98)
+    );
+
+  border:
+    2px solid #725035;
+
+  box-shadow:
+    0 12px 25px rgba(0,0,0,.85);
+}
+
+#playerPopup.show{
+  display:block;
+}
+
+.popup-name{
+  color:#fff1ce;
+
+  font-size:17px;
+  font-weight:900;
+}
+
+.popup-rating{
+  margin-top:5px;
+
+  color:#ffc94f;
+
+  font-size:14px;
+}
+
+.popup-stats{
+  margin-top:9px;
+
+  padding-top:8px;
+
+  border-top:
+    1px solid #4d4234;
+
+  color:#cfc8bb;
+
+  font-size:12px;
+  line-height:19px;
+}
+
+
+/* =========================================================
    TURN MESSAGE
-========================================= */
+========================================================= */
 
 #turnMessage{
   position:absolute;
 
   left:50%;
-  top:29%;
+  top:607px;
 
-  transform:translateX(-50%);
+  transform:
+    translateX(-50%);
 
-  z-index:120;
+  z-index:130;
 
-  min-width:170px;
+  min-width:180px;
 
-  padding:6px 15px;
+  padding:
+    8px 20px;
+
+  text-align:center;
+
+  color:#ffe6a5;
+
+  font-size:16px;
+  font-weight:900;
 
   border-radius:20px;
 
-  text-align:center;
+  background:
+    rgba(7,24,17,.88);
 
-  color:#ffe6a3;
-
-  border:1px solid rgba(255,212,102,.4);
-
-  background:rgba(18,28,20,.91);
+  border:
+    1px solid rgba(211,171,92,.55);
 
   box-shadow:
-    0 4px 10px rgba(0,0,0,.55);
-
-  font-size:13px;
-  font-weight:bold;
-
-  opacity:0;
-
-  pointer-events:none;
-
-  transition:opacity .25s;
-}
-
-#turnMessage.show{
-  opacity:1;
+    0 4px 9px rgba(0,0,0,.65);
 }
 
 
-/* =========================================
-   ROTATE SCREEN
-========================================= */
+/* =========================================================
+   THESE CONTROLS MUST NOT EXIST VISUALLY
+========================================================= */
 
-.rotate{
-  display:none;
+.top-actions,
+.bottom-right-actions,
+#ribaBtn,
+#surrenderBtn,
+#soundBtn,
+#settingsBtn,
+#emojiTopBtn{
+  display:none !important;
+}
 
+
+/* =========================================================
+   PORTRAIT WARNING
+========================================================= */
+
+#rotateWarning{
   position:fixed;
+
   inset:0;
 
-  z-index:9999;
+  z-index:999999;
+
+  display:none;
 
   align-items:center;
   justify-content:center;
+
   flex-direction:column;
 
-  background:#071d14;
+  gap:10px;
+
+  padding:30px;
+
+  color:#f8e7c5;
 
   text-align:center;
 
-  padding:25px;
+  background:
+    radial-gradient(
+      circle,
+      #2c180d,
+      #050302
+    );
 }
 
-.rotate div{
-  font-size:65px;
+#rotateWarning .phone{
+  font-size:70px;
 }
 
-.rotate h2{
-  margin-top:15px;
+#rotateWarning strong{
+  font-size:23px;
 }
 
+#rotateWarning span{
+  max-width:320px;
 
-/* =========================================
-   PHONE LANDSCAPE
-========================================= */
+  color:#cbbda9;
 
-@media(max-height:550px){
-
-  .top-panel{
-    height:21%;
-  }
-
-  .bead{
-    width:9px;
-    height:14px;
-  }
-
-  .player{
-    width:48px;
-    height:48px;
-  }
-
-  .avatar{
-    width:48px;
-    height:48px;
-
-    border-width:3px;
-
-    font-size:24px;
-  }
-
-  .online-dot{
-    width:14px;
-    height:14px;
-  }
-
-  .player-bottom{
-    bottom:22%;
-  }
-
-  .room-info{
-    padding:6px;
-  }
-
+  line-height:22px;
 }
 
+@media (orientation:portrait){
 
-/* portrait */
-
-@media(orientation:portrait) and (max-width:800px){
-
-  .rotate{
+  #rotateWarning{
     display:flex;
   }
 
 }
 
 
-/* ===== PART 1/4 END ===== */
-/* =========================================
-   PART 2/4 — DOMINOES, HAND, CONTROLS
-========================================= */
-
-
-/* =========================================
-   DOMINO TILE
-========================================= */
-
-.domino{
-  position:absolute;
-
-  width:64px;
-  height:36px;
-
-  display:flex;
-
-  border:2px solid #6f6757;
-  border-radius:7px;
-
-  overflow:hidden;
-
-  background:
-    linear-gradient(
-      145deg,
-      #fffdf0 0%,
-      #e8dfc8 55%,
-      #c8bea8 100%
-    );
-
-  box-shadow:
-    inset 1px 1px 2px rgba(255,255,255,.9),
-    inset -2px -2px 3px rgba(70,55,35,.25),
-    0 4px 6px rgba(0,0,0,.65);
-
-  transform-origin:center center;
-
-  transition:
-    transform .18s ease,
-    filter .18s ease;
-}
-
-.domino-half{
-  position:relative;
-
-  width:50%;
-  height:100%;
-}
-
-.domino-half:first-child{
-  border-right:2px solid #817866;
-}
-
-
-/* vertical / double */
-
-.domino.vertical{
-  width:36px;
-  height:64px;
-
-  flex-direction:column;
-}
-
-.domino.vertical .domino-half{
-  width:100%;
-  height:50%;
-}
-
-.domino.vertical .domino-half:first-child{
-  border-right:0;
-  border-bottom:2px solid #817866;
-}
-
-
-/* =========================================
-   PIPS
-========================================= */
-
-.pip{
-  position:absolute;
-
-  width:7px;
-  height:7px;
-
-  border-radius:50%;
-
-  background:
-    radial-gradient(
-      circle at 35% 30%,
-      #333,
-      #050505 72%
-    );
-
-  box-shadow:
-    inset 0 1px 1px rgba(255,255,255,.2);
-}
-
-.p1{left:50%;top:50%;transform:translate(-50%,-50%)}
-
-.p2{left:20%;top:20%}
-.p3{right:20%;bottom:20%}
-
-.p4{right:20%;top:20%}
-.p5{left:20%;bottom:20%}
-
-.p6{left:20%;top:50%;transform:translateY(-50%)}
-.p7{right:20%;top:50%;transform:translateY(-50%)}
-
-
-/* =========================================
-   OWN HAND + WOOD RACK
-========================================= */
-
-.hand-zone{
-  position:absolute;
-
-  left:50%;
-  bottom:10.7%;
-
-  transform:translateX(-50%);
-
-  z-index:110;
-
-  min-width:390px;
-  height:96px;
-
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-
-  padding:0 18px 10px;
-
-  border-radius:9px 9px 4px 4px;
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(95,46,20,.12),
-      rgba(68,30,12,.82) 72%,
-      #321408 73%,
-      #6f3516 88%,
-      #281006 100%
-    );
-
-  box-shadow:
-    inset 0 -3px 0 #9d572c,
-    0 5px 8px rgba(0,0,0,.7);
-}
-
-#playerHand{
-  position:relative;
-
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-
-  gap:4px;
-
-  height:84px;
-}
-
-
-/* hand tiles are NOT absolute */
-
-#playerHand .domino{
-  position:relative;
-
-  left:auto !important;
-  top:auto !important;
-
-  width:43px;
-  height:72px;
-
-  flex-direction:column;
-
-  cursor:pointer;
-
-  transform:none;
-}
-
-#playerHand .domino .domino-half{
-  width:100%;
-  height:50%;
-}
-
-#playerHand .domino .domino-half:first-child{
-  border-right:0;
-  border-bottom:2px solid #817866;
-}
-
-#playerHand .domino:hover{
-  filter:brightness(1.07);
-}
-
-#playerHand .domino.selected{
-  transform:translateY(-9px);
-
-  box-shadow:
-    0 0 0 3px #f2c457,
-    0 7px 10px rgba(0,0,0,.8);
-}
-
-#playerHand .domino.playable{
-  box-shadow:
-    0 0 0 2px rgba(255,219,95,.55),
-    0 4px 6px rgba(0,0,0,.7);
-}
-
-#playerHand .domino.disabled{
-  filter:brightness(.55);
-}
-
-
-/* =========================================
-   LEFT ACTIONS
-========================================= */
-
-.bottom-left-actions{
-  position:absolute;
-
-  left:1.5%;
-  bottom:11.5%;
-
-  z-index:120;
-
-  display:flex;
-  gap:7px;
-
-  width:25%;
-
-  justify-content:flex-start;
-}
-
-.action-btn{
-  height:51px;
-
-  min-width:0;
-
-  padding:0 14px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  gap:7px;
-
-  border:2px solid #6e502d;
-  border-radius:13px;
-
-  color:#f4ead8;
-
-  font-size:14px;
-  font-weight:900;
-
-  text-shadow:0 2px 2px #000;
-
-  background:
-    linear-gradient(
-      #25352d,
-      #101b16
-    );
-
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.08),
-    0 5px 8px rgba(0,0,0,.7);
-}
-
-#passBtn{
-  width:135px;
-}
-
-#chatBtn{
-  width:125px;
-}
-
-.action-btn:disabled{
-  opacity:.38;
-  filter:grayscale(.5);
-}
-
-.action-icon{
-  font-size:20px;
-}
-
-
-/* =========================================
-   RIGHT ACTIONS
-========================================= */
-
-.bottom-right-actions{
-  position:absolute;
-
-  right:1.5%;
-  bottom:11.5%;
-
-  z-index:120;
-
-  display:flex;
-  justify-content:flex-end;
-
-  gap:7px;
-
-  width:25%;
-}
-
-#ribaBtn,
-#surrenderBtn{
-  height:51px;
-
-  border-radius:13px;
-
-  font-size:14px;
-  font-weight:900;
-
-  color:#f8ead7;
-
-  text-shadow:0 2px 2px #000;
-
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.1),
-    0 5px 8px rgba(0,0,0,.75);
-}
-
-#ribaBtn{
-  width:120px;
-
-  border:2px solid #4b463a;
-
-  background:
-    linear-gradient(
-      #25251f,
-      #10100d
-    );
-}
-
-#ribaBtn:disabled{
-  opacity:.4;
-}
-
-#surrenderBtn{
-  width:145px;
-
-  border:2px solid #8e2f24;
-
-  background:
-    linear-gradient(
-      #b53a2b,
-      #641c16
-    );
-}
-
-
-/* =========================================
-   TOP RIGHT ICON BUTTONS
-========================================= */
-
-.top-actions{
-  position:absolute;
-
-  right:14.8%;
-  top:22.3%;
-
-  z-index:130;
-
-  display:flex;
-  gap:5px;
-}
-
-.icon-btn{
-  width:45px;
-  height:45px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  border:2px solid #684326;
-  border-radius:11px;
-
-  color:#f6e5c3;
-
-  font-size:20px;
-
-  background:
-    linear-gradient(
-      #26342d,
-      #0d1813
-    );
-
-  box-shadow:
-    0 4px 7px rgba(0,0,0,.75);
-}
-
-
-/* =========================================
-   EMOJI CHAT
-========================================= */
-
-#emojiPanel{
-  position:absolute;
-
-  left:2%;
-  bottom:20%;
-
-  z-index:500;
-
-  display:none;
-
-  width:265px;
-
-  padding:10px;
-
-  border:2px solid #755034;
-  border-radius:14px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(22,31,26,.98),
-      rgba(7,12,10,.98)
-    );
-
-  box-shadow:
-    0 12px 25px rgba(0,0,0,.85);
-}
-
-#emojiPanel.show{
-  display:block;
-}
-
-.emoji-title{
-  margin-bottom:8px;
-
-  color:#e9d5ac;
-
-  text-align:center;
-
-  font-size:12px;
-  font-weight:bold;
-}
-
-.emoji-grid{
-  display:grid;
-
-  grid-template-columns:repeat(5,1fr);
-
-  gap:6px;
-}
-
-.emoji-btn{
-  height:42px;
-
-  border:1px solid #514839;
-  border-radius:8px;
-
-  background:#15231c;
-
-  font-size:23px;
-}
-
-.emoji-btn:hover{
-  background:#234033;
-}
-
-
-/* floating emoji */
-
-.floating-emoji{
-  position:absolute;
-
-  z-index:600;
-
-  font-size:42px;
-
-  pointer-events:none;
-
-  animation:emojiFloat 1.8s ease-out forwards;
-}
-
-@keyframes emojiFloat{
-
-  0%{
-    opacity:0;
-    transform:translateY(15px) scale(.5);
-  }
-
-  20%{
-    opacity:1;
-    transform:translateY(0) scale(1.15);
-  }
-
-  100%{
-    opacity:0;
-    transform:translateY(-75px) scale(1);
-  }
-
-}
-
-
-/* =========================================
-   BOTTOM INFO BAR
-========================================= */
-
-.bottom-info{
-  position:absolute;
-
-  left:.8%;
-  right:.8%;
-  bottom:.5%;
-
-  height:9.5%;
-
-  z-index:60;
-
-  display:grid;
-
-  grid-template-columns:
-    1.15fr
-    1fr
-    1fr
-    1fr;
-
-  gap:3px;
-
-  overflow:hidden;
-
-  border:2px solid #251008;
-  border-radius:5px;
-
-  background:#090a09;
-
-  box-shadow:
-    inset 0 2px 0 #56301b,
-    0 -3px 8px rgba(0,0,0,.65);
-}
-
-.info-box{
-  display:flex;
-  align-items:center;
-
-  gap:7px;
-
-  padding:5px 9px;
-
-  border-right:1px solid #39271a;
-
-  color:#bcb8ae;
-
-  font-size:11px;
-
-  background:
-    linear-gradient(
-      180deg,
-      #171b18,
-      #090b09
-    );
-}
-
-.info-box:last-child{
-  border-right:0;
-}
-
-.info-icon{
-  font-size:22px;
-}
-
-.info-box strong{
-  display:block;
-
-  margin-bottom:2px;
-
-  color:#f3e3c5;
-
-  font-size:12px;
-}
-
-
-/* =========================================
-   MODAL
-========================================= */
-
-.modal{
-  position:fixed;
-
-  inset:0;
-
-  z-index:3000;
-
-  display:none;
-
-  align-items:center;
-  justify-content:center;
-
-  padding:20px;
-
-  background:rgba(0,0,0,.78);
-
-  backdrop-filter:blur(3px);
-}
-
-.modal.show{
-  display:flex;
-}
-
-.modal-card{
-  width:min(430px,92vw);
-
-  max-height:88vh;
-
-  overflow:auto;
-
-  padding:20px;
-
-  border:3px solid #764323;
-  border-radius:18px;
-
-  color:#e8dfd1;
-
-  background:
-    linear-gradient(
-      145deg,
-      #163127,
-      #081510
-    );
-
-  box-shadow:
-    inset 0 0 0 1px #b07542,
-    0 20px 50px #000;
-}
-
-.modal-card h2{
-  margin-bottom:15px;
-
-  color:#ffe0a2;
-
-  font-family:Georgia,serif;
-
-  text-align:center;
-}
-
-.modal-card p{
-  margin-bottom:10px;
-
-  line-height:1.5;
-
-  font-size:14px;
-}
-
-.modal-close{
-  width:100%;
-  height:45px;
-
-  margin-top:12px;
-
-  border:2px solid #735034;
-  border-radius:10px;
-
-  color:#fff1d2;
-
-  font-weight:bold;
-
-  background:#263a30;
-}
-
-
-/* =========================================
-   TOAST
-========================================= */
-
-#toast{
-  position:fixed;
-
-  left:50%;
-  bottom:22%;
-
-  transform:translateX(-50%) translateY(20px);
-
-  z-index:5000;
-
-  max-width:80vw;
-
-  padding:10px 18px;
-
-  border:1px solid #8e7447;
-  border-radius:22px;
-
-  color:#fff1c9;
-
-  background:rgba(8,18,14,.96);
-
-  box-shadow:0 7px 18px #000;
-
-  font-size:13px;
-  font-weight:bold;
-
-  opacity:0;
-
-  pointer-events:none;
-
-  transition:
-    opacity .2s,
-    transform .2s;
-}
-
-#toast.show{
-  opacity:1;
-
-  transform:translateX(-50%) translateY(0);
-}
-
-
-/* =========================================
-   MOBILE LANDSCAPE
-========================================= */
-
-@media(max-height:550px){
-
-  .hand-zone{
-    bottom:10.2%;
-
-    min-width:320px;
-    height:76px;
-
-    padding-bottom:6px;
-  }
-
-  #playerHand{
-    height:69px;
-  }
-
-  #playerHand .domino{
-    width:36px;
-    height:61px;
-  }
-
-  .bottom-left-actions,
-  .bottom-right-actions{
-    bottom:10.7%;
-  }
-
-  .action-btn,
-  #ribaBtn,
-  #surrenderBtn{
-    height:43px;
-
-    font-size:11px;
-  }
-
-  #passBtn{
-    width:100px;
-  }
-
-  #chatBtn{
-    width:90px;
-  }
-
-  #ribaBtn{
-    width:95px;
-  }
-
-  #surrenderBtn{
-    width:115px;
-  }
-
-  .icon-btn{
-    width:39px;
-    height:39px;
-
-    font-size:18px;
-  }
-
-  .bottom-info{
-    height:9%;
-  }
-
-  .info-box{
-    padding:3px 6px;
-
-    gap:4px;
-
-    font-size:9px;
-  }
-
-  .info-box strong{
-    font-size:10px;
-  }
-
-  .info-icon{
-    font-size:17px;
-  }
-
-}
-
-
-/* =========================================
-   HTML START
-========================================= */
-
-</style>
-</head>
-
-<body>
-
-<div id="game">
-
-  <div class="shell">
-
-
-    <!-- ===================================
-         TOP SCORE PANEL
-    ==================================== -->
-
-    <div class="top-panel">
-
-      <!-- TEAM A -->
-
-      <div class="team-score">
-
-        <div class="team-title">
-          გუნდი A (1 და 3)
-        </div>
-
-        <div class="score-body">
-
-          <div class="abacus" id="abacusA">
-
-            <div class="abacus-row">
-              <span class="abacus-label">100</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-            <div class="abacus-row">
-              <span class="abacus-label">100</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-            <div class="abacus-row">
-              <span class="abacus-label">100</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-            <div class="abacus-row">
-              <span class="abacus-label">50</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-            <div class="abacus-row">
-              <span class="abacus-label">5</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-          </div>
-
-          <div class="team-total">
-            <span id="teamAScore">0</span>&nbsp;/&nbsp;355
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- LOGO -->
-
-      <div class="logo">
-
-        <div class="logo-main">
-          DOMINO
-        </div>
-
-        <div class="logo-sub">
-
-          <span class="logo-flag">🇬🇪</span>
-
-          <span>GEORGIA</span>
-
-          <span class="logo-flag">🇬🇪</span>
-
-        </div>
-
-      </div>
-
-
-      <!-- TEAM B -->
-
-      <div class="team-score">
-
-        <div class="team-title">
-          გუნდი B (2 და 4)
-        </div>
-
-        <div class="score-body">
-
-          <div class="abacus" id="abacusB">
-
-            <div class="abacus-row">
-              <span class="abacus-label">100</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-            <div class="abacus-row">
-              <span class="abacus-label">100</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-            <div class="abacus-row">
-              <span class="abacus-label">100</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-            <div class="abacus-row">
-              <span class="abacus-label">50</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-            <div class="abacus-row">
-              <span class="abacus-label">5</span>
-              <div class="rail">
-                <div class="beads"></div>
-              </div>
-            </div>
-
-          </div>
-
-          <div class="team-total">
-            <span id="teamBScore">0</span>&nbsp;/&nbsp;355
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         ROOM INFO
-    ==================================== -->
-
-    <div class="room-info">
-
-      <small>ოთახი:</small>
-      <strong id="roomCode">GE-0001</strong>
-
-      <small>რეჟიმი:</small>
-      <strong>ქართული დომინო</strong>
-
-      <div class="online">
-        ● ონლაინ
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         RIGHT NOTE
-    ==================================== -->
-
-    <div class="side-note">
-      მეგობრობა მაგიდასთან იწყება
-    </div>
-
-
-    <!-- ===================================
-         GREEN TABLE
-    ==================================== -->
-
-    <div class="table-area">
-
-      <div class="watermark">
-
-        <div class="crown">♛</div>
-
-        <div class="watermark-text">
-          ქართული დომინო
-        </div>
-
-      </div>
-
-
-      <!-- HARD DOMINO BOUNDARY -->
-
-      <div id="boardViewport">
-
-        <div id="dominoBoard"></div>
-
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         PLAYER 1 — TOP
-    ==================================== -->
-
-    <div class="player player-top"
-         id="player0"
-         data-player="0">
-
-      <div class="avatar">
-        👨
-        <span class="online-dot"></span>
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         PLAYER 4 — LEFT
-    ==================================== -->
-
-    <div class="player player-left"
-         id="player3"
-         data-player="3">
-
-      <div class="avatar">
-        👩
-        <span class="online-dot"></span>
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         PLAYER 2 — RIGHT
-    ==================================== -->
-
-    <div class="player player-right"
-         id="player1"
-         data-player="1">
-
-      <div class="avatar">
-        👨
-        <span class="online-dot"></span>
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         PLAYER 3 — YOU
-    ==================================== -->
-
-    <div class="player player-bottom"
-         id="player2"
-         data-player="2">
-
-      <div class="avatar">
-        🧔
-        <span class="online-dot"></span>
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         PLAYER POPUP
-    ==================================== -->
-
-    <div id="playerPopup"
-         class="player-popup">
-
-      <div class="player-popup-name"
-           id="popupName">
-        მოთამაშე
-      </div>
-
-      <div class="player-popup-rating"
-           id="popupRating">
-        ★ 1000
-      </div>
-
-      <div class="player-popup-stats"
-           id="popupStats">
-        მოგება: 0<br>
-        თამაში: 0
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         OPPONENT HIDDEN HANDS
-    ==================================== -->
-
-    <div class="hidden-hand hidden-top"
-         id="hidden0"></div>
-
-    <div class="hidden-hand hidden-right"
-         id="hidden1"></div>
-
-    <div class="hidden-hand hidden-left"
-         id="hidden3"></div>
-
-
-    <!-- ===================================
-         TURN MESSAGE
-    ==================================== -->
-
-    <div id="turnMessage">
-      შენი სვლაა
-    </div>
-
-
-    <!-- ===================================
-         TOP ACTIONS
-    ==================================== -->
-
-    <div class="top-actions">
-
-      <button class="icon-btn"
-              id="emojiTopBtn"
-              title="ემოჯი">
-        😊
-      </button>
-
-      <button class="icon-btn"
-              id="soundBtn"
-              title="ხმა">
-        🔊
-      </button>
-
-      <button class="icon-btn"
-              id="settingsBtn"
-              title="პარამეტრები">
-        ⚙️
-      </button>
-
-    </div>
-
-
-    <!-- ===================================
-         OWN HAND
-    ==================================== -->
-
-    <div class="hand-zone">
-
-      <div id="playerHand"></div>
-
-    </div>
-
-
-    <!-- ===================================
-         LEFT BUTTONS
-    ==================================== -->
-
-    <div class="bottom-left-actions">
-
-      <button class="action-btn"
-              id="passBtn">
-
-        <span class="action-icon">✋</span>
-
-        <span>გავიარე</span>
-
-      </button>
-
-
-      <button class="action-btn"
-              id="chatBtn">
-
-        <span class="action-icon">😊</span>
-
-        <span>ჩატი</span>
-
-      </button>
-
-    </div>
-
-
-    <!-- ===================================
-         RIGHT BUTTONS
-    ==================================== -->
-
-    <div class="bottom-right-actions">
-
-      <button id="ribaBtn"
-              disabled>
-        🔒 რიბა?
-      </button>
-
-      <button id="surrenderBtn">
-        🏳 დანებება
-      </button>
-
-    </div>
-
-
-    <!-- ===================================
-         EMOJI PANEL
-    ==================================== -->
-
-    <div id="emojiPanel">
-
-      <div class="emoji-title">
-        მხოლოდ ემოჯი
-      </div>
-
-      <div class="emoji-grid">
-
-        <button class="emoji-btn">👍</button>
-        <button class="emoji-btn">👏</button>
-        <button class="emoji-btn">😂</button>
-        <button class="emoji-btn">😎</button>
-        <button class="emoji-btn">🤝</button>
-
-        <button class="emoji-btn">🔥</button>
-        <button class="emoji-btn">❤️</button>
-        <button class="emoji-btn">😮</button>
-        <button class="emoji-btn">🤔</button>
-        <button class="emoji-btn">🏆</button>
-
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         BOTTOM INFO
-    ==================================== -->
-
-    <div class="bottom-info">
-
-      <div class="info-box">
-
-        <div class="info-icon">🎯</div>
-
-        <div>
-          <strong>მიზანი</strong>
-          355 ქულა
-        </div>
-
-      </div>
-
-
-      <div class="info-box">
-
-        <div class="info-icon">🤝</div>
-
-        <div>
-          <strong>გუნდები</strong>
-          1+3 / 2+4
-        </div>
-
-      </div>
-
-
-      <div class="info-box">
-
-        <div class="info-icon">🁣</div>
-
-        <div>
-          <strong>დაწყება</strong>
-          პირველი ხელი: 6–6
-        </div>
-
-      </div>
-
-
-      <div class="info-box">
-
-        <div class="info-icon">🔒</div>
-
-        <div>
-          <strong>რიბა</strong>
-          დაბლოკილი თამაში
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         HELP MODAL
-    ==================================== -->
-
-    <div class="modal"
-         id="helpModal">
-
-      <div class="modal-card">
-
-        <h2>DOMINO GEORGIA</h2>
-
-        <p>
-          თამაში მიმდინარეობს 4 მოთამაშით.
-          მოთამაშეები 1 და 3 არიან ერთი გუნდი,
-          ხოლო 2 და 4 — მეორე გუნდი.
-        </p>
-
-        <p>
-          პირველი ხელი იწყება 6–6 დომინოთი.
-        </p>
-
-        <p>
-          თუ სვლა არ გაქვს, გამოიყენე
-          <b>„გავიარე“</b>.
-        </p>
-
-        <p>
-          დაბლოკილ თამაშს ეწოდება
-          <b>„რიბა“</b>.
-        </p>
-
-        <button class="modal-close"
-                id="helpClose">
-          დახურვა
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <!-- ===================================
-         TOAST
-    ==================================== -->
-
-    <div id="toast"></div>
-
-
-  </div>
-</div>
-
-
-<!-- ROTATE PHONE -->
-
-<div class="rotate">
-
-  <div>📱↻</div>
-
-  <h2>შემოაბრუნე ტელეფონი</h2>
-
-  <p>
-    DOMINO GEORGIA თამაშდება ჰორიზონტალურად
-  </p>
-
-</div>
-
-
-<!-- ===== PART 2/4 END ===== -->
-<script>
 /* =========================================================
-   DOMINO GEORGIA — PART 3/4
-   GAME ENGINE
+   PART 1/4 END
+   IMPORTANT: STYLE CONTINUES IN PART 2
 ========================================================= */
-
-"use strict";
-
-
-/* =========================================================
-   BASIC HELPERS
-========================================================= */
-
-const $ = (id) => document.getElementById(id);
-
-function round5(value){
-  value = Number(value) || 0;
-  return Math.ceil(value / 5) * 5;
-}
-
-function teamOf(player){
-  // Player 1 + Player 3 = Team A
-  // Player 2 + Player 4 = Team B
-  return (player === 0 || player === 2) ? 0 : 1;
-}
-
-function nextPlayer(player){
-  return (player + 1) % 4;
-}
-
-function otherTeam(team){
-  return team === 0 ? 1 : 0;
-}
-
-function sleep(ms){
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-
-/* =========================================================
-   PLAYER DATA
-========================================================= */
-
-const players = [
-
-  {
-    name:"მოთამაშე 1",
-    rating:1000,
-    games:0,
-    wins:0
-  },
-
-  {
-    name:"მოთამაშე 2",
-    rating:1000,
-    games:0,
-    wins:0
-  },
-
-  {
-    name:"Kusto",
-    rating:1000,
-    games:0,
-    wins:0
-  },
-
-  {
-    name:"მოთამაშე 4",
-    rating:1000,
-    games:0,
-    wins:0
-  }
-
-];
-
-
-/* =========================================================
-   GAME STATE
-========================================================= */
-
-const gameState = {
-
-  hands:[
-    [],
-    [],
-    [],
-    []
-  ],
-
-  board:[],
-
-  leftEnd:null,
-  rightEnd:null,
-
-  currentPlayer:0,
-
-  teamScores:[
-    0,
-    0
-  ],
-
-  /*
-    Equal Riba carry.
-    Example:
-    Team A = 17
-    Team B = 17
-
-    round5(17) = 20
-    carryPoints += 20
-  */
-  carryPoints:0,
-
-  roundNumber:1,
-
-  firstRound:true,
-
-  /*
-    Normal hand:
-    previous winner starts next hand.
-
-    Riba:
-    riba closer starts next hand.
-  */
-  nextStarter:null,
-
-  finished:false,
-
-  selectedIndex:null,
-
-  lastPlayerToPlay:null,
-
-  /*
-    Last player who played a NORMAL tile.
-
-    Important for special Georgian riba rule:
-    if board is effectively closed but a final matching
-    double can still be played, the player BEFORE that
-    final double remains the riba closer.
-  */
-  ribaCloser:null,
-
-  /*
-    Special riba state.
-  */
-  pendingRiba:false,
-
-  pendingRibaCloser:null,
-
-  /*
-    Consecutive passes.
-  */
-  passCount:0,
-
-  /*
-    355 was reached, but the match can only finish
-    after a NON-RIBA hand.
-  */
-  targetReached:false,
-
-  /*
-    Prevent repeated actions during animations/AI.
-  */
-  locked:false
-
-};
-
-
-/* =========================================================
-   CREATE DOMINO SET
-========================================================= */
-
-function createDominoSet(){
-
-  const set = [];
-
-  let id = 0;
-
-  for(let a = 0; a <= 6; a++){
-
-    for(let b = a; b <= 6; b++){
-
-      set.push({
-
-        id:"D" + id++,
-
-        a:a,
-        b:b
-
-      });
-
-    }
-
-  }
-
-  return set;
-
-}
-
-
-/* =========================================================
-   SHUFFLE
-========================================================= */
-
-function shuffle(array){
-
-  const arr = [...array];
-
-  for(let i = arr.length - 1; i > 0; i--){
-
-    const j = Math.floor(
-      Math.random() * (i + 1)
-    );
-
-    [
-      arr[i],
-      arr[j]
-    ] = [
-      arr[j],
-      arr[i]
-    ];
-
-  }
-
-  return arr;
-
-}
-
-
-/* =========================================================
-   DEAL
-========================================================= */
-
-function dealTiles(){
-
-  const deck = shuffle(
-    createDominoSet()
-  );
-
-  gameState.hands = [
-    [],
-    [],
-    [],
-    []
-  ];
-
-  for(let i = 0; i < 28; i++){
-
-    const player = i % 4;
-
-    gameState.hands[player].push(
-      deck[i]
-    );
-
-  }
-
-  /*
-    Sort own hand for cleaner appearance.
-  */
-
-  gameState.hands[2].sort((x,y)=>{
-
-    const sx = x.a + x.b;
-    const sy = y.a + y.b;
-
-    if(sy !== sx){
-      return sy - sx;
-    }
-
-    return Math.max(y.a,y.b) -
-           Math.max(x.a,x.b);
-
-  });
-
-}
-
-
-/* =========================================================
-   DOMINO HELPERS
-========================================================= */
-
-function isDouble(tile){
-
-  return tile.a === tile.b;
-
-}
-
-function tilePoints(tile){
-
-  return tile.a + tile.b;
-
-}
-
-function handPoints(player){
-
-  return gameState.hands[player]
-    .reduce(
-      (sum,tile)=>sum + tilePoints(tile),
-      0
-    );
-
-}
-
-function teamRemaining(team){
-
-  if(team === 0){
-
-    return (
-      handPoints(0) +
-      handPoints(2)
-    );
-
-  }
-
-  return (
-    handPoints(1) +
-    handPoints(3)
-  );
-
-}
-
-
-/* =========================================================
-   FIND 6-6
-========================================================= */
-
-function findSixSixHolder(){
-
-  for(let p = 0; p < 4; p++){
-
-    const index =
-      gameState.hands[p]
-      .findIndex(
-        tile =>
-          tile.a === 6 &&
-          tile.b === 6
-      );
-
-    if(index !== -1){
-
-      return {
-        player:p,
-        index:index
-      };
-
-    }
-
-  }
-
-  return null;
-
-}
-
-
-/* =========================================================
-   PLAYABILITY
-========================================================= */
-
-function canPlay(tile){
-
-  if(gameState.board.length === 0){
-    return true;
-  }
-
-  return (
-    tile.a === gameState.leftEnd ||
-    tile.b === gameState.leftEnd ||
-    tile.a === gameState.rightEnd ||
-    tile.b === gameState.rightEnd
-  );
-
-}
-
-function legalTiles(player){
-
-  return gameState.hands[player]
-    .map((tile,index)=>({
-      tile,
-      index
-    }))
-    .filter(item =>
-      canPlay(item.tile)
-    );
-
-}
-
-function hasLegalMove(player){
-
-  return legalTiles(player).length > 0;
-
-}
-
-
-/* =========================================================
-   SIDE MATCHING
-========================================================= */
-
-function canFitLeft(tile){
-
-  if(gameState.board.length === 0){
-    return true;
-  }
-
-  return (
-    tile.a === gameState.leftEnd ||
-    tile.b === gameState.leftEnd
-  );
-
-}
-
-function canFitRight(tile){
-
-  if(gameState.board.length === 0){
-    return true;
-  }
-
-  return (
-    tile.a === gameState.rightEnd ||
-    tile.b === gameState.rightEnd
-  );
-
-}
-
-
-/* =========================================================
-   ORIENT TILE
-========================================================= */
-
-function orientForLeft(tile){
-
-  if(gameState.board.length === 0){
-
-    return {
-      a:tile.a,
-      b:tile.b
-    };
-
-  }
-
-  /*
-    On left:
-    outer value = a
-    connected value = b
-  */
-
-  if(tile.b === gameState.leftEnd){
-
-    return {
-      a:tile.a,
-      b:tile.b
-    };
-
-  }
-
-  return {
-    a:tile.b,
-    b:tile.a
-  };
-
-}
-
-function orientForRight(tile){
-
-  if(gameState.board.length === 0){
-
-    return {
-      a:tile.a,
-      b:tile.b
-    };
-
-  }
-
-  /*
-    On right:
-    connected value = a
-    outer value = b
-  */
-
-  if(tile.a === gameState.rightEnd){
-
-    return {
-      a:tile.a,
-      b:tile.b
-    };
-
-  }
-
-  return {
-    a:tile.b,
-    b:tile.a
-  };
-
-}
-
-
-/* =========================================================
-   PIP HTML
-========================================================= */
-
-function pipHTML(value){
-
-  const positions = {
-
-    0:[],
-
-    1:[
-      "p1"
-    ],
-
-    2:[
-      "p2",
-      "p3"
-    ],
-
-    3:[
-      "p2",
-      "p1",
-      "p3"
-    ],
-
-    4:[
-      "p2",
-      "p4",
-      "p5",
-      "p3"
-    ],
-
-    5:[
-      "p2",
-      "p4",
-      "p1",
-      "p5",
-      "p3"
-    ],
-
-    6:[
-      "p2",
-      "p4",
-      "p6",
-      "p7",
-      "p5",
-      "p3"
-    ]
-
-  };
-
-  return positions[value]
-    .map(
-      pos =>
-        `<span class="pip ${pos}"></span>`
-    )
-    .join("");
-
-}
-
-
-/* =========================================================
-   CREATE VISUAL DOMINO
-========================================================= */
-
-function createDominoElement(a,b,vertical=false){
-
-  const el =
-    document.createElement("div");
-
-  el.className =
-    "domino" +
-    (vertical ? " vertical" : "");
-
-  const first =
-    document.createElement("div");
-
-  first.className =
-    "domino-half";
-
-  first.innerHTML =
-    pipHTML(a);
-
-  const second =
-    document.createElement("div");
-
-  second.className =
-    "domino-half";
-
-  second.innerHTML =
-    pipHTML(b);
-
-  el.appendChild(first);
-  el.appendChild(second);
-
-  return el;
-
-}
-
-
-/* =========================================================
-   RENDER OWN HAND
-========================================================= */
-
-function renderHand(){
-
-  const handEl =
-    $("playerHand");
-
-  if(!handEl){
-    return;
-  }
-
-  handEl.innerHTML = "";
-
-  const player = 2;
-
-  gameState.hands[player]
-    .forEach((tile,index)=>{
-
-      const el =
-        createDominoElement(
-          tile.a,
-          tile.b,
-          true
-        );
-
-      el.dataset.index = index;
-
-      if(
-        gameState.currentPlayer === player &&
-        canPlay(tile) &&
-        !gameState.finished
-      ){
-
-        el.classList.add(
-          "playable"
-        );
-
-      }else{
-
-        el.classList.add(
-          "disabled"
-        );
-
-      }
-
-      if(
-        gameState.selectedIndex === index
-      ){
-
-        el.classList.add(
-          "selected"
-        );
-
-      }
-
-      el.addEventListener(
-        "click",
-        ()=>selectOwnTile(index)
-      );
-
-      handEl.appendChild(el);
-
-    });
-
-}
-
-
-/* =========================================================
-   SELECT OWN TILE
-========================================================= */
-
-function selectOwnTile(index){
-
-  if(gameState.finished){
-    return;
-  }
-
-  if(gameState.locked){
-    return;
-  }
-
-  if(gameState.currentPlayer !== 2){
-
-    toast(
-      "ჯერ შენი სვლა არ არის"
-    );
-
-    return;
-  }
-
-  const tile =
-    gameState.hands[2][index];
-
-  if(!tile){
-    return;
-  }
-
-  if(!canPlay(tile)){
-
-    toast(
-      "ეს დომინო ვერ ჯდება"
-    );
-
-    return;
-  }
-
-  gameState.selectedIndex =
-    index;
-
-  renderHand();
-
-  const left =
-    canFitLeft(tile);
-
-  const right =
-    canFitRight(tile);
-
-  /*
-    If only one side fits,
-    play immediately.
-  */
-
-  if(left && !right){
-
-    playTile(
-      2,
-      index,
-      "left"
-    );
-
-    return;
-  }
-
-  if(right && !left){
-
-    playTile(
-      2,
-      index,
-      "right"
-    );
-
-    return;
-  }
-
-  /*
-    If board empty, use right.
-  */
-
-  if(gameState.board.length === 0){
-
-    playTile(
-      2,
-      index,
-      "right"
-    );
-
-    return;
-  }
-
-  /*
-    If both ends have the same number,
-    side makes no difference.
-  */
-
-  if(
-    left &&
-    right &&
-    gameState.leftEnd ===
-    gameState.rightEnd
-  ){
-
-    playTile(
-      2,
-      index,
-      "right"
-    );
-
-    return;
-  }
-
-  /*
-    Both sides are legal.
-    For now second tap chooses:
-    left half of screen = left,
-    right half = right.
-
-    We also expose chooseSide()
-    for future UI buttons.
-  */
-
-  toast(
-    "ორივე მხარეს ჯდება — აირჩიე მარცხენა ან მარჯვენა"
-  );
-
-}
-
-
-/* =========================================================
-   CHOOSE SIDE
-========================================================= */
-
-function chooseSide(side){
-
-  const index =
-    gameState.selectedIndex;
-
-  if(index === null){
-    return;
-  }
-
-  const tile =
-    gameState.hands[2][index];
-
-  if(!tile){
-    return;
-  }
-
-  if(
-    side === "left" &&
-    canFitLeft(tile)
-  ){
-
-    playTile(
-      2,
-      index,
-      "left"
-    );
-
-  }else if(
-    side === "right" &&
-    canFitRight(tile)
-  ){
-
-    playTile(
-      2,
-      index,
-      "right"
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   BOARD CLICK SIDE SELECTION
-========================================================= */
-
-const boardViewport =
-  $("boardViewport");
-
-if(boardViewport){
-
-  boardViewport.addEventListener(
-    "click",
-    (event)=>{
-
-      if(
-        gameState.currentPlayer !== 2 ||
-        gameState.selectedIndex === null
-      ){
-        return;
-      }
-
-      const rect =
-        boardViewport
-        .getBoundingClientRect();
-
-      const x =
-        event.clientX - rect.left;
-
-      if(x < rect.width / 2){
-
-        chooseSide("left");
-
-      }else{
-
-        chooseSide("right");
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   PLAY TILE
-========================================================= */
-
-async function playTile(
-  player,
-  handIndex,
-  side="right",
-  options={}
-){
-
-  if(gameState.finished){
-    return false;
-  }
-
-  if(gameState.locked && !options.force){
-    return false;
-  }
-
-  if(player !== gameState.currentPlayer &&
-     !options.force){
-
-    return false;
-
-  }
-
-  const hand =
-    gameState.hands[player];
-
-  const tile =
-    hand[handIndex];
-
-  if(!tile){
-    return false;
-  }
-
-  if(
-    gameState.board.length > 0 &&
-    !canPlay(tile)
-  ){
-
-    return false;
-
-  }
-
-  let oriented;
-
-  /*
-    First tile.
-  */
-
-  if(gameState.board.length === 0){
-
-    oriented = {
-      a:tile.a,
-      b:tile.b
-    };
-
-    gameState.leftEnd =
-      oriented.a;
-
-    gameState.rightEnd =
-      oriented.b;
-
-    gameState.board.push({
-
-      id:tile.id,
-
-      a:oriented.a,
-      b:oriented.b,
-
-      originalA:tile.a,
-      originalB:tile.b,
-
-      player:player,
-
-      side:"right",
-
-      isDouble:isDouble(tile)
-
-    });
-
-  }
-
-  /*
-    LEFT
-  */
-
-  else if(
-    side === "left" &&
-    canFitLeft(tile)
-  ){
-
-    oriented =
-      orientForLeft(tile);
-
-    gameState.leftEnd =
-      oriented.a;
-
-    gameState.board.unshift({
-
-      id:tile.id,
-
-      a:oriented.a,
-      b:oriented.b,
-
-      originalA:tile.a,
-      originalB:tile.b,
-
-      player:player,
-
-      side:"left",
-
-      isDouble:isDouble(tile)
-
-    });
-
-  }
-
-  /*
-    RIGHT
-  */
-
-  else if(
-    canFitRight(tile)
-  ){
-
-    oriented =
-      orientForRight(tile);
-
-    gameState.rightEnd =
-      oriented.b;
-
-    gameState.board.push({
-
-      id:tile.id,
-
-      a:oriented.a,
-      b:oriented.b,
-
-      originalA:tile.a,
-      originalB:tile.b,
-
-      player:player,
-
-      side:"right",
-
-      isDouble:isDouble(tile)
-
-    });
-
-  }
-
-  else if(canFitLeft(tile)){
-
-    /*
-      Fallback if AI chose wrong side.
-    */
-
-    oriented =
-      orientForLeft(tile);
-
-    gameState.leftEnd =
-      oriented.a;
-
-    gameState.board.unshift({
-
-      id:tile.id,
-
-      a:oriented.a,
-      b:oriented.b,
-
-      originalA:tile.a,
-      originalB:tile.b,
-
-      player:player,
-
-      side:"left",
-
-      isDouble:isDouble(tile)
-
-    });
-
-  }
-
-  else{
-
-    return false;
-
-  }
-
-
-  /*
-    Remove tile from hand.
-  */
-
-  hand.splice(
-    handIndex,
-    1
-  );
-
-
-  /*
-    Last player who actually laid a tile.
-  */
-
-  gameState.lastPlayerToPlay =
-    player;
-
-  gameState.passCount = 0;
-
-  gameState.selectedIndex = null;
-
-
-  /*
-    Special Georgian Riba tracking.
-
-    If we had already detected a pending riba
-    and this tile is the permitted final double,
-    DO NOT change the riba closer.
-
-    Otherwise this player becomes the latest
-    possible closer.
-  */
-
-  if(
-    !(
-      gameState.pendingRiba &&
-      isDouble(tile)
-    )
-  ){
-
-    gameState.ribaCloser =
-      player;
-
-  }
-
-
-  renderAll();
-
-
-  /*
-    Player used all tiles:
-    NORMAL HAND WIN.
-
-    But if this tile was the final double
-    after a pending riba, it is still RIBA,
-    not a normal hand win.
-  */
-
-  if(
-    hand.length === 0 &&
-    !gameState.pendingRiba
-  ){
-
-    await finishNormalHand(
-      player
-    );
-
-    return true;
-
-  }
-
-
-  /*
-    Check board situation after this tile.
-  */
-
-  await continueAfterPlay(
-    player,
-    tile
-  );
-
-  return true;
-
-}
-
-
-/* =========================================================
-   DETECT WHETHER ANY OTHER PLAYER CAN MOVE
-========================================================= */
-
-function playersWithLegalMoves(excludePlayer=null){
-
-  const result = [];
-
-  for(let p = 0; p < 4; p++){
-
-    if(p === excludePlayer){
-      continue;
-    }
-
-    if(
-      gameState.hands[p].length > 0 &&
-      hasLegalMove(p)
-    ){
-
-      result.push(p);
-
-    }
-
-  }
-
-  return result;
-
-}
-
-
-/* =========================================================
-   FIND SPECIAL FINAL DOUBLE
-========================================================= */
-
-function findFinalPlayableDouble(){
-
-  /*
-    Georgian special rule:
-
-    If the board would otherwise be blocked,
-    but another player still has a matching double,
-    that double may still be laid.
-
-    We search all remaining hands.
-  */
-
-  for(let p = 0; p < 4; p++){
-
-    const hand =
-      gameState.hands[p];
-
-    for(let i = 0; i < hand.length; i++){
-
-      const tile =
-        hand[i];
-
-      if(
-        isDouble(tile) &&
-        canPlay(tile)
-      ){
-
-        return {
-          player:p,
-          index:i,
-          tile:tile
-        };
-
-      }
-
-    }
-
-  }
-
-  return null;
-
-}
-
-
-/* =========================================================
-   CHECK TRUE BLOCKED STATE
-========================================================= */
-
-function noOneCanMove(){
-
-  for(let p = 0; p < 4; p++){
-
-    if(hasLegalMove(p)){
-      return false;
-    }
-
-  }
-
-  return true;
-
-}
-
-
-/* =========================================================
-   CONTINUE AFTER PLAY
-========================================================= */
-
-async function continueAfterPlay(
-  player,
-  playedTile
-){
-
-  /*
-    If we are in pending-riba mode,
-    the permitted final double has now been laid.
-    After it, if nobody can continue, finish riba.
-  */
-
-  if(gameState.pendingRiba){
-
-    const closer =
-      gameState.pendingRibaCloser;
-
-    gameState.pendingRiba = false;
-    gameState.pendingRibaCloser = null;
-
-    /*
-      The riba closer stays the player who laid
-      the tile BEFORE this final double.
-    */
-
-    gameState.ribaCloser =
-      closer;
-
-    if(noOneCanMove()){
-
-      await finishRiba(
-        closer
-      );
-
-      return;
-
-    }
-
-  }
-
-
-  /*
-    Move to next player.
-  */
-
-  gameState.currentPlayer =
-    nextPlayer(player);
-
-  renderAll();
-
-  updateTurnMessage();
-
-
-  /*
-    Start AI if necessary.
-  */
-
-  scheduleTurn();
-
-}
-
-
-/* =========================================================
-   PASS
-========================================================= */
-
-async function passTurn(player){
-
-  if(gameState.finished){
-    return;
-  }
-
-  if(gameState.locked){
-    return;
-  }
-
-  if(player !== gameState.currentPlayer){
-    return;
-  }
-
-  if(hasLegalMove(player)){
-
-    if(player === 2){
-
-      toast(
-        "სვლა გაქვს — „გავიარე“ არ შეიძლება"
-      );
-
-    }
-
-    return;
-
-  }
-
-  gameState.passCount++;
-
-  /*
-    If 4 players have consecutively passed,
-    board is blocked.
-  */
-
-  if(gameState.passCount >= 4){
-
-    await handleBlockedGame();
-
-    return;
-
-  }
-
-  gameState.currentPlayer =
-    nextPlayer(player);
-
-  renderAll();
-
-  scheduleTurn();
-
-}
-
-
-/* =========================================================
-   HANDLE BLOCKED GAME / RIBA
-========================================================= */
-
-async function handleBlockedGame(){
-
-  /*
-    Normally four consecutive passes means
-    nobody can play.
-
-    Keep the special double check here too.
-  */
-
-  const finalDouble =
-    findFinalPlayableDouble();
-
-  if(finalDouble){
-
-    const closer =
-      gameState.ribaCloser;
-
-    gameState.pendingRiba = true;
-
-    gameState.pendingRibaCloser =
-      closer;
-
-    gameState.currentPlayer =
-      finalDouble.player;
-
-    toast(
-      "რიბა — დარჩენილი დუპლი იდება"
-    );
-
-    await sleep(500);
-
-    await playTile(
-      finalDouble.player,
-      finalDouble.index,
-      canFitRight(finalDouble.tile)
-        ? "right"
-        : "left",
-      {
-        force:true
-      }
-    );
-
-    return;
-
-  }
-
-  await finishRiba(
-    gameState.ribaCloser
-  );
-
-}
-
-
-/* =========================================================
-   PASS BUTTON
-========================================================= */
-
-if($("passBtn")){
-
-  $("passBtn").addEventListener(
-    "click",
-    ()=>{
-
-      if(
-        gameState.currentPlayer !== 2
-      ){
-
-        toast(
-          "ჯერ შენი სვლა არ არის"
-        );
-
-        return;
-
-      }
-
-      passTurn(2);
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   NORMAL HAND SCORING
-========================================================= */
-
-async function finishNormalHand(
-  winnerPlayer
-){
-
-  gameState.locked = true;
-
-  const winnerTeam =
-    teamOf(winnerPlayer);
-
-  const loserTeam =
-    otherTeam(winnerTeam);
-
-  /*
-    Georgian scoring:
-    remaining pips of BOTH opposing players.
-  */
-
-  const opponentPoints =
-    teamRemaining(loserTeam);
-
-  const earned =
-    round5(opponentPoints);
-
-  const carry =
-    gameState.carryPoints;
-
-  const totalEarned =
-    earned + carry;
-
-  gameState.teamScores[winnerTeam] +=
-    totalEarned;
-
-  gameState.carryPoints = 0;
-
-  gameState.nextStarter =
-    winnerPlayer;
-
-
-  /*
-    If 355 has been reached/crossed,
-    this is a NON-RIBA hand,
-    so match may now be resolved.
-  */
-
-  if(
-    gameState.teamScores[0] >= 355 ||
-    gameState.teamScores[1] >= 355 ||
-    gameState.targetReached
-  ){
-
-    gameState.targetReached = true;
-
-    renderAll();
-
-    await sleep(700);
-
-    finishMatch();
-
-    return;
-
-  }
-
-
-  toast(
-    `გუნდი ${winnerTeam === 0 ? "A" : "B"} +${totalEarned} ქულა`
-  );
-
-  renderAll();
-
-  await sleep(1100);
-
-  gameState.roundNumber++;
-
-  gameState.firstRound = false;
-
-  gameState.locked = false;
-
-  startRound();
-
-}
-
-
-/* =========================================================
-   RIBA SCORING
-========================================================= */
-
-async function finishRiba(
-  closerPlayer
-){
-
-  gameState.locked = true;
-
-  const teamA =
-    teamRemaining(0);
-
-  const teamB =
-    teamRemaining(1);
-
-  /*
-    Riba never ends match immediately.
-    If 355 was already reached,
-    we continue until a later NON-RIBA hand.
-  */
-
-  if(
-    gameState.teamScores[0] >= 355 ||
-    gameState.teamScores[1] >= 355
-  ){
-
-    gameState.targetReached = true;
-
-  }
-
-
-  /*
-    EQUAL RIBA
-  */
-
-  if(teamA === teamB){
-
-    const carryAdd =
-      round5(teamA);
-
-    gameState.carryPoints +=
-      carryAdd;
-
-    toast(
-      `თანაბარი რიბა ${teamA}:${teamB} — ${carryAdd} ქულა გადავიდა შემდეგ ხელში`
-    );
-
-  }
-
-  /*
-    TEAM A WINS RIBA
-  */
-
-  else if(teamA < teamB){
-
-    const earned =
-      round5(teamB);
-
-    const total =
-      earned +
-      gameState.carryPoints;
-
-    gameState.teamScores[0] +=
-      total;
-
-    gameState.carryPoints = 0;
-
-    toast(
-      `რიბა — გუნდი A +${total}`
-    );
-
-  }
-
-  /*
-    TEAM B WINS RIBA
-  */
-
-  else{
-
-    const earned =
-      round5(teamA);
-
-    const total =
-      earned +
-      gameState.carryPoints;
-
-    gameState.teamScores[1] +=
-      total;
-
-    gameState.carryPoints = 0;
-
-    toast(
-      `რიბა — გუნდი B +${total}`
-    );
-
-  }
-
-
-  /*
-    IMPORTANT:
-    Riba closer starts next hand.
-
-    If special final double existed,
-    closerPlayer is the player who laid
-    the tile BEFORE that final double.
-  */
-
-  if(
-    closerPlayer === null ||
-    closerPlayer === undefined
-  ){
-
-    closerPlayer =
-      gameState.lastPlayerToPlay ?? 0;
-
-  }
-
-  gameState.nextStarter =
-    closerPlayer;
-
-  renderAll();
-
-  await sleep(1300);
-
-  gameState.roundNumber++;
-
-  gameState.firstRound = false;
-
-  gameState.locked = false;
-
-  startRound();
-
-}
-
-
-/* =========================================================
-   MATCH FINISH
-========================================================= */
-
-function finishMatch(){
-
-  gameState.finished = true;
-  gameState.locked = true;
-
-  const A =
-    gameState.teamScores[0];
-
-  const B =
-    gameState.teamScores[1];
-
-  let text = "";
-
-  if(A > B){
-
-    text =
-      `🏆 გუნდი A იმარჯვებს — ${A}:${B}`;
-
-  }
-
-  else if(B > A){
-
-    text =
-      `🏆 გუნდი B იმარჯვებს — ${B}:${A}`;
-
-  }
-
-  else{
-
-    /*
-      Very rare exact tie after a non-riba
-      threshold hand.
-
-      Continue another hand instead of
-      declaring a false winner.
-    */
-
-    gameState.finished = false;
-    gameState.locked = false;
-    gameState.targetReached = true;
-
-    toast(
-      `თანაბარი ანგარიში ${A}:${B} — თამაში გრძელდება`
-    );
-
-    gameState.roundNumber++;
-
-    startRound();
-
-    return;
-
-  }
-
-  toast(text);
-
-  updateTurnMessage(text);
-
-}
-
-
-/* =========================================================
-   SCORE DISPLAY
-========================================================= */
-
-function renderScores(){
-
-  if($("teamAScore")){
-
-    $("teamAScore").textContent =
-      gameState.teamScores[0];
-
-  }
-
-  if($("teamBScore")){
-
-    $("teamBScore").textContent =
-      gameState.teamScores[1];
-
-  }
-
-  renderAbacus(
-    "abacusA",
-    gameState.teamScores[0]
-  );
-
-  renderAbacus(
-    "abacusB",
-    gameState.teamScores[1]
-  );
-
-}
-
-
-/* =========================================================
-   CHOTKA / ABACUS
-========================================================= */
-
-function renderAbacus(id,score){
-
-  const root =
-    $(id);
-
-  if(!root){
-    return;
-  }
-
-  const rows =
-    root.querySelectorAll(
-      ".abacus-row"
-    );
-
-  /*
-    Visual old-style chotka representation.
-
-    Three 100 rows,
-    one 50 row,
-    one 5 row.
-  */
-
-  const values = [
-    100,
-    100,
-    100,
-    50,
-    5
-  ];
-
-  let remaining =
-    Math.max(
-      0,
-      Math.min(score,355)
-    );
-
-  rows.forEach((row,index)=>{
-
-    const beads =
-      row.querySelector(
-        ".beads"
-      );
-
-    if(!beads){
-      return;
-    }
-
-    beads.innerHTML = "";
-
-    const rowValue =
-      values[index];
-
-    let active = 0;
-
-    if(rowValue === 100){
-
-      const used =
-        Math.min(
-          100,
-          remaining
-        );
-
-      active =
-        Math.floor(
-          used / 10
-        );
-
-      remaining -= used;
-
-    }
-
-    else if(rowValue === 50){
-
-      const used =
-        Math.min(
-          50,
-          remaining
-        );
-
-      active =
-        Math.floor(
-          used / 5
-        );
-
-      remaining -= used;
-
-    }
-
-    else{
-
-      active =
-        remaining >= 5
-          ? 1
-          : 0;
-
-      if(active){
-        remaining -= 5;
-      }
-
-    }
-
-    const beadCount =
-      rowValue === 5
-        ? 5
-        : 10;
-
-    for(
-      let i = 0;
-      i < beadCount;
-      i++
-    ){
-
-      const bead =
-        document.createElement(
-          "span"
-        );
-
-      bead.className =
-        "bead" +
-        (
-          i < active
-            ? " active"
-            : ""
-        );
-
-      beads.appendChild(
-        bead
-      );
-
-    }
-
-  });
-
-}
-
-
-/* =========================================================
-   RENDER BOARD
-========================================================= */
-
-function renderBoard(){
-
-  const board =
-    $("dominoBoard");
-
-  if(!board){
-    return;
-  }
-
-  board.innerHTML = "";
-
-  const count =
-    gameState.board.length;
-
-  if(count === 0){
-    return;
-  }
-
-
-  /*
-    The chain is kept inside the green felt.
-    It automatically becomes smaller as
-    more tiles appear.
-  */
-
-  let tileW = 64;
-  let tileH = 36;
-  let gap = 4;
-
-  if(count > 8){
-
-    tileW = 56;
-    tileH = 32;
-    gap = 3;
-
-  }
-
-  if(count > 12){
-
-    tileW = 49;
-    tileH = 29;
-    gap = 2;
-
-  }
-
-  if(count > 17){
-
-    tileW = 43;
-    tileH = 26;
-    gap = 1;
-
-  }
-
-
-  /*
-    Calculate visual width.
-    Doubles use vertical layout.
-  */
-
-  const visualWidths =
-    gameState.board.map(
-      item =>
-        item.isDouble
-          ? tileH
-          : tileW
-    );
-
-  const totalWidth =
-    visualWidths.reduce(
-      (a,b)=>a+b,
-      0
-    ) +
-    gap * (count - 1);
-
-  let cursorX =
-    Math.max(
-      0,
-      (board.clientWidth -
-       totalWidth) / 2
-    );
-
-  const centerY =
-    board.clientHeight / 2;
-
-
-  gameState.board.forEach(
-    (item,index)=>{
-
-      const vertical =
-        item.isDouble;
-
-      const el =
-        createDominoElement(
-          item.a,
-          item.b,
-          vertical
-        );
-
-      if(vertical){
-
-        el.style.width =
-          tileH + "px";
-
-        el.style.height =
-          tileW + "px";
-
-        el.style.left =
-          cursorX + "px";
-
-        el.style.top =
-          (
-            centerY -
-            tileW / 2
-          ) + "px";
-
-        cursorX +=
-          tileH + gap;
-
-      }else{
-
-        el.style.width =
-          tileW + "px";
-
-        el.style.height =
-          tileH + "px";
-
-        el.style.left =
-          cursorX + "px";
-
-        el.style.top =
-          (
-            centerY -
-            tileH / 2
-          ) + "px";
-
-        cursorX +=
-          tileW + gap;
-
-      }
-
-      board.appendChild(el);
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   HIDDEN HANDS
-========================================================= */
-
-function renderHiddenHands(){
-
-  const mapping = [
-    {
-      player:0,
-      id:"hidden0"
-    },
-    {
-      player:1,
-      id:"hidden1"
-    },
-    {
-      player:3,
-      id:"hidden3"
-    }
-  ];
-
-  mapping.forEach(item=>{
-
-    const root =
-      $(item.id);
-
-    if(!root){
-      return;
-    }
-
-    root.innerHTML = "";
-
-    const count =
-      gameState.hands[
-        item.player
-      ].length;
-
-    for(
-      let i = 0;
-      i < count;
-      i++
-    ){
-
-      const back =
-        document.createElement(
-          "div"
-        );
-
-      back.className =
-        "tile-back";
-
-      root.appendChild(back);
-
-    }
-
-  });
-
-}
-
-
-/* =========================================================
-   PLAYER ACTIVE STATE
-========================================================= */
-
-function renderPlayers(){
-
-  for(let p = 0; p < 4; p++){
-
-    const el =
-      $("player" + p);
-
-    if(!el){
-      continue;
-    }
-
-    el.classList.toggle(
-      "active",
-      p === gameState.currentPlayer &&
-      !gameState.finished
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   TURN MESSAGE
-========================================================= */
-
-function updateTurnMessage(
-  customText=null
-){
-
-  const message =
-    $("turnMessage");
-
-  if(!message){
-    return;
-  }
-
-  if(customText){
-
-    message.textContent =
-      customText;
-
-    return;
-
-  }
-
-  if(gameState.finished){
-
-    message.textContent =
-      "თამაში დასრულდა";
-
-    return;
-
-  }
-
-  if(gameState.currentPlayer === 2){
-
-    message.textContent =
-      "შენი სვლაა";
-
-  }else{
-
-    message.textContent =
-      `${players[gameState.currentPlayer].name}-ის სვლაა`;
-
-  }
-
-}
-
-
-/* =========================================================
-   PASS BUTTON STATE
-========================================================= */
-
-function updateButtons(){
-
-  const pass =
-    $("passBtn");
-
-  if(pass){
-
-    const allowed =
-      (
-        gameState.currentPlayer === 2 &&
-        !hasLegalMove(2) &&
-        !gameState.finished &&
-        !gameState.locked
-      );
-
-    pass.disabled =
-      !allowed;
-
-  }
-
-  const riba =
-    $("ribaBtn");
-
-  if(riba){
-
-    riba.disabled =
-      !gameState.pendingRiba;
-
-  }
-
-}
-
-
-/* =========================================================
-   RENDER ALL
-========================================================= */
-
-function renderAll(){
-
-  renderScores();
-
-  renderBoard();
-
-  renderHand();
-
-  renderHiddenHands();
-
-  renderPlayers();
-
-  updateTurnMessage();
-
-  updateButtons();
-
-}
-
-
-/* =========================================================
-   TEMPORARY AI
-========================================================= */
-
-function chooseAITile(player){
-
-  const legal =
-    legalTiles(player);
-
-  if(legal.length === 0){
-    return null;
-  }
-
-  /*
-    Prefer doubles.
-  */
-
-  const doubles =
-    legal.filter(
-      item =>
-        isDouble(item.tile)
-    );
-
-  if(doubles.length){
-
-    doubles.sort(
-      (x,y)=>
-        tilePoints(y.tile) -
-        tilePoints(x.tile)
-    );
-
-    return doubles[0];
-
-  }
-
-  /*
-    Otherwise prefer higher tile.
-  */
-
-  legal.sort(
-    (x,y)=>
-      tilePoints(y.tile) -
-      tilePoints(x.tile)
-  );
-
-  return legal[0];
-
-}
-
-
-/* =========================================================
-   AI TURN
-========================================================= */
-
-async function aiTurn(player){
-
-  if(gameState.finished){
-    return;
-  }
-
-  if(gameState.currentPlayer !== player){
-    return;
-  }
-
-  gameState.locked = true;
-
-  renderAll();
-
-  await sleep(
-    550 +
-    Math.random() * 450
-  );
-
-  const choice =
-    chooseAITile(player);
-
-  if(!choice){
-
-    gameState.locked = false;
-
-    await passTurn(player);
-
-    return;
-
-  }
-
-  const tile =
-    choice.tile;
-
-  let side = "right";
-
-  const left =
-    canFitLeft(tile);
-
-  const right =
-    canFitRight(tile);
-
-  if(left && !right){
-
-    side = "left";
-
-  }
-
-  else if(
-    left &&
-    right &&
-    Math.random() < .5
-  ){
-
-    side = "left";
-
-  }
-
-  gameState.locked = false;
-
-  await playTile(
-    player,
-    choice.index,
-    side
-  );
-
-}
-
-
-/* =========================================================
-   SCHEDULE CURRENT TURN
-========================================================= */
-
-function scheduleTurn(){
-
-  if(gameState.finished){
-    return;
-  }
-
-  renderAll();
-
-  /*
-    Player 3 is the human user.
-  */
-
-  if(gameState.currentPlayer === 2){
-
-    gameState.locked = false;
-
-    renderAll();
-
-    return;
-
-  }
-
-  const player =
-    gameState.currentPlayer;
-
-  setTimeout(
-    ()=>{
-
-      if(
-        !gameState.finished &&
-        gameState.currentPlayer === player
-      ){
-
-        aiTurn(player);
-
-      }
-
-    },
-    450
-  );
-
-}
-
-
-/* =========================================================
-   START ROUND
-========================================================= */
-
-async function startRound(){
-
-  gameState.finished = false;
-
-  gameState.board = [];
-
-  gameState.leftEnd = null;
-  gameState.rightEnd = null;
-
-  gameState.passCount = 0;
-
-  gameState.selectedIndex = null;
-
-  gameState.lastPlayerToPlay = null;
-
-  gameState.ribaCloser = null;
-
-  gameState.pendingRiba = false;
-
-  gameState.pendingRibaCloser = null;
-
-  dealTiles();
-
-
-  /*
-    FIRST HAND:
-    holder of 6-6 starts and 6-6
-    is automatically placed.
-  */
-
-  if(gameState.firstRound){
-
-    const six =
-      findSixSixHolder();
-
-    if(!six){
-
-      /*
-        Impossible with normal double-six set,
-        but safe fallback.
-      */
-
-      gameState.currentPlayer = 0;
-
-      renderAll();
-
-      scheduleTurn();
-
-      return;
-
-    }
-
-    gameState.currentPlayer =
-      six.player;
-
-    renderAll();
-
-    toast(
-      `${players[six.player].name} იწყებს 6–6-ით`
-    );
-
-    await sleep(700);
-
-    gameState.locked = false;
-
-    await playTile(
-      six.player,
-      six.index,
-      "right",
-      {
-        force:true
-      }
-    );
-
-    gameState.firstRound = false;
-
-    return;
-
-  }
-
-
-  /*
-    NEXT HAND:
-    previous normal winner OR
-    riba closer starts.
-  */
-
-  if(
-    gameState.nextStarter !== null
-  ){
-
-    gameState.currentPlayer =
-      gameState.nextStarter;
-
-  }else{
-
-    gameState.currentPlayer = 0;
-
-  }
-
-  renderAll();
-
-  toast(
-    `${players[gameState.currentPlayer].name} იწყებს ახალ ხელს`
-  );
-
-  scheduleTurn();
-
-}
-
-
-/* =========================================================
-   EMOJI CHAT
-========================================================= */
-
-function toggleEmojiPanel(){
-
-  const panel =
-    $("emojiPanel");
-
-  if(!panel){
-    return;
-  }
-
-  panel.classList.toggle(
-    "show"
-  );
-
-}
-
-if($("chatBtn")){
-
-  $("chatBtn").addEventListener(
-    "click",
-    toggleEmojiPanel
-  );
-
-}
-
-if($("emojiTopBtn")){
-
-  $("emojiTopBtn").addEventListener(
-    "click",
-    toggleEmojiPanel
-  );
-
-}
-
-document
-  .querySelectorAll(
-    ".emoji-btn"
-  )
-  .forEach(button=>{
-
-    button.addEventListener(
-      "click",
-      ()=>{
-
-        showFloatingEmoji(
-          button.textContent
-        );
-
-        $("emojiPanel")
-          ?.classList.remove(
-            "show"
-          );
-
-      }
-    );
-
-  });
-
-
-/* =========================================================
-   FLOATING EMOJI
-========================================================= */
-
-function showFloatingEmoji(emoji){
-
-  const shell =
-    document.querySelector(
-      ".shell"
-    );
-
-  if(!shell){
-    return;
-  }
-
-  const el =
-    document.createElement(
-      "div"
-    );
-
-  el.className =
-    "floating-emoji";
-
-  el.textContent =
-    emoji;
-
-  el.style.left =
-    "50%";
-
-  el.style.top =
-    "63%";
-
-  shell.appendChild(el);
-
-  setTimeout(
-    ()=>el.remove(),
-    1900
-  );
-
-}
-
-
-/* =========================================================
-   SOUND
-========================================================= */
-
-let soundEnabled = true;
-
-if($("soundBtn")){
-
-  $("soundBtn").addEventListener(
-    "click",
-    ()=>{
-
-      soundEnabled =
-        !soundEnabled;
-
-      $("soundBtn").textContent =
-        soundEnabled
-          ? "🔊"
-          : "🔇";
-
-      toast(
-        soundEnabled
-          ? "ხმა ჩართულია"
-          : "ხმა გამორთულია"
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   SETTINGS / HELP
-========================================================= */
-
-if($("settingsBtn")){
-
-  $("settingsBtn").addEventListener(
-    "click",
-    ()=>{
-
-      $("helpModal")
-        ?.classList.add(
-          "show"
-        );
-
-    }
-  );
-
-}
-
-if($("helpClose")){
-
-  $("helpClose").addEventListener(
-    "click",
-    ()=>{
-
-      $("helpModal")
-        ?.classList.remove(
-          "show"
-        );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   RIBA BUTTON
-========================================================= */
-
-if($("ribaBtn")){
-
-  $("ribaBtn").addEventListener(
-    "click",
-    ()=>{
-
-      if(gameState.pendingRiba){
-
-        toast(
-          "რიბა — ბოლო დუპლი უნდა დაიდოს"
-        );
-
-      }else{
-
-        toast(
-          "ამ მომენტში რიბა არ არის"
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   SURRENDER
-========================================================= */
-
-if($("surrenderBtn")){
-
-  $("surrenderBtn").addEventListener(
-    "click",
-    ()=>{
-
-      /*
-        No real-money or wallet action.
-        Game-only surrender.
-      */
-
-      const ok =
-        confirm(
-          "ნამდვილად გინდა თამაშის დანებება?"
-        );
-
-      if(!ok){
-        return;
-      }
-
-      gameState.finished = true;
-
-      const opponentTeam =
-        otherTeam(
-          teamOf(2)
-        );
-
-      toast(
-        opponentTeam === 0
-          ? "გუნდი A იმარჯვებს"
-          : "გუნდი B იმარჯვებს"
-      );
-
-      renderAll();
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   PLAYER POPUPS
-========================================================= */
-
-document
-  .querySelectorAll(
-    ".player"
-  )
-  .forEach(el=>{
-
-    el.addEventListener(
-      "click",
-      (event)=>{
-
-        const p =
-          Number(
-            el.dataset.player
-          );
-
-        showPlayerPopup(
-          p,
-          event
-        );
-
-      }
-    );
-
-  });
-
-function showPlayerPopup(
-  player,
-  event
-){
-
-  const popup =
-    $("playerPopup");
-
-  if(!popup){
-    return;
-  }
-
-  const data =
-    players[player];
-
-  $("popupName").textContent =
-    data.name;
-
-  $("popupRating").textContent =
-    `★ ${data.rating}`;
-
-  $("popupStats").innerHTML =
-    `მოგება: ${data.wins}<br>` +
-    `თამაში: ${data.games}`;
-
-  popup.style.left =
-    Math.min(
-      event.clientX + 10,
-      window.innerWidth - 190
-    ) + "px";
-
-  popup.style.top =
-    Math.min(
-      event.clientY + 10,
-      window.innerHeight - 130
-    ) + "px";
-
-  popup.classList.add(
-    "show"
-  );
-
-  setTimeout(
-    ()=>{
-
-      popup.classList.remove(
-        "show"
-      );
-
-    },
-    2600
-  );
-
-}
-
-
-/* =========================================================
-   TOAST
-========================================================= */
-
-let toastTimer = null;
-
-function toast(text){
-
-  const el =
-    $("toast");
-
-  if(!el){
-    return;
-  }
-
-  el.textContent =
-    text;
-
-  el.classList.add(
-    "show"
-  );
-
-  clearTimeout(
-    toastTimer
-  );
-
-  toastTimer =
-    setTimeout(
-      ()=>{
-
-        el.classList.remove(
-          "show"
-        );
-
-      },
-      2200
-    );
-
-}
-
-
-/* =========================================================
-   RESIZE
-========================================================= */
-
-window.addEventListener(
-  "resize",
-  ()=>{
-
-    renderBoard();
-
-  }
-);
-
-
-/* =========================================================
-   DEBUG / TEST HELPERS
-========================================================= */
-
-/*
-  These are useful while we build the game.
-  They don't show buttons to the player.
-*/
-
-window.DOMINO_GEORGIA = {
-
-  state:gameState,
-
-  newGame(){
-
-    gameState.teamScores = [
-      0,
-      0
-    ];
-
-    gameState.carryPoints = 0;
-
-    gameState.roundNumber = 1;
-
-    gameState.firstRound = true;
-
-    gameState.nextStarter = null;
-
-    gameState.targetReached = false;
-
-    gameState.finished = false;
-
-    gameState.locked = false;
-
-    startRound();
-
-  },
-
-  setScore(a,b){
-
-    gameState.teamScores = [
-      Number(a) || 0,
-      Number(b) || 0
-    ];
-
-    renderAll();
-
-  },
-
-  chooseLeft(){
-
-    chooseSide("left");
-
-  },
-
-  chooseRight(){
-
-    chooseSide("right");
-
-  }
-
-};
-
-
-/* =========================================================
-   START GAME
-========================================================= */
-
-renderAll();
-
-setTimeout(
-  ()=>{
-
-    startRound();
-
-  },
-  300
-);
-
-
-/* ===== PART 3/4 END ===== */
-</script>
-<script>
-/* =========================================================
-   DOMINO GEORGIA — PART 4
-   SAVE / RESTORE / PROFILE / EMOJI / PWA
-========================================================= */
-
-const DG_SAVE_KEY = "domino_georgia_game_v1";
-const DG_PROFILE_KEY = "domino_georgia_profile_v1";
-
-/* =========================
-   1. უსაფრთხო JSON
-========================= */
-function dgReadJSON(key, fallback = null) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch (e) {
-    console.warn("Storage read error:", e);
-    return fallback;
-  }
-}
-
-function dgWriteJSON(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (e) {
-    console.warn("Storage write error:", e);
-    return false;
-  }
-}
-
-/* =========================
-   2. თამაშის ავტომატური შენახვა
-========================= */
-function saveDominoGame() {
-  if (typeof gameState === "undefined") return;
-
-  const saveData = {
-    version: 1,
-    savedAt: Date.now(),
-    state: gameState
-  };
-
-  dgWriteJSON(DG_SAVE_KEY, saveData);
-}
-
-function restoreDominoGame() {
-  if (typeof gameState === "undefined") return false;
-
-  const saved = dgReadJSON(DG_SAVE_KEY);
-
-  if (!saved || !saved.state) {
-    return false;
-  }
-
-  try {
-    Object.keys(gameState).forEach(key => {
-      delete gameState[key];
-    });
-
-    Object.assign(gameState, saved.state);
-
-    console.log("DOMINO GEORGIA: saved game restored");
-
-    refreshGameAfterRestore();
-
-    return true;
-
-  } catch (e) {
-    console.warn("Restore error:", e);
-    return false;
-  }
-}
-
-/* =========================
-   3. აღდგენის შემდეგ ეკრანის განახლება
-========================= */
-function refreshGameAfterRestore() {
-
-  try {
-    if (typeof renderBoard === "function") {
-      renderBoard();
-    }
-  } catch(e){}
-
-  try {
-    if (typeof renderHand === "function") {
-      renderHand();
-    }
-  } catch(e){}
-
-  try {
-    if (typeof renderHands === "function") {
-      renderHands();
-    }
-  } catch(e){}
-
-  try {
-    if (typeof updateScores === "function") {
-      updateScores();
-    }
-  } catch(e){}
-
-  try {
-    if (typeof updateUI === "function") {
-      updateUI();
-    }
-  } catch(e){}
-
-  try {
-    if (typeof renderGame === "function") {
-      renderGame();
-    }
-  } catch(e){}
-
-  try {
-    if (typeof updateTurnMessage === "function") {
-      updateTurnMessage();
-    }
-  } catch(e){}
-
-  setTimeout(() => {
-    if (typeof fitDominoBoard === "function") {
-      fitDominoBoard();
-    }
-  }, 100);
-}
-
-/* =========================
-   4. ცვლილების ავტომატური აღმოჩენა
-========================= */
-let dgLastState = "";
-
-function dgAutoSaveWatcher() {
-
-  if (typeof gameState === "undefined") return;
-
-  try {
-
-    const current = JSON.stringify(gameState);
-
-    if (current !== dgLastState) {
-
-      dgLastState = current;
-
-      saveDominoGame();
-    }
-
-  } catch(e){}
-}
-
-setInterval(dgAutoSaveWatcher, 700);
-
-/* გვერდის დახურვისას */
-window.addEventListener("beforeunload", () => {
-  saveDominoGame();
-});
-
-/* background-ში გადასვლისას */
-document.addEventListener("visibilitychange", () => {
-
-  if (document.hidden) {
-    saveDominoGame();
-  }
-
-});
-
-/* =========================
-   5. ახალი თამაშის save-ის წაშლა
-========================= */
-function clearSavedDominoGame() {
-
-  localStorage.removeItem(DG_SAVE_KEY);
-
-  dgLastState = "";
-
-  console.log("Saved game cleared");
-}
-
-/* =========================================================
-   PROFILE
-========================================================= */
-
-let dominoProfile = dgReadJSON(DG_PROFILE_KEY, {
-  nickname: "მოთამაშე",
-  rating: 1000,
-  wins: 0,
-  losses: 0,
-  games: 0
-});
-
-function saveDominoProfile() {
-  dgWriteJSON(DG_PROFILE_KEY, dominoProfile);
-}
-
-function setDominoNickname(name) {
-
-  const clean = String(name || "")
-    .trim()
-    .replace(/[<>]/g, "")
-    .slice(0, 18);
-
-  if (!clean) return;
-
-  dominoProfile.nickname = clean;
-
-  saveDominoProfile();
-
-  updateDominoProfileUI();
-}
-
-function updateDominoProfileUI() {
-
-  const nicknameElements = document.querySelectorAll(
-    "[data-my-nickname], #myNickname, .my-nickname"
-  );
-
-  nicknameElements.forEach(el => {
-    el.textContent = dominoProfile.nickname;
-  });
-
-  const ratingElements = document.querySelectorAll(
-    "[data-my-rating], #myRating, .my-rating"
-  );
-
-  ratingElements.forEach(el => {
-    el.textContent = "⭐ " + dominoProfile.rating;
-  });
-}
-
-/* =========================================================
-   PLAYER AVATAR POPUP
-========================================================= */
-
-const dgProfilePopup = document.createElement("div");
-
-dgProfilePopup.id = "dgProfilePopup";
-
-dgProfilePopup.innerHTML = `
-  <div class="dg-profile-popup-inner">
-
-    <button
-      id="dgProfileClose"
-      class="dg-profile-close"
-      aria-label="დახურვა"
-    >
-      ×
-    </button>
-
-    <div class="dg-profile-avatar">
-      👤
-    </div>
-
-    <div
-      id="dgPopupNickname"
-      class="dg-profile-name"
-    >
-      მოთამაშე
-    </div>
-
-    <div
-      id="dgPopupRating"
-      class="dg-profile-rating"
-    >
-      ⭐ 1000
-    </div>
-
-    <div class="dg-profile-stats">
-
-      <div>
-        <strong id="dgPopupWins">0</strong>
-        <span>მოგება</span>
-      </div>
-
-      <div>
-        <strong id="dgPopupLosses">0</strong>
-        <span>წაგება</span>
-      </div>
-
-    </div>
-
-    <div
-      id="dgPopupStatus"
-      class="dg-profile-status"
-    >
-      თამაშში
-    </div>
-
-  </div>
-`;
-
-document.body.appendChild(dgProfilePopup);
-
-const dgProfileStyle = document.createElement("style");
-
-dgProfileStyle.textContent = `
-
-#dgProfilePopup{
-  position:fixed;
-  inset:0;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:999999;
-  background:rgba(0,0,0,.28);
-}
-
-#dgProfilePopup.show{
-  display:flex;
-}
-
-.dg-profile-popup-inner{
-  position:relative;
-  width:220px;
-  padding:18px;
-  border-radius:18px;
-
-  color:#fff;
-  text-align:center;
-
-  background:
-    linear-gradient(
-      145deg,
-      #3d2415,
-      #17100c
-    );
-
-  border:2px solid #8d6339;
-
-  box-shadow:
-    0 18px 45px rgba(0,0,0,.65),
-    inset 0 1px rgba(255,255,255,.15);
-}
-
-.dg-profile-close{
-  position:absolute;
-  right:8px;
-  top:5px;
-
-  width:32px;
-  height:32px;
-
-  border:0;
-  background:transparent;
-
-  color:#fff;
-  font-size:26px;
-
-  cursor:pointer;
-}
-
-.dg-profile-avatar{
-  width:64px;
-  height:64px;
-
-  margin:0 auto 8px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  border-radius:50%;
-
-  font-size:32px;
-
-  background:#173d2b;
-
-  border:3px solid #c79a54;
-}
-
-.dg-profile-name{
-  font-weight:900;
-  font-size:18px;
-}
-
-.dg-profile-rating{
-  margin-top:4px;
-  color:#ffd66b;
-}
-
-.dg-profile-stats{
-  display:flex;
-  gap:8px;
-
-  margin-top:13px;
-}
-
-.dg-profile-stats > div{
-  flex:1;
-
-  padding:8px 4px;
-
-  border-radius:10px;
-
-  background:rgba(255,255,255,.07);
-}
-
-.dg-profile-stats strong{
-  display:block;
-  font-size:17px;
-}
-
-.dg-profile-stats span{
-  display:block;
-
-  margin-top:2px;
-
-  font-size:10px;
-
-  opacity:.72;
-}
-
-.dg-profile-status{
-  margin-top:10px;
-
-  font-size:12px;
-
-  color:#8ee7a9;
-}
-
-/* მუდმივი სახელის ბარათები დამალული */
-.player-card .player-name,
-.player-card .player-rating{
-  display:none !important;
-}
-
-/* თუ player-card თვითონ არის ძველი დიდი ბარათი */
-.player-card{
-  min-width:0 !important;
-  width:auto !important;
-
-  padding:0 !important;
-
-  background:transparent !important;
-  border:0 !important;
-  box-shadow:none !important;
-}
-
-/* avatar რჩება */
-.player-card .avatar{
-  cursor:pointer;
-}
-
-/* მოთხოვნილი ღილაკები სრულად გამორთულია */
-.top-actions{
-  display:none !important;
-}
-
-.bottom-right-actions{
-  display:none !important;
-}
-
-#ribaBtn,
-#surrenderBtn{
-  display:none !important;
-}
-
-`;
-
-document.head.appendChild(dgProfileStyle);
-
-/* =========================
-   6. მოთამაშის ინფორმაციის გახსნა
-========================= */
-function openPlayerProfile(data = {}) {
-
-  document.getElementById("dgPopupNickname").textContent =
-    data.nickname || "მოთამაშე";
-
-  document.getElementById("dgPopupRating").textContent =
-    "⭐ " + (data.rating || 1000);
-
-  document.getElementById("dgPopupWins").textContent =
-    data.wins || 0;
-
-  document.getElementById("dgPopupLosses").textContent =
-    data.losses || 0;
-
-  document.getElementById("dgPopupStatus").textContent =
-    data.status || "თამაშში";
-
-  dgProfilePopup.classList.add("show");
-}
-
-function closePlayerProfile() {
-  dgProfilePopup.classList.remove("show");
-}
-
-document.getElementById("dgProfileClose").onclick =
-  closePlayerProfile;
-
-dgProfilePopup.addEventListener("click", e => {
-
-  if (e.target === dgProfilePopup) {
-    closePlayerProfile();
-  }
-
-});
-
-/* avatar-ზე დაჭერა */
-document.addEventListener("click", e => {
-
-  const avatar = e.target.closest(".avatar");
-
-  if (!avatar) return;
-
-  const card = avatar.closest(".player-card");
-
-  let nickname = "მოთამაშე";
-  let rating = 1000;
-
-  if (card) {
-
-    const nameEl =
-      card.querySelector(".player-name");
-
-    const ratingEl =
-      card.querySelector(".player-rating");
-
-    if (nameEl && nameEl.textContent.trim()) {
-      nickname = nameEl.textContent.trim();
-    }
-
-    if (ratingEl) {
-
-      const number =
-        ratingEl.textContent.match(/\d+/);
-
-      if (number) {
-        rating = Number(number[0]);
-      }
-
-    }
-  }
-
-  openPlayerProfile({
-    nickname,
-    rating,
-    wins:0,
-    losses:0,
-    status:"თამაშში"
-  });
-
-});
-
-/* =========================================================
-   EMOJI ONLY CHAT
-========================================================= */
-
-const DG_EMOJIS = [
-  "👍",
-  "👏",
-  "😂",
-  "😎",
-  "🤔",
-  "😮",
-  "🔥",
-  "💪",
-  "🎯",
-  "🏆",
-  "🇬🇪",
-  "👋"
-];
-
-function createEmojiPanel() {
-
-  let panel =
-    document.getElementById("emojiPanel");
-
-  if (!panel) {
-
-    panel = document.createElement("div");
-
-    panel.id = "emojiPanel";
-
-    document.body.appendChild(panel);
-  }
-
-  panel.innerHTML = "";
-
-  DG_EMOJIS.forEach(emoji => {
-
-    const button =
-      document.createElement("button");
-
-    button.type = "button";
-
-    button.textContent = emoji;
-
-    button.onclick = () => {
-
-      showDominoEmoji(
-        emoji,
-        dominoProfile.nickname
-      );
-
-      panel.classList.remove("open");
-    };
-
-    panel.appendChild(button);
-
-  });
-
-}
-
-function showDominoEmoji(
-  emoji,
-  nickname = "მოთამაშე"
-) {
-
-  const bubble =
-    document.createElement("div");
-
-  bubble.className =
-    "dg-emoji-bubble";
-
-  const name =
-    document.createElement("div");
-
-  name.className =
-    "dg-emoji-name";
-
-  name.textContent =
-    nickname;
-
-  const icon =
-    document.createElement("div");
-
-  icon.className =
-    "dg-emoji-icon";
-
-  icon.textContent =
-    emoji;
-
-  bubble.appendChild(name);
-  bubble.appendChild(icon);
-
-  document.body.appendChild(bubble);
-
-  setTimeout(() => {
-
-    bubble.classList.add("show");
-
-  }, 20);
-
-  setTimeout(() => {
-
-    bubble.classList.remove("show");
-
-    setTimeout(() => {
-      bubble.remove();
-    }, 250);
-
-  }, 2200);
-
-}
-
-const dgEmojiStyle =
-  document.createElement("style");
-
-dgEmojiStyle.textContent = `
-
-#emojiPanel{
-  position:fixed;
-
-  left:18px;
-  bottom:82px;
-
-  width:210px;
-
-  display:none;
-  grid-template-columns:
-    repeat(4,1fr);
-
-  gap:6px;
-
-  padding:10px;
-
-  border-radius:15px;
-
-  background:
-    rgba(24,14,8,.97);
-
-  border:
-    1px solid #8e6439;
-
-  box-shadow:
-    0 10px 30px rgba(0,0,0,.55);
-
-  z-index:99990;
-}
-
-#emojiPanel.open{
-  display:grid;
-}
-
-#emojiPanel button{
-  height:40px;
-
-  border:0;
-
-  border-radius:9px;
-
-  font-size:22px;
-
-  background:
-    rgba(255,255,255,.09);
-
-  cursor:pointer;
-}
-
-.dg-emoji-bubble{
-  position:fixed;
-
-  left:50%;
-  top:45%;
-
-  transform:
-    translate(-50%,-50%)
-    scale(.7);
-
-  opacity:0;
-
-  min-width:110px;
-
-  padding:8px 14px;
-
-  border-radius:16px;
-
-  text-align:center;
-
-  background:
-    rgba(18,12,8,.94);
-
-  border:
-    1px solid #ad8050;
-
-  color:white;
-
-  z-index:999999;
-
-  transition:
-    .2s ease;
-}
-
-.dg-emoji-bubble.show{
-  opacity:1;
-
-  transform:
-    translate(-50%,-50%)
-    scale(1);
-}
-
-.dg-emoji-name{
-  font-size:11px;
-  opacity:.72;
-}
-
-.dg-emoji-icon{
-  font-size:38px;
-  line-height:44px;
-}
-
-`;
-
-document.head.appendChild(
-  dgEmojiStyle
-);
-
-createEmojiPanel();
-
-/* ძველი ჩატის ღილაკი = emoji */
-const dgChatButton =
-  document.getElementById("chatBtn");
-
-if (dgChatButton) {
-
-  dgChatButton.onclick = () => {
-
-    const panel =
-      document.getElementById("emojiPanel");
-
-    panel.classList.toggle("open");
-  };
-
-}
-
-/* =========================================================
-   BOARD AUTO SCALE
-   დომინოები არ უნდა გავიდეს მწვანე მაგიდიდან
-========================================================= */
-
-function fitDominoBoard() {
-
-  const board =
-    document.getElementById("dominoBoard");
-
-  const table =
-    document.querySelector(".table-area");
-
-  if (!board || !table) return;
-
-  /*
-    თუ Part 3-ში გვაქვს ცალკე board-inner,
-    მას ვაპატარავებთ.
-  */
-
-  const inner =
-    board.querySelector(
-      ".board-inner"
-    ) || board;
-
-  inner.style.transform = "";
-
-  inner.style.transformOrigin =
-    "center center";
-
-  const tableRect =
-    table.getBoundingClientRect();
-
-  const boardRect =
-    inner.getBoundingClientRect();
-
-  if (
-    boardRect.width <= 0 ||
-    boardRect.height <= 0
-  ) return;
-
-  /*
-    მაგიდის კიდეებთან მცირე ადგილი
-  */
-
-  const maxWidth =
-    tableRect.width * 0.88;
-
-  const maxHeight =
-    tableRect.height * 0.72;
-
-  const scaleX =
-    maxWidth / boardRect.width;
-
-  const scaleY =
-    maxHeight / boardRect.height;
-
-  let scale =
-    Math.min(
-      1,
-      scaleX,
-      scaleY
-    );
-
-  /*
-    ძალიან პატარა მნიშვნელობისგან დაცვა
-  */
-
-  scale =
-    Math.max(
-      0.30,
-      scale
-    );
-
-  inner.style.transform =
-    `scale(${scale})`;
-}
-
-/* resize */
-window.addEventListener(
-  "resize",
-  () => {
-    setTimeout(
-      fitDominoBoard,
-      50
-    );
-  }
-);
-
-/* orientation */
-window.addEventListener(
-  "orientationchange",
-  () => {
-    setTimeout(
-      fitDominoBoard,
-      250
-    );
-  }
-);
-
-/* DOM ცვლილებებისას */
-const dgBoard =
-  document.getElementById("dominoBoard");
-
-if (dgBoard) {
-
-  const observer =
-    new MutationObserver(() => {
-
-      requestAnimationFrame(
-        fitDominoBoard
-      );
-
-    });
-
-  observer.observe(
-    dgBoard,
-    {
-      childList:true,
-      subtree:true
-    }
-  );
-}
-
-/* =========================================================
-   PWA SERVICE WORKER
-========================================================= */
-
-if ("serviceWorker" in navigator) {
-
-  window.addEventListener(
-    "load",
-    async () => {
-
-      try {
-
-        const registration =
-          await navigator
-            .serviceWorker
-            .register(
-              "./service-worker.js"
-            );
-
-        console.log(
-          "DOMINO GEORGIA PWA ready",
-          registration.scope
-        );
-
-      } catch(error) {
-
-        console.warn(
-          "Service worker error:",
-          error
-        );
-
-      }
-
-    }
-  );
-
-}
-
-/* =========================================================
-   START
-========================================================= */
-
-window.addEventListener(
-  "DOMContentLoaded",
-  () => {
-
-    updateDominoProfileUI();
-
-    const restored =
-      restoreDominoGame();
-
-    if (!restored) {
-
-      console.log(
-        "DOMINO GEORGIA: new game"
-      );
-
-    }
-
-    setTimeout(
-      fitDominoBoard,
-      300
-    );
-
-  }
-);
-
-/* =========================================================
-   DEBUG HELPERS
-========================================================= */
-
-/*
-  საჭიროების შემთხვევაში Console-ში:
-
-  saveDominoGame()
-  restoreDominoGame()
-  clearSavedDominoGame()
-
-  nickname:
-  setDominoNickname("Kusto")
-*/
-
-</script>
-
-</body>
-</html>
