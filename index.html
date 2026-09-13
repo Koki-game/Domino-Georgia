@@ -7544,19 +7544,18 @@ window.addEventListener(
 );
 
 </script>
-  <!-- ======================================================
-     DOMINO GEORGIA — STAKE RULE FIX
+<!-- ======================================================
+     DOMINO GEORGIA — EXACT STAKE RULE
 ====================================================== -->
 
 <style>
 
-/* სტავკა მსუბუქად ოქროსფრად გამოჩნდეს */
 .domino.stake-domino{
   box-shadow:
     inset 2px 2px 3px rgba(255,255,255,.98),
-    inset -3px -3px 5px rgba(87,68,38,.3),
+    inset -3px -3px 5px rgba(87,68,38,.30),
     0 4px 0 #9c8866,
-    0 0 13px rgba(255,202,73,.9),
+    0 0 12px rgba(255,202,70,.75),
     0 8px 10px rgba(0,0,0,.55);
 }
 
@@ -7565,91 +7564,52 @@ window.addEventListener(
 <script>
 
 /* ======================================================
-   STAKE — ROBUST PROMOTION CHECK
+   EXACT STAKE PROMOTION
+
+   ეს ფუნქცია უკვე playTileToPort()-იდან იძახება,
+   ამიტომ სხვა wrapper აღარ გვჭირდება.
 ====================================================== */
 
-function ensureStakeRule(){
+maybePromoteStake=function(tile){
 
-  /*
-    პირველ ხელში სტავკა არ იქმნება.
-    პირველი ხელი მხოლოდ 6-6-ით იწყება.
-  */
-
-  if(gameState.roundNumber<=1){
+  /* პირველი ხელი — სტავკა საერთოდ არ არსებობს */
+  if(gameState.roundNumber===1){
     return;
   }
 
 
-  /*
-    თუ უკვე გვაქვს სტავკა,
-    მეორე აღარ იქმნება.
-  */
-
+  /* ერთ ხელში მხოლოდ ერთი სტავკა */
   if(gameState.stakeTileId){
     return;
   }
 
 
-  /*
-    opening double მოგვიანო ხელში
-    placeOpeningTile-ში უკვე ავტომატურად
-    უნდა იყოს stake.
-  */
-
-  const openingDouble=
-    gameState.placements.find(
-      tile=>
-        tile.opening &&
-        tile.isDouble
-    );
-
-
-  if(openingDouble){
-
-    promoteOpeningDoubleToStake(
-      openingDouble
-    );
-
+  /* მხოლოდ დუპლი შეიძლება გახდეს სტავკა */
+  if(
+    !tile ||
+    !tile.isDouble
+  ){
     return;
   }
 
 
   /*
-    ხელი თუ non-double-ით გაიხსნა:
-    ვეძებთ პირველ დუპლს,
-    რომელიც ორივე normal მხრიდან
-    უკვე შეერთებულია.
+    გახსნის დუპლი აქ არ მუშავდება.
+    მოგვიანო ხელში გახსნის დუპლს
+    placeOpeningTile() უკვე ავტომატურად
+    აძლევს ოთხივე მხარეს.
   */
-
-  const candidate=
-    gameState.placements.find(
-      tile=>
-        tile.isDouble &&
-        !tile.opening &&
-        (tile.normalConnections || 0)>=2
-    );
-
-
-  if(candidate){
-
-    promoteClosedDoubleToStake(
-      candidate
-    );
-
+  if(tile.opening){
+    return;
   }
 
-}
 
-
-/* ======================================================
-   OPENING DOUBLE -> FOUR-SIDED STAKE
-====================================================== */
-
-function promoteOpeningDoubleToStake(tile){
-
+  /*
+    დუპლი ჯერ ორივე ჩვეულებრივი
+    მხრიდან უნდა იყოს დახურული.
+  */
   if(
-    !tile ||
-    gameState.stakeTileId
+    (tile.normalConnections || 0)<2
   ){
     return;
   }
@@ -7662,152 +7622,16 @@ function promoteOpeningDoubleToStake(tile){
 
 
   /*
-    ძველი ports წავშალოთ მხოლოდ
-    ამ opening double-სთვის.
+    თუ დუპლი ვერტიკალურია,
+    მისი ჩვეულებრივი ჯაჭვი E/W მიმართულებითაა.
+    ამიტომ ახალი სტავკის მხარეებია N/S.
   */
-
-  gameState.ports.forEach(
-    port=>{
-
-      if(
-        port.sourceTileId===tile.id
-      ){
-
-        port.active=false;
-
-      }
-
-    }
-  );
-
-
-  /*
-    4 დამოუკიდებელი მხარე
-  */
-
-  createPort({
-
-    sourceTileId:tile.id,
-
-    value:tile.a,
-
-    x:tile.x+SHORT_HALF,
-    y:tile.y,
-
-    dir:"E",
-
-    kind:"stake",
-
-    contribution:tile.a
-
-  });
-
-
-  createPort({
-
-    sourceTileId:tile.id,
-
-    value:tile.a,
-
-    x:tile.x-SHORT_HALF,
-    y:tile.y,
-
-    dir:"W",
-
-    kind:"stake",
-
-    contribution:tile.a
-
-  });
-
-
-  createPort({
-
-    sourceTileId:tile.id,
-
-    value:tile.a,
-
-    x:tile.x,
-    y:tile.y-LONG_HALF,
-
-    dir:"N",
-
-    kind:"stake",
-
-    contribution:tile.a
-
-  });
-
-
-  createPort({
-
-    sourceTileId:tile.id,
-
-    value:tile.a,
-
-    x:tile.x,
-    y:tile.y+LONG_HALF,
-
-    dir:"S",
-
-    kind:"stake",
-
-    contribution:tile.a
-
-  });
-
-
-  showMessage(
-    "სტავკა!"
-  );
-
-
-  renderAll();
-
-}
-
-
-/* ======================================================
-   CLOSED DOUBLE -> SIDE BRANCH STAKE
-====================================================== */
-
-function promoteClosedDoubleToStake(tile){
-
-  if(
-    !tile ||
-    gameState.stakeTileId
-  ){
-    return;
-  }
-
-
-  tile.isStake=true;
-
-  gameState.stakeTileId=
-    tile.id;
-
-
-  /*
-    ეს დუპლი უკვე ორივე normal მხრიდან
-    არის დაკავებული.
-
-    ამიტომ ძველ normal port-ებს აღარ ვხსნით.
-    მხოლოდ დარჩენილი ორი გვერდითი მხარე
-    ემატება.
-  */
-
 
   const vertical=
     Math.abs(tile.angle)%180===90;
 
 
   if(vertical){
-
-    /*
-      ვერტიკალური დუპლი:
-      normal ჯაჭვი მარცხენა/მარჯვენაა.
-      stake მხარეები ზემოთ/ქვემოთ.
-    */
 
     createPort({
 
@@ -7844,13 +7668,15 @@ function promoteClosedDoubleToStake(tile){
 
     });
 
-  }else{
+  }
 
-    /*
-      ჰორიზონტალური დუპლი:
-      normal ჯაჭვი ზემოთ/ქვემოთაა.
-      stake მხარეები მარცხენა/მარჯვენა.
-    */
+  /*
+    თუ დუპლი ჰორიზონტალურია,
+    მისი ჩვეულებრივი ჯაჭვი N/S მიმართულებითაა.
+    სტავკის ახალი მხარეებია W/E.
+  */
+
+  else{
 
     createPort({
 
@@ -7892,102 +7718,26 @@ function promoteClosedDoubleToStake(tile){
 
   showMessage(
     `${tile.a}-${tile.b} — სტავკა!`,
-    2200
+    2000
   );
 
 
   renderAll();
 
-}
-
-
-/* ======================================================
-   CHECK STAKE AFTER EVERY SUCCESSFUL MOVE
-====================================================== */
-
-const oldPlayTileToPort=
-  playTileToPort;
-
-
-playTileToPort=function(
-  player,
-  handIndex,
-  portId
-){
-
-  const result=
-    oldPlayTileToPort(
-      player,
-      handIndex,
-      portId
-    );
-
-
-  if(result){
-
-    /*
-      უკვე დასრულებულ ხელში აღარ გვჭირდება.
-    */
-
-    if(
-      !gameState.matchFinished
-    ){
-
-      ensureStakeRule();
-
-    }
-
-  }
-
-
-  return result;
-
 };
 
 
 /* ======================================================
-   CHECK STAKE AFTER OPENING TOO
+   STAKE VISUAL
 ====================================================== */
 
-const oldPlaceOpeningTile=
-  placeOpeningTile;
-
-
-placeOpeningTile=function(
-  player,
-  handIndex
-){
-
-  const result=
-    oldPlaceOpeningTile(
-      player,
-      handIndex
-    );
-
-
-  if(result){
-
-    ensureStakeRule();
-
-  }
-
-
-  return result;
-
-};
-
-
-/* ======================================================
-   VISUAL MARK FOR STAKE
-====================================================== */
-
-const oldRenderBoardStake=
+const renderBoardBeforeStakeVisual=
   renderBoard;
 
 
 renderBoard=function(){
 
-  oldRenderBoardStake();
+  renderBoardBeforeStakeVisual();
 
 
   if(!gameState.stakeTileId){
@@ -7996,14 +7746,15 @@ renderBoard=function(){
 
 
   const index=
-    gameState.placements.findIndex(
-      tile=>
-        tile.id===
-        gameState.stakeTileId
-    );
+    gameState.placements
+      .findIndex(
+        tile=>
+          tile.id===
+          gameState.stakeTileId
+      );
 
 
-  if(index===-1){
+  if(index<0){
     return;
   }
 
