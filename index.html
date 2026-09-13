@@ -5256,28 +5256,29 @@ function renderAll(){
 
 function resizeScene(){
 
-  const scene =
-    $("scene");
+  const scene = $("scene");
+  if(!scene) return;
 
-  if(!scene)
-    return;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
 
-  const viewportW =
-    window.innerWidth;
+  const scale = Math.min(
+    vw / 1536,
+    vh / 1024
+  );
 
-  const viewportH =
-    window.innerHeight;
+  const scaledWidth = 1536 * scale;
+  const scaledHeight = 1024 * scale;
 
-  const scale =
-    Math.min(
-      viewportW / 1536,
-      viewportH / 1024
-    );
+  const offsetX = (vw - scaledWidth) / 2;
+  const offsetY = (vh - scaledHeight) / 2;
 
-  scene.style.transform =
-    `translate(-50%,-50%) scale(${scale})`;
-
+  scene.style.left = offsetX + "px";
+  scene.style.top = offsetY + "px";
+  scene.style.transformOrigin = "top left";
+  scene.style.transform = `scale(${scale})`;
 }
+  
 
 
 window.addEventListener(
