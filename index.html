@@ -2088,3 +2088,3145 @@ button{
      არაფერი დახურო.
      PART 2/3 ზუსტად აქედან გაგრძელდება.
 ========================================================= -->
+<!-- =========================================================
+     DOMINO GEORGIA
+     PART 2/3 — GAME ENGINE
+========================================================= -->
+
+<script>
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+const $ = id => document.getElementById(id);
+
+const TEAM = player =>
+  (player === 0 || player === 2) ? 0 : 1;
+
+const TEAM_NAME = team =>
+  team === 0 ? "გუნდი A" : "გუნდი B";
+
+const sleep = ms =>
+  new Promise(resolve => setTimeout(resolve, ms));
+
+const round5 = value =>
+  Math.ceil(value / 5) * 5;
+
+const isDouble = tile =>
+  tile.a === tile.b;
+
+const tilePips = tile =>
+  tile.a + tile.b;
+
+
+/* =========================================================
+   DIRECTIONS
+========================================================= */
+
+const DIRS = {
+  E:{x:1,y:0},
+  W:{x:-1,y:0},
+  N:{x:0,y:-1},
+  S:{x:0,y:1}
+};
+
+const OPPOSITE = {
+  E:"W",
+  W:"E",
+  N:"S",
+  S:"N"
+};
+
+const LEFT_TURN = {
+  E:"N",
+  N:"W",
+  W:"S",
+  S:"E"
+};
+
+const RIGHT_TURN = {
+  E:"S",
+  S:"W",
+  W:"N",
+  N:"E"
+};
+
+
+/* =========================================================
+   BOARD SIZES
+========================================================= */
+
+const TILE_W = 76;
+const TILE_H = 42;
+
+const STEP = 72;
+const DOUBLE_STEP = 58;
+
+let tileSequence = 1;
+let portSequence = 1;
+
+
+/* =========================================================
+   GAME STATE
+========================================================= */
+
+const gameState = {
+
+  hands:[
+    [],
+    [],
+    [],
+    []
+  ],
+
+  placements:[],
+
+  ports:[],
+
+  teamScores:[
+    0,
+    0
+  ],
+
+  carryPoints:0,
+
+  currentPlayer:0,
+
+  nextStarter:null,
+
+  roundNumber:0,
+
+  firstRound:true,
+
+  stakeTileId:null,
+
+  pendingRibaCloser:null,
+
+  ribaCloser:null,
+
+  selectedTileIndex:null,
+
+  passesInRow:0,
+
+  thresholdTriggered:false,
+
+  matchFinished:false,
+
+  moveNumber:0,
+
+  handFinished:false,
+
+  aiBusy:false
+
+};
+
+
+/* =========================================================
+   CREATE 28 DOMINOES
+========================================================= */
+
+function createSet(){
+
+  const set = [];
+
+  for(let a=0;a<=6;a++){
+
+    for(let b=a;b<=6;b++){
+
+      set.push({
+        id:`T${tileSequence++}`,
+        a,
+        b
+      });
+
+    }
+
+  }
+
+  return set;
+}
+
+
+/* =========================================================
+   SHUFFLE
+========================================================= */
+
+function shuffle(array){
+
+  for(
+    let i=array.length-1;
+    i>0;
+    i--
+  ){
+
+    const j =
+      Math.floor(
+        Math.random()*(i+1)
+      );
+
+    [
+      array[i],
+      array[j]
+    ] = [
+      array[j],
+      array[i]
+    ];
+
+  }
+
+  return array;
+}
+
+
+/* =========================================================
+   DEAL 7 EACH
+========================================================= */
+
+function deal(){
+
+  const set =
+    shuffle(
+      createSet()
+    );
+
+  gameState.hands = [
+    [],
+    [],
+    [],
+    []
+  ];
+
+  for(let i=0;i<28;i++){
+
+    gameState
+      .hands[i%4]
+      .push(
+        set[i]
+      );
+
+  }
+
+}
+
+
+/* =========================================================
+   FIND 6-6 HOLDER
+========================================================= */
+
+function findSixSix(){
+
+  for(let player=0;player<4;player++){
+
+    const index =
+      gameState.hands[player]
+        .findIndex(
+          tile =>
+            tile.a===6 &&
+            tile.b===6
+        );
+
+    if(index!==-1){
+
+      return {
+        player,
+        index
+      };
+
+    }
+
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   PIP HTML
+========================================================= */
+
+function pipPositions(value){
+
+  const map = {
+
+    0:[],
+
+    1:["p1"],
+
+    2:[
+      "p2",
+      "p3"
+    ],
+
+    3:[
+      "p2",
+      "p1",
+      "p3"
+    ],
+
+    4:[
+      "p2",
+      "p4",
+      "p5",
+      "p3"
+    ],
+
+    5:[
+      "p2",
+      "p4",
+      "p1",
+      "p5",
+      "p3"
+    ],
+
+    6:[
+      "p2",
+      "p4",
+      "p6",
+      "p7",
+      "p5",
+      "p3"
+    ]
+
+  };
+
+  return map[value] || [];
+}
+
+
+function halfHTML(value){
+
+  return `
+    <div class="domino-half">
+      ${
+        pipPositions(value)
+          .map(
+            pos =>
+              `<i class="pip ${pos}"></i>`
+          )
+          .join("")
+      }
+    </div>
+  `;
+
+}
+
+
+/* =========================================================
+   CREATE PORT
+========================================================= */
+
+function createPort(
+  tileId,
+  value,
+  x,
+  y,
+  dir,
+  options={}
+){
+
+  const port = {
+
+    id:`P${portSequence++}`,
+
+    tileId,
+
+    value,
+
+    x,
+    y,
+
+    dir,
+
+    active:true,
+
+    doubleValue:
+      options.doubleValue || false,
+
+    stakePort:
+      options.stakePort || false
+
+  };
+
+  gameState.ports.push(port);
+
+  return port;
+}
+
+
+/* =========================================================
+   ACTIVE PORTS
+========================================================= */
+
+function activePorts(){
+
+  return gameState.ports
+    .filter(
+      port => port.active
+    );
+
+}
+
+
+function getPort(id){
+
+  return gameState.ports
+    .find(
+      port =>
+        port.id===id &&
+        port.active
+    );
+
+}
+
+
+/* =========================================================
+   OPENING TILE
+========================================================= */
+
+function placeOpeningTile(
+  player,
+  handIndex,
+  options={}
+){
+
+  const tile =
+    gameState.hands[player][handIndex];
+
+  if(!tile) return false;
+
+  gameState.hands[player]
+    .splice(
+      handIndex,
+      1
+    );
+
+
+  const placement = {
+
+    id:tile.id,
+
+    a:tile.a,
+    b:tile.b,
+
+    x:0,
+    y:0,
+
+    angle:
+      isDouble(tile)
+        ? 90
+        : 0,
+
+    opening:true,
+
+    isStake:false,
+
+    normalConnections:0
+
+  };
+
+
+  gameState.placements.push(
+    placement
+  );
+
+
+  /*
+    მოგვიანო ხელში გახსნილი double
+    ავტომატურად ხდება სტავკა.
+  */
+
+  const laterOpeningStake =
+    gameState.roundNumber > 1 &&
+    isDouble(tile);
+
+
+  if(laterOpeningStake){
+
+    placement.isStake = true;
+
+    gameState.stakeTileId =
+      tile.id;
+
+    /*
+      სტავკას ოთხივე მიმართულება აქვს.
+      თითო ღია მხარე ერთხელ ითვლება.
+    */
+
+    createPort(
+      tile.id,
+      tile.a,
+      0,
+      0,
+      "E",
+      {stakePort:true}
+    );
+
+    createPort(
+      tile.id,
+      tile.a,
+      0,
+      0,
+      "W",
+      {stakePort:true}
+    );
+
+    createPort(
+      tile.id,
+      tile.a,
+      0,
+      0,
+      "N",
+      {stakePort:true}
+    );
+
+    createPort(
+      tile.id,
+      tile.a,
+      0,
+      0,
+      "S",
+      {stakePort:true}
+    );
+
+  }else{
+
+    /*
+      ჩვეულებრივი გახსნა.
+    */
+
+    createPort(
+      tile.id,
+      tile.a,
+      -TILE_W/2,
+      0,
+      "W",
+      {
+        doubleValue:
+          isDouble(tile)
+      }
+    );
+
+    createPort(
+      tile.id,
+      tile.b,
+      TILE_W/2,
+      0,
+      "E",
+      {
+        doubleValue:
+          isDouble(tile)
+      }
+    );
+
+  }
+
+
+  gameState.currentPlayer =
+    player;
+
+  gameState.moveNumber = 1;
+
+  gameState.passesInRow = 0;
+
+
+  /*
+    გახსნის ქულა:
+    მხოლოდ 5-5 = +10.
+  */
+
+  if(
+    tile.a===5 &&
+    tile.b===5
+  ){
+
+    addScore(
+      TEAM(player),
+      10
+    );
+
+    showMessage(
+      `${TEAM_NAME(TEAM(player))} +10`
+    );
+
+  }
+
+
+  renderAll();
+
+  return true;
+}
+
+
+/* =========================================================
+   PORT MATCH
+========================================================= */
+
+function tileMatchesPort(
+  tile,
+  port
+){
+
+  return (
+    tile.a===port.value ||
+    tile.b===port.value
+  );
+
+}
+
+
+/* =========================================================
+   LEGAL PORTS FOR TILE
+========================================================= */
+
+function legalPortsForTile(tile){
+
+  return activePorts()
+    .filter(
+      port =>
+        tileMatchesPort(
+          tile,
+          port
+        )
+    );
+
+}
+
+
+/* =========================================================
+   PLAYER LEGAL MOVES
+========================================================= */
+
+function legalMoves(player){
+
+  const moves = [];
+
+  gameState.hands[player]
+    .forEach(
+      (tile,index)=>{
+
+        legalPortsForTile(tile)
+          .forEach(
+            port=>{
+
+              moves.push({
+                player,
+                index,
+                tile,
+                portId:port.id
+              });
+
+            }
+          );
+
+      }
+    );
+
+  return moves;
+}
+
+
+/* =========================================================
+   DOES PLAYER HAVE MOVE
+========================================================= */
+
+function hasLegalMove(player){
+
+  return legalMoves(player).length>0;
+
+}
+
+
+/* =========================================================
+   ALL REMAINING MOVES
+========================================================= */
+
+function allRemainingLegalMoves(){
+
+  const all = [];
+
+  for(let player=0;player<4;player++){
+
+    all.push(
+      ...legalMoves(player)
+    );
+
+  }
+
+  return all;
+}
+
+
+/* =========================================================
+   BOARD ROUTING
+========================================================= */
+
+function proposedPosition(
+  port,
+  tile,
+  dirName=port.dir
+){
+
+  const dir =
+    DIRS[dirName];
+
+  const distance =
+    isDouble(tile)
+      ? DOUBLE_STEP
+      : STEP;
+
+  return {
+
+    x:
+      port.x +
+      dir.x*distance,
+
+    y:
+      port.y +
+      dir.y*distance
+
+  };
+
+}
+
+
+/* =========================================================
+   COLLISION
+========================================================= */
+
+function placementDistance(
+  a,
+  b
+){
+
+  const dx = a.x-b.x;
+  const dy = a.y-b.y;
+
+  return Math.sqrt(
+    dx*dx + dy*dy
+  );
+
+}
+
+
+function positionFree(position){
+
+  return gameState.placements
+    .every(
+      placement =>
+        placementDistance(
+          position,
+          placement
+        ) > 47
+    );
+
+}
+
+
+/* =========================================================
+   SMART DIRECTION
+
+   ჯაჭვი ჯერ პირდაპირ მიდის.
+   სივრცის ამოწურვისას იხვევა.
+========================================================= */
+
+function chooseDirection(
+  port,
+  tile
+){
+
+  const candidates = [
+    port.dir,
+    RIGHT_TURN[port.dir],
+    LEFT_TURN[port.dir]
+  ];
+
+  let best =
+    port.dir;
+
+  let bestScore =
+    -Infinity;
+
+
+  candidates.forEach(
+    dirName=>{
+
+      const pos =
+        proposedPosition(
+          port,
+          tile,
+          dirName
+        );
+
+      let score = 0;
+
+      if(positionFree(pos)){
+        score += 100;
+      }
+
+      /*
+        ლოგიკური სამუშაო არე.
+        fitBoard მაინც ყველაფერს
+        მწვანე მაგიდაში ჩასვამს.
+      */
+
+      if(Math.abs(pos.x)<390){
+        score += 30;
+      }
+
+      if(Math.abs(pos.y)<155){
+        score += 30;
+      }
+
+      /*
+        პირდაპირ სვლას მცირე
+        უპირატესობა.
+      */
+
+      if(dirName===port.dir){
+        score += 12;
+      }
+
+      score -=
+        (
+          Math.abs(pos.x)*.03 +
+          Math.abs(pos.y)*.05
+        );
+
+
+      if(score>bestScore){
+
+        bestScore = score;
+        best = dirName;
+
+      }
+
+    }
+  );
+
+
+  return best;
+}
+
+
+/* =========================================================
+   ATTACH GEOMETRY
+
+   აქ მთავარი წესია:
+   შესატყვისი ნახევარი ყოველთვის
+   ეხება უკვე ღია ბოლოს.
+
+   მაგალითად:
+   ღია ბოლო = 6
+   ქვა = 3-6
+   ვიზუალურად 6 შეეხება 6-ს,
+   გარეთ დარჩება 3.
+========================================================= */
+
+function attachTile(
+  player,
+  handIndex,
+  portId
+){
+
+  if(gameState.handFinished){
+    return false;
+  }
+
+  const port =
+    getPort(portId);
+
+  if(!port){
+    return false;
+  }
+
+  const tile =
+    gameState.hands[player][handIndex];
+
+  if(!tile){
+    return false;
+  }
+
+  if(
+    !tileMatchesPort(
+      tile,
+      port
+    )
+  ){
+    return false;
+  }
+
+
+  const direction =
+    chooseDirection(
+      port,
+      tile
+    );
+
+  const position =
+    proposedPosition(
+      port,
+      tile,
+      direction
+    );
+
+
+  /*
+    რომელი ნახევარი ეხება ძველ ბოლოს?
+  */
+
+  let touchingValue;
+  let outerValue;
+
+  if(tile.a===port.value){
+
+    touchingValue = tile.a;
+    outerValue = tile.b;
+
+  }else{
+
+    touchingValue = tile.b;
+    outerValue = tile.a;
+
+  }
+
+
+  /*
+    DOMINO HTML-ში პირველი ნახევარი
+    მარცხენა მხარეა.
+    მიმართულების მიხედვით ვწყვეტთ
+    რომელი რიცხვი სად გამოჩნდეს.
+  */
+
+  let visualA;
+  let visualB;
+  let angle;
+
+
+  if(isDouble(tile)){
+
+    visualA = tile.a;
+    visualB = tile.b;
+
+    /*
+      double ყოველთვის ჯაჭვს
+      გადაჯვარედინებულად ედება.
+    */
+
+    angle =
+      (
+        direction==="E" ||
+        direction==="W"
+      )
+      ? 90
+      : 0;
+
+  }else if(direction==="E"){
+
+    visualA = touchingValue;
+    visualB = outerValue;
+    angle = 0;
+
+  }else if(direction==="W"){
+
+    visualA = outerValue;
+    visualB = touchingValue;
+    angle = 0;
+
+  }else if(direction==="S"){
+
+    /*
+      ჰორიზონტალური ქვა 90°-ით
+      ვატრიალებთ.
+      პირველი ნახევარი ზემოთ ხვდება.
+    */
+
+    visualA = touchingValue;
+    visualB = outerValue;
+    angle = 90;
+
+  }else{
+
+    /*
+      N:
+      touching ნახევარი ქვემოთ უნდა იყოს.
+    */
+
+    visualA = outerValue;
+    visualB = touchingValue;
+    angle = 90;
+
+  }
+
+
+  const placement = {
+
+    id:tile.id,
+
+    a:tile.a,
+    b:tile.b,
+
+    visualA,
+    visualB,
+
+    x:position.x,
+    y:position.y,
+
+    angle,
+
+    opening:false,
+
+    isStake:false,
+
+    connectedTo:
+      port.tileId,
+
+    normalConnections:
+      1
+
+  };
+
+
+  /*
+    გამოყენებული ღია ბოლო იხურება.
+  */
+
+  port.active = false;
+
+
+  gameState.hands[player]
+    .splice(
+      handIndex,
+      1
+    );
+
+
+  gameState.placements.push(
+    placement
+  );
+
+
+  /*
+    ძველი tile-ს ვუმატებთ კავშირს.
+    ეს გვჭირდება double-ის
+    "ორივე მხრიდან დახურვის"
+    დასადგენად.
+  */
+
+  const parent =
+    gameState.placements
+      .find(
+        item =>
+          item.id===port.tileId
+      );
+
+  if(parent){
+
+    parent.normalConnections =
+      (parent.normalConnections || 0)
+      + 1;
+
+  }
+
+
+  /*
+    ახალი ღია ბოლო.
+  */
+
+  const dir =
+    DIRS[direction];
+
+
+  if(isDouble(tile)){
+
+    /*
+      ჩვეულებრივ double-ს
+      გაგრძელება აქვს იგივე ხაზზე.
+
+      ღია double endpoint ქულაში
+      ორმაგად ითვლება.
+    */
+
+    createPort(
+      tile.id,
+      outerValue,
+      position.x +
+        dir.x*(TILE_W/2),
+
+      position.y +
+        dir.y*(TILE_W/2),
+
+      direction,
+
+      {
+        doubleValue:true
+      }
+    );
+
+  }else{
+
+    createPort(
+      tile.id,
+      outerValue,
+
+      position.x +
+        dir.x*(TILE_W/2),
+
+      position.y +
+        dir.y*(TILE_W/2),
+
+      direction,
+
+      {
+        doubleValue:false
+      }
+    );
+
+  }
+
+
+  /*
+    ვამოწმებთ:
+    რომელიმე ჩვეულებრივი double
+    ხომ არ გახდა სტავკა.
+  */
+
+  checkStakePromotion();
+
+
+  gameState.selectedTileIndex =
+    null;
+
+  gameState.moveNumber++;
+
+  gameState.passesInRow = 0;
+
+
+  /*
+    სვლის ქულები.
+  */
+
+  scoreOpenEnds(player);
+
+
+  renderAll();
+
+
+  /*
+    ზუსტად 35 = მთლიანი მატჩის
+    მყისიერი მოგება.
+  */
+
+  if(
+    openEndTotal()===35
+  ){
+
+    instant35Win(
+      player
+    );
+
+    return true;
+  }
+
+
+  /*
+    მოთამაშეს ქვები გაუთავდა.
+  */
+
+  if(
+    gameState.hands[player]
+      .length===0
+  ){
+
+    finishNormalHand(
+      player
+    );
+
+    return true;
+  }
+
+
+  updatePendingRibaCloser(
+    player
+  );
+
+  scheduleNextPlayer();
+
+  return true;
+}
+
+
+/* =========================================================
+   STAKE PROMOTION
+
+   მოგვიანო ხელი თუ non-double-ით
+   დაიწყო, პირველი double რომელიც
+   ორივე ნორმალური მხრიდან დაიხურა,
+   ხდება სტავკა.
+
+   მას ემატება გვერდითი ღია მხარეები.
+========================================================= */
+
+function checkStakePromotion(){
+
+  if(
+    gameState.roundNumber<=1 ||
+    gameState.stakeTileId
+  ){
+    return;
+  }
+
+
+  const candidate =
+    gameState.placements
+      .find(
+        placement =>{
+
+          if(
+            placement.opening &&
+            isDouble(placement)
+          ){
+            return false;
+          }
+
+          return (
+            isDouble(placement) &&
+            (placement.normalConnections || 0)>=2
+          );
+
+        }
+      );
+
+
+  if(!candidate){
+    return;
+  }
+
+
+  candidate.isStake = true;
+
+  gameState.stakeTileId =
+    candidate.id;
+
+
+  /*
+    double-ის ორი ნორმალური მხარე
+    უკვე დახურულია.
+
+    ვამატებთ მხოლოდ ორ გვერდით
+    branch-ს.
+  */
+
+  const horizontalDouble =
+    candidate.angle===0;
+
+
+  if(horizontalDouble){
+
+    createPort(
+      candidate.id,
+      candidate.a,
+      candidate.x,
+      candidate.y-TILE_H/2,
+      "N",
+      {stakePort:true}
+    );
+
+    createPort(
+      candidate.id,
+      candidate.a,
+      candidate.x,
+      candidate.y+TILE_H/2,
+      "S",
+      {stakePort:true}
+    );
+
+  }else{
+
+    createPort(
+      candidate.id,
+      candidate.a,
+      candidate.x-TILE_H/2,
+      candidate.y,
+      "W",
+      {stakePort:true}
+    );
+
+    createPort(
+      candidate.id,
+      candidate.a,
+      candidate.x+TILE_H/2,
+      candidate.y,
+      "E",
+      {stakePort:true}
+    );
+
+  }
+
+
+  showMessage(
+    "სტავკა!"
+  );
+
+}
+
+
+/* =========================================================
+   OPEN END TOTAL
+========================================================= */
+
+function openEndTotal(){
+
+  return activePorts()
+    .reduce(
+      (sum,port)=>{
+
+        /*
+          სტავკის თითო branch
+          ერთხელ ითვლება.
+
+          ჩვეულებრივი ღია double
+          ორივე ნახევრით ითვლება.
+        */
+
+        if(port.stakePort){
+
+          return (
+            sum +
+            port.value
+          );
+
+        }
+
+
+        if(port.doubleValue){
+
+          return (
+            sum +
+            port.value*2
+          );
+
+        }
+
+
+        return (
+          sum +
+          port.value
+        );
+
+      },
+      0
+    );
+
+}
+
+
+/* =========================================================
+   ENDPOINT SCORING
+========================================================= */
+
+function scoreOpenEnds(player){
+
+  /*
+    გახსნის სვლა აქ არ მოდის.
+  */
+
+  const total =
+    openEndTotal();
+
+
+  if(total===35){
+
+    return;
+
+  }
+
+
+  if(
+    total>0 &&
+    total%5===0
+  ){
+
+    addScore(
+      TEAM(player),
+      total
+    );
+
+    showMessage(
+      `${TEAM_NAME(TEAM(player))} +${total}`
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   ADD SCORE
+========================================================= */
+
+function addScore(
+  team,
+  points
+){
+
+  gameState.teamScores[team]
+    += points;
+
+
+  if(
+    gameState.teamScores[team]
+    >=355
+  ){
+
+    gameState.thresholdTriggered =
+      true;
+
+  }
+
+
+  updateTeamScores();
+
+}
+
+
+/* =========================================================
+   EXACT 35
+========================================================= */
+
+function instant35Win(player){
+
+  if(gameState.matchFinished){
+    return;
+  }
+
+  gameState.matchFinished = true;
+  gameState.handFinished = true;
+
+  const team =
+    TEAM(player);
+
+  showMessage(
+    `35! ${TEAM_NAME(team)} — მატჩის გამარჯვებული!`,
+    5000
+  );
+
+  updateTurnUI();
+
+}
+
+
+/* =========================================================
+   HAND PIP TOTAL
+========================================================= */
+
+function handPips(player){
+
+  return gameState.hands[player]
+    .reduce(
+      (sum,tile)=>
+        sum +
+        tile.a +
+        tile.b,
+      0
+    );
+
+}
+
+
+/* =========================================================
+   TEAM REMAINING PIPS
+========================================================= */
+
+function teamRemainingPips(team){
+
+  if(team===0){
+
+    return (
+      handPips(0) +
+      handPips(2)
+    );
+
+  }
+
+  return (
+    handPips(1) +
+    handPips(3)
+  );
+
+}
+
+
+/* =========================================================
+   NORMAL HAND FINISH
+========================================================= */
+
+function finishNormalHand(player){
+
+  if(gameState.handFinished){
+    return;
+  }
+
+  gameState.handFinished = true;
+
+  const winnerTeam =
+    TEAM(player);
+
+  const opponentTeam =
+    winnerTeam===0 ? 1 : 0;
+
+  const opponentPips =
+    teamRemainingPips(
+      opponentTeam
+    );
+
+  let earned =
+    round5(
+      opponentPips
+    );
+
+
+  earned +=
+    gameState.carryPoints;
+
+
+  gameState.carryPoints = 0;
+
+
+  if(earned>0){
+
+    addScore(
+      winnerTeam,
+      earned
+    );
+
+  }
+
+
+  showMessage(
+    `${TEAM_NAME(winnerTeam)} — ხელი +${earned}`,
+    2600
+  );
+
+
+  gameState.nextStarter =
+    player;
+
+
+  /*
+    355 უკვე გადალახულია?
+
+    მატჩი მხოლოდ NON-RIBA ხელის
+    დასრულების შემდეგ წყდება.
+  */
+
+  if(
+    gameState.thresholdTriggered
+  ){
+
+    setTimeout(
+      resolveThresholdMatch,
+      1800
+    );
+
+    return;
+  }
+
+
+  setTimeout(
+    startRound,
+    2200
+  );
+
+}
+
+
+/* =========================================================
+   RESOLVE MATCH AFTER NON-RIBA
+========================================================= */
+
+function resolveThresholdMatch(){
+
+  if(gameState.matchFinished){
+    return;
+  }
+
+  const a =
+    gameState.teamScores[0];
+
+  const b =
+    gameState.teamScores[1];
+
+
+  if(a===b){
+
+    /*
+      თუ თანაბარია, თამაში
+      გრძელდება.
+    */
+
+    showMessage(
+      "ქულები თანაბარია — თამაში გრძელდება",
+      2200
+    );
+
+    gameState.nextStarter =
+      gameState.currentPlayer;
+
+    setTimeout(
+      startRound,
+      2300
+    );
+
+    return;
+  }
+
+
+  gameState.matchFinished = true;
+
+  const winner =
+    a>b ? 0 : 1;
+
+  showMessage(
+    `${TEAM_NAME(winner)} — მატჩის გამარჯვებული!`,
+    5000
+  );
+
+}
+
+
+/* =========================================================
+   SPECIAL RIBA CLOSER TRACKING
+========================================================= */
+
+function updatePendingRibaCloser(
+  mover
+){
+
+  const moves =
+    allRemainingLegalMoves();
+
+
+  if(moves.length===0){
+
+    gameState.pendingRibaCloser =
+      mover;
+
+    return;
+  }
+
+
+  /*
+    თუ დარჩენილი ყველა შესაძლო
+    სვლა მხოლოდ matching double-ებია,
+    ახლანდელი mover ინახება როგორც
+    რიბის დამხურავი.
+
+    შემდეგ final double შეიძლება
+    მაინც დაიდოს.
+  */
+
+  const onlyDoubles =
+    moves.every(
+      move =>
+        isDouble(
+          move.tile
+        )
+    );
+
+
+  if(onlyDoubles){
+
+    gameState.pendingRibaCloser =
+      mover;
+
+  }else{
+
+    gameState.pendingRibaCloser =
+      null;
+
+  }
+
+}
+
+
+/* =========================================================
+   RIBA
+========================================================= */
+
+function finishRiba(){
+
+  if(gameState.handFinished){
+    return;
+  }
+
+  gameState.handFinished = true;
+
+
+  const teamA =
+    teamRemainingPips(0);
+
+  const teamB =
+    teamRemainingPips(1);
+
+
+  let closer =
+    gameState.pendingRibaCloser;
+
+
+  if(closer===null){
+
+    closer =
+      gameState.ribaCloser;
+
+  }
+
+
+  if(closer===null){
+
+    closer =
+      gameState.currentPlayer;
+
+  }
+
+
+  gameState.nextStarter =
+    closer;
+
+
+  /*
+    თანაბარი რიბა.
+  */
+
+  if(teamA===teamB){
+
+    const carry =
+      round5(teamA);
+
+    gameState.carryPoints +=
+      carry;
+
+
+    showMessage(
+      `რიბა ${teamA}:${teamB} — გადადის +${carry}`,
+      2800
+    );
+
+
+    /*
+      რიბაზე მატჩი არ მთავრდება,
+      355-ის შემთხვევაშიც.
+    */
+
+    setTimeout(
+      startRound,
+      2600
+    );
+
+    return;
+  }
+
+
+  const winnerTeam =
+    teamA < teamB
+      ? 0
+      : 1;
+
+
+  const loserPips =
+    winnerTeam===0
+      ? teamB
+      : teamA;
+
+
+  let earned =
+    round5(
+      loserPips
+    );
+
+
+  earned +=
+    gameState.carryPoints;
+
+
+  gameState.carryPoints = 0;
+
+
+  addScore(
+    winnerTeam,
+    earned
+  );
+
+
+  showMessage(
+    `რიბა — ${TEAM_NAME(winnerTeam)} +${earned}`,
+    2800
+  );
+
+
+  /*
+    რიბა მატჩს არ ასრულებს.
+  */
+
+  setTimeout(
+    startRound,
+    2600
+  );
+
+}
+
+
+/* =========================================================
+   NEXT PLAYER
+========================================================= */
+
+function scheduleNextPlayer(){
+
+  if(
+    gameState.handFinished ||
+    gameState.matchFinished
+  ){
+    return;
+  }
+
+
+  gameState.currentPlayer =
+    (
+      gameState.currentPlayer + 1
+    ) % 4;
+
+
+  renderAll();
+
+
+  if(
+    gameState.currentPlayer!==0
+  ){
+
+    setTimeout(
+      aiTurn,
+      650
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   PASS
+========================================================= */
+
+function passTurn(player){
+
+  if(
+    gameState.handFinished ||
+    gameState.matchFinished
+  ){
+    return;
+  }
+
+
+  if(
+    hasLegalMove(player)
+  ){
+
+    if(player===0){
+
+      showMessage(
+        "შეგიძლია ქვის დადება"
+      );
+
+    }
+
+    return;
+  }
+
+
+  gameState.passesInRow++;
+
+
+  showMessage(
+    player===0
+      ? "გავიარე"
+      : `${playerName(player)} — გაიარა`
+  );
+
+
+  /*
+    ოთხივე ზედიზედ გავიდა =
+    რიბა.
+  */
+
+  if(
+    gameState.passesInRow>=4
+  ){
+
+    gameState.ribaCloser =
+      gameState.pendingRibaCloser !== null
+        ? gameState.pendingRibaCloser
+        : (
+            player+3
+          )%4;
+
+    finishRiba();
+
+    return;
+  }
+
+
+  scheduleNextPlayer();
+
+}
+
+
+/* =========================================================
+   PLAYER NAMES
+========================================================= */
+
+function playerName(player){
+
+  const names = [
+    "Kusto",
+    "Nika",
+    "Dato",
+    "Gio"
+  ];
+
+  return names[player];
+}
+
+
+/* =========================================================
+   AI MOVE QUALITY
+========================================================= */
+
+function aiMoveScore(move){
+
+  const tile =
+    move.tile;
+
+  let score =
+    tilePips(tile);
+
+
+  if(isDouble(tile)){
+    score += 4;
+  }
+
+
+  /*
+    მაღალი ქვის მოშორება
+    სასარგებლოა.
+  */
+
+  score +=
+    tilePips(tile)*.35;
+
+
+  /*
+    ვცდით შესაძლო endpoint score-ს.
+  */
+
+  const port =
+    getPort(
+      move.portId
+    );
+
+
+  if(port){
+
+    const current =
+      openEndTotal();
+
+    let removed =
+      port.stakePort
+        ? port.value
+        : (
+            port.doubleValue
+              ? port.value*2
+              : port.value
+          );
+
+
+    const outer =
+      tile.a===port.value
+        ? tile.b
+        : tile.a;
+
+
+    const added =
+      isDouble(tile)
+        ? outer*2
+        : outer;
+
+
+    const possible =
+      current -
+      removed +
+      added;
+
+
+    if(possible===35){
+
+      score += 10000;
+
+    }else if(
+      possible>0 &&
+      possible%5===0
+    ){
+
+      score +=
+        possible*3;
+
+    }
+
+  }
+
+
+  return score;
+}
+
+
+/* =========================================================
+   AI TURN
+========================================================= */
+
+async function aiTurn(){
+
+  if(
+    gameState.aiBusy ||
+    gameState.handFinished ||
+    gameState.matchFinished
+  ){
+    return;
+  }
+
+
+  const player =
+    gameState.currentPlayer;
+
+
+  if(player===0){
+    return;
+  }
+
+
+  gameState.aiBusy = true;
+
+
+  await sleep(350);
+
+
+  if(
+    gameState.currentPlayer!==player ||
+    gameState.handFinished
+  ){
+
+    gameState.aiBusy = false;
+    return;
+  }
+
+
+  const moves =
+    legalMoves(player);
+
+
+  if(moves.length===0){
+
+    gameState.aiBusy = false;
+
+    passTurn(player);
+
+    return;
+  }
+
+
+  moves.sort(
+    (a,b)=>
+      aiMoveScore(b) -
+      aiMoveScore(a)
+  );
+
+
+  const best =
+    moves[0];
+
+
+  gameState.aiBusy = false;
+
+
+  attachTile(
+    player,
+    best.index,
+    best.portId
+  );
+
+}
+
+
+/* =========================================================
+   HUMAN TILE CLICK
+========================================================= */
+
+function selectHumanTile(index){
+
+  if(
+    gameState.currentPlayer!==0 ||
+    gameState.handFinished ||
+    gameState.matchFinished
+  ){
+    return;
+  }
+
+
+  const tile =
+    gameState.hands[0][index];
+
+  if(!tile){
+    return;
+  }
+
+
+  const ports =
+    legalPortsForTile(tile);
+
+
+  if(ports.length===0){
+
+    showMessage(
+      "ეს ქვა ვერ ედება"
+    );
+
+    return;
+  }
+
+
+  gameState.selectedTileIndex =
+    index;
+
+
+  /*
+    თუ მხოლოდ ერთი შესაძლო ბოლოა,
+    პირდაპირ ვდებთ.
+  */
+
+  if(ports.length===1){
+
+    attachTile(
+      0,
+      index,
+      ports[0].id
+    );
+
+    return;
+  }
+
+
+  /*
+    რამდენიმე ბოლო თუ ემთხვევა,
+    ვირჩევთ უკეთეს ვარიანტს.
+    შემდეგ ნაწილში ვიზუალური
+    endpoint არჩევაც დაემატება.
+  */
+
+  let bestPort =
+    ports[0];
+
+  let bestValue =
+    -Infinity;
+
+
+  ports.forEach(
+    port=>{
+
+      let value = 0;
+
+      const current =
+        openEndTotal();
+
+
+      const removed =
+        port.stakePort
+          ? port.value
+          : (
+              port.doubleValue
+                ? port.value*2
+                : port.value
+            );
+
+
+      const outer =
+        tile.a===port.value
+          ? tile.b
+          : tile.a;
+
+
+      const added =
+        isDouble(tile)
+          ? outer*2
+          : outer;
+
+
+      const total =
+        current -
+        removed +
+        added;
+
+
+      if(total===35){
+
+        value += 10000;
+
+      }else if(
+        total>0 &&
+        total%5===0
+      ){
+
+        value += total*10;
+
+      }
+
+
+      if(value>bestValue){
+
+        bestValue = value;
+        bestPort = port;
+
+      }
+
+    }
+  );
+
+
+  attachTile(
+    0,
+    index,
+    bestPort.id
+  );
+
+}
+
+
+/* =========================================================
+   RENDER BOARD
+========================================================= */
+
+function renderBoard(){
+
+  const board =
+    $("dominoBoard");
+
+  if(!board){
+    return;
+  }
+
+
+  board.innerHTML = "";
+
+
+  gameState.placements
+    .forEach(
+      placement=>{
+
+        const domino =
+          document.createElement(
+            "div"
+          );
+
+        domino.className =
+          "domino";
+
+
+        /*
+          opening tile-საც visualA/B
+          თუ არ აქვს, ნამდვილ a/b-ს
+          ვიყენებთ.
+        */
+
+        const first =
+          placement.visualA ??
+          placement.a;
+
+        const second =
+          placement.visualB ??
+          placement.b;
+
+
+        domino.innerHTML =
+          halfHTML(first) +
+          halfHTML(second);
+
+
+        domino.style.left =
+          `${
+            placement.x -
+            TILE_W/2
+          }px`;
+
+        domino.style.top =
+          `${
+            placement.y -
+            TILE_H/2
+          }px`;
+
+        domino.style.transform =
+          `rotate(${placement.angle}deg)`;
+
+
+        if(placement.isStake){
+
+          domino.style.filter =
+            "drop-shadow(0 0 7px rgba(255,202,82,.75))";
+
+        }
+
+
+        board.appendChild(
+          domino
+        );
+
+      }
+    );
+
+
+  requestAnimationFrame(
+    fitBoard
+  );
+
+}
+
+
+/* =========================================================
+   FIT ENTIRE DOMINO LAYOUT INSIDE FELT
+
+   არცერთი ქვა არ უნდა გავიდეს
+   მწვანე მაგიდიდან.
+========================================================= */
+
+function fitBoard(){
+
+  const viewport =
+    $("boardViewport");
+
+  const board =
+    $("dominoBoard");
+
+
+  if(
+    !viewport ||
+    !board ||
+    gameState.placements.length===0
+  ){
+    return;
+  }
+
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+
+  gameState.placements
+    .forEach(
+      placement=>{
+
+        const vertical =
+          placement.angle%180!==0;
+
+
+        const halfW =
+          vertical
+            ? TILE_H/2
+            : TILE_W/2;
+
+        const halfH =
+          vertical
+            ? TILE_W/2
+            : TILE_H/2;
+
+
+        minX =
+          Math.min(
+            minX,
+            placement.x-halfW
+          );
+
+        maxX =
+          Math.max(
+            maxX,
+            placement.x+halfW
+          );
+
+        minY =
+          Math.min(
+            minY,
+            placement.y-halfH
+          );
+
+        maxY =
+          Math.max(
+            maxY,
+            placement.y+halfH
+          );
+
+      }
+    );
+
+
+  const contentW =
+    Math.max(
+      1,
+      maxX-minX
+    );
+
+  const contentH =
+    Math.max(
+      1,
+      maxY-minY
+    );
+
+
+  const padding = 28;
+
+
+  const availableW =
+    Math.max(
+      1,
+      viewport.clientWidth -
+      padding*2
+    );
+
+  const availableH =
+    Math.max(
+      1,
+      viewport.clientHeight -
+      padding*2
+    );
+
+
+  const scale =
+    Math.min(
+      1,
+      availableW/contentW,
+      availableH/contentH
+    );
+
+
+  const centerX =
+    (minX+maxX)/2;
+
+  const centerY =
+    (minY+maxY)/2;
+
+
+  board.style.transform =
+    `
+      translate(
+        ${-centerX*scale}px,
+        ${-centerY*scale}px
+      )
+      scale(${scale})
+    `;
+
+}
+
+
+/* =========================================================
+   RENDER HUMAN HAND
+========================================================= */
+
+function renderHand(){
+
+  const hand =
+    $("playerHand");
+
+  if(!hand){
+    return;
+  }
+
+
+  hand.innerHTML = "";
+
+
+  gameState.hands[0]
+    .forEach(
+      (tile,index)=>{
+
+        const domino =
+          document.createElement(
+            "div"
+          );
+
+
+        domino.className =
+          "hand-domino";
+
+
+        if(
+          legalPortsForTile(tile)
+            .length>0 &&
+          gameState.currentPlayer===0
+        ){
+
+          domino.classList.add(
+            "playable"
+          );
+
+        }
+
+
+        if(
+          gameState.selectedTileIndex
+          ===index
+        ){
+
+          domino.classList.add(
+            "selected"
+          );
+
+        }
+
+
+        domino.innerHTML =
+          halfHTML(tile.a) +
+          halfHTML(tile.b);
+
+
+        domino.addEventListener(
+          "click",
+          ()=>{
+
+            selectHumanTile(
+              index
+            );
+
+          }
+        );
+
+
+        hand.appendChild(
+          domino
+        );
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   HIDDEN HANDS
+========================================================= */
+
+function renderHiddenHand(
+  elementId,
+  count
+){
+
+  const element =
+    $(elementId);
+
+  if(!element){
+    return;
+  }
+
+
+  element.innerHTML = "";
+
+
+  for(let i=0;i<count;i++){
+
+    const tile =
+      document.createElement(
+        "i"
+      );
+
+    tile.className =
+      "tile-back";
+
+    element.appendChild(
+      tile
+    );
+
+  }
+
+}
+
+
+function renderHiddenHands(){
+
+  /*
+    ეკრანის განლაგება:
+    player 2 = top
+    player 3 = left
+    player 1 = right
+  */
+
+  renderHiddenHand(
+    "topHiddenHand",
+    gameState.hands[2].length
+  );
+
+  renderHiddenHand(
+    "leftHiddenHand",
+    gameState.hands[3].length
+  );
+
+  renderHiddenHand(
+    "rightHiddenHand",
+    gameState.hands[1].length
+  );
+
+}
+
+
+/* =========================================================
+   SCORE UI
+========================================================= */
+
+function updateTeamScores(){
+
+  const a =
+    $("teamAScore");
+
+  const b =
+    $("teamBScore");
+
+
+  if(a){
+
+    a.textContent =
+      `${gameState.teamScores[0]} / 355`;
+
+  }
+
+
+  if(b){
+
+    b.textContent =
+      `${gameState.teamScores[1]} / 355`;
+
+  }
+
+}
+
+
+/* =========================================================
+   TURN UI
+========================================================= */
+
+function updateTurnUI(){
+
+  const pass =
+    $("passBtn");
+
+
+  if(pass){
+
+    pass.disabled =
+      !(
+        gameState.currentPlayer===0 &&
+        !gameState.handFinished &&
+        !gameState.matchFinished &&
+        !hasLegalMove(0)
+      );
+
+  }
+
+
+  /*
+    აქტიური avatar ოდნავ ანათებს.
+  */
+
+  document
+    .querySelectorAll(
+      ".player"
+    )
+    .forEach(
+      element=>{
+
+        const player =
+          Number(
+            element.dataset.player
+          );
+
+        const avatar =
+          element.querySelector(
+            ".avatar"
+          );
+
+
+        if(!avatar){
+          return;
+        }
+
+
+        if(
+          player===
+          gameState.currentPlayer &&
+          !gameState.handFinished
+        ){
+
+          avatar.style.boxShadow =
+            `
+              inset 0 0 0 3px #49301c,
+              0 0 0 3px rgba(255,221,118,.35),
+              0 0 18px rgba(255,201,73,.85)
+            `;
+
+        }else{
+
+          avatar.style.boxShadow =
+            `
+              inset 0 0 0 3px #49301c,
+              0 4px 8px rgba(0,0,0,.8)
+            `;
+
+        }
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   RENDER EVERYTHING
+========================================================= */
+
+function renderAll(){
+
+  renderBoard();
+
+  renderHand();
+
+  renderHiddenHands();
+
+  updateTeamScores();
+
+  updateTurnUI();
+
+}
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+let messageTimer = null;
+
+
+function showMessage(
+  text,
+  duration=1500
+){
+
+  const element =
+    $("turnMessage");
+
+  if(!element){
+    return;
+  }
+
+
+  clearTimeout(
+    messageTimer
+  );
+
+
+  element.textContent =
+    text;
+
+  element.classList.add(
+    "show"
+  );
+
+
+  messageTimer =
+    setTimeout(
+      ()=>{
+
+        element.classList.remove(
+          "show"
+        );
+
+      },
+      duration
+    );
+
+}
+
+
+/* =========================================================
+   START NEW HAND
+========================================================= */
+
+function startRound(){
+
+  if(gameState.matchFinished){
+    return;
+  }
+
+
+  gameState.roundNumber++;
+
+  gameState.handFinished = false;
+
+  gameState.aiBusy = false;
+
+  gameState.placements = [];
+
+  gameState.ports = [];
+
+  gameState.stakeTileId = null;
+
+  gameState.pendingRibaCloser = null;
+
+  gameState.ribaCloser = null;
+
+  gameState.selectedTileIndex = null;
+
+  gameState.passesInRow = 0;
+
+  gameState.moveNumber = 0;
+
+
+  deal();
+
+
+  /*
+    პირველი ხელი:
+    6-6 მფლობელი იწყებს
+    და 6-6 სავალდებულოდ იდება.
+  */
+
+  if(gameState.roundNumber===1){
+
+    const sixSix =
+      findSixSix();
+
+
+    if(!sixSix){
+
+      showMessage(
+        "6-6 ვერ მოიძებნა"
+      );
+
+      return;
+    }
+
+
+    gameState.currentPlayer =
+      sixSix.player;
+
+
+    placeOpeningTile(
+      sixSix.player,
+      sixSix.index
+    );
+
+
+    showMessage(
+      `${playerName(sixSix.player)} იწყებს 6-6`
+    );
+
+
+    /*
+      6-6 უკვე დაიდო.
+      შემდეგი მოთამაშის ჯერია.
+    */
+
+    gameState.currentPlayer =
+      (
+        sixSix.player + 1
+      ) % 4;
+
+
+    renderAll();
+
+
+    if(
+      gameState.currentPlayer!==0
+    ){
+
+      setTimeout(
+        aiTurn,
+        900
+      );
+
+    }
+
+
+    return;
+  }
+
+
+  /*
+    შემდეგი ხელები:
+    წინა ხელის დამამთავრებელი ან
+    რიბის დამხურავი იწყებს.
+  */
+
+  const starter =
+    gameState.nextStarter ?? 0;
+
+
+  gameState.currentPlayer =
+    starter;
+
+
+  renderAll();
+
+
+  showMessage(
+    `${playerName(starter)} იწყებს`
+  );
+
+
+  /*
+    შემდეგ ხელში მოთამაშე თვითონ
+    ირჩევს ნებისმიერ ქვას.
+
+    AI თუ იწყებს, ცოტა ხანში
+    opening move-ს თვითონ გააკეთებს.
+  */
+
+  if(starter!==0){
+
+    setTimeout(
+      aiOpeningTurn,
+      800
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   LATER HAND OPENING
+========================================================= */
+
+function humanOpeningTile(index){
+
+  if(
+    gameState.roundNumber<=1 ||
+    gameState.placements.length!==0 ||
+    gameState.currentPlayer!==0
+  ){
+    return false;
+  }
+
+
+  placeOpeningTile(
+    0,
+    index
+  );
+
+
+  if(
+    gameState.hands[0].length===0
+  ){
+
+    finishNormalHand(0);
+
+    return true;
+  }
+
+
+  scheduleNextPlayer();
+
+  return true;
+}
+
+
+/* =========================================================
+   REPLACE HUMAN CLICK TO SUPPORT OPENING
+========================================================= */
+
+const normalHumanTileSelection =
+  selectHumanTile;
+
+
+selectHumanTile = function(index){
+
+  if(
+    gameState.currentPlayer!==0 ||
+    gameState.handFinished ||
+    gameState.matchFinished
+  ){
+    return;
+  }
+
+
+  /*
+    მოგვიანო ხელის პირველი ქვა.
+  */
+
+  if(
+    gameState.roundNumber>1 &&
+    gameState.placements.length===0
+  ){
+
+    humanOpeningTile(
+      index
+    );
+
+    return;
+  }
+
+
+  normalHumanTileSelection(
+    index
+  );
+
+};
+
+
+/* =========================================================
+   AI OPENING TURN
+========================================================= */
+
+async function aiOpeningTurn(){
+
+  if(
+    gameState.handFinished ||
+    gameState.matchFinished
+  ){
+    return;
+  }
+
+
+  const player =
+    gameState.currentPlayer;
+
+
+  if(player===0){
+    return;
+  }
+
+
+  await sleep(400);
+
+
+  if(
+    gameState.currentPlayer!==player ||
+    gameState.placements.length!==0
+  ){
+    return;
+  }
+
+
+  const hand =
+    gameState.hands[player];
+
+
+  if(hand.length===0){
+    return;
+  }
+
+
+  /*
+    AI პირველ სვლაზე ირჩევს
+    ძლიერ ქვას.
+
+    5-5-ს დიდი უპირატესობა აქვს,
+    რადგან გახსნაზე +10 იძლევა.
+  */
+
+  let bestIndex = 0;
+  let bestScore = -Infinity;
+
+
+  hand.forEach(
+    (tile,index)=>{
+
+      let score =
+        tilePips(tile);
+
+
+      if(
+        tile.a===5 &&
+        tile.b===5
+      ){
+
+        score += 50;
+
+      }
+
+
+      if(isDouble(tile)){
+
+        score += 7;
+
+      }
+
+
+      if(score>bestScore){
+
+        bestScore = score;
+        bestIndex = index;
+
+      }
+
+    }
+  );
+
+
+  placeOpeningTile(
+    player,
+    bestIndex
+  );
+
+
+  scheduleNextPlayer();
+
+}
+
+
+/* =========================================================
+   PASS BUTTON
+========================================================= */
+
+$("passBtn")
+  .addEventListener(
+    "click",
+    ()=>{
+
+      if(
+        gameState.currentPlayer===0
+      ){
+
+        passTurn(0);
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   RESIZE
+========================================================= */
+
+window.addEventListener(
+  "resize",
+  ()=>{
+
+    requestAnimationFrame(
+      fitBoard
+    );
+
+  }
+);
+
+
+/* =========================================================
+   PART 2/3 END
+
+   SCRIPT ჯერ არ დახურო.
+   PART 3/3 პირდაპირ აქედან გაგრძელდება.
+========================================================= */
