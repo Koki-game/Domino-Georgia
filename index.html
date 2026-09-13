@@ -3285,6 +3285,162 @@ document
 
 updateProfileUI();
   </script>
+<style>
 
+/* ===== DOMINO GEORGIA LAYOUT FIX ===== */
+
+/* მეტი ადგილი სათამაშო მაგიდისთვის */
+.table{
+  top:70px !important;
+  bottom:72px !important;
+}
+
+/* ზედა მოთამაშეები */
+.player-top-left{
+  top:35px !important;
+  left:55px !important;
+}
+
+.player-top-right{
+  top:35px !important;
+  right:55px !important;
+}
+
+/* ცენტრალური ქვების ჯაჭვი */
+#dominoBoard{
+  left:18% !important;
+  right:18% !important;
+
+  top:36% !important;
+  bottom:36% !important;
+
+  z-index:8 !important;
+}
+
+/* ჩემი ქვები — ქვედა ცენტრში */
+.hand-wrap{
+  left:50% !important;
+  bottom:20px !important;
+
+  width:54% !important;
+
+  transform:translateX(-50%) !important;
+
+  z-index:20 !important;
+}
+
+#playerHand{
+  gap:4px !important;
+}
+
+#playerHand .domino{
+  width:46px !important;
+  height:88px !important;
+}
+
+/* ჩემი პროფილი ქვედა მარცხნივ */
+.player-bottom-left{
+  left:25px !important;
+  bottom:22px !important;
+
+  width:185px !important;
+
+  transform:scale(.88);
+  transform-origin:left bottom;
+}
+
+/* გავიარე — ქვედა მარჯვნივ */
+#passBtn{
+  right:28px !important;
+  bottom:28px !important;
+
+  width:155px !important;
+  height:58px !important;
+
+  font-size:20px !important;
+}
+
+/* ოთახის პატარა პანელი */
+.room-panel{
+  right:22px !important;
+  top:130px !important;
+
+  width:150px !important;
+
+  transform:scale(.9);
+  transform-origin:right top;
+}
+
+/* სტატუსი */
+#gameStatus{
+  top:128px !important;
+
+  font-size:14px !important;
+}
+
+/* ლოგო */
+.logo-board{
+  width:300px !important;
+  height:105px !important;
+}
+
+/* ქვედა მენიუ */
+.bottom-menu{
+  left:16% !important;
+  right:16% !important;
+
+  height:58px !important;
+}
+
+/* პატარა ჰორიზონტალური ტელეფონებისთვის */
+@media (max-height:500px){
+
+  .table{
+    top:48px !important;
+    bottom:58px !important;
+  }
+
+  .logo-board{
+    width:260px !important;
+    height:86px !important;
+  }
+
+  .logo-main{
+    font-size:30px !important;
+  }
+
+  .logo-sub{
+    font-size:15px !important;
+  }
+
+  .player-card{
+    width:190px !important;
+    min-height:62px !important;
+  }
+
+  .player-top-left,
+  .player-top-right{
+    top:25px !important;
+  }
+
+  #dominoBoard{
+    top:34% !important;
+    bottom:34% !important;
+  }
+
+  #playerHand .domino{
+    width:42px !important;
+    height:80px !important;
+  }
+
+  #passBtn{
+    width:135px !important;
+    height:52px !important;
+    font-size:18px !important;
+  }
+
+}
+
+</style>
 </body>
 </html>
