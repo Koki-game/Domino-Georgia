@@ -5298,3 +5298,1028 @@ window.addEventListener(
    PART 3/4 END
    SCRIPT CONTINUES IN PART 4
 ========================================================= */
+/* =========================================================
+   PART 4/4
+   UI + NICKNAME + EMOJI + INVITE + PWA + START
+========================================================= */
+
+
+/* =========================================================
+   PLAYER AVATAR INFO POPUP
+========================================================= */
+
+let openedPlayerPopup = null;
+
+function showPlayerPopup(playerIndex){
+
+  const popup = $("playerPopup");
+  const playerEl = $("player" + playerIndex);
+
+  if(!popup || !playerEl) return;
+
+  /*
+    Tap same avatar again = close.
+  */
+
+  if(
+    openedPlayerPopup === playerIndex &&
+    popup.classList.contains("show")
+  ){
+
+    closePlayerPopup();
+    return;
+
+  }
+
+  const player = players[playerIndex];
+
+  $("popupName").textContent =
+    player.nickname;
+
+  $("popupRating").textContent =
+    `★ ${player.rating}`;
+
+  $("popupStats").innerHTML =
+    `მოგება: ${player.wins}<br>` +
+    `წაგება: ${player.losses}<br>` +
+    `სტატუსი: ონლაინ`;
+
+  /*
+    Position popup near avatar.
+  */
+
+  const sceneRect =
+    $("scene").getBoundingClientRect();
+
+  const avatarRect =
+    playerEl.getBoundingClientRect();
+
+  const scale =
+    sceneRect.width / 1536 || 1;
+
+  let left =
+    (
+      avatarRect.left -
+      sceneRect.left
+    ) / scale + 105;
+
+  let top =
+    (
+      avatarRect.top -
+      sceneRect.top
+    ) / scale;
+
+  /*
+    Right-side player:
+    open popup to the left.
+  */
+
+  if(playerIndex === 1){
+
+    left =
+      (
+        avatarRect.left -
+        sceneRect.left
+      ) / scale - 220;
+
+  }
+
+  /*
+    Bottom player:
+    popup above avatar.
+  */
+
+  if(playerIndex === 2){
+
+    left =
+      (
+        avatarRect.left -
+        sceneRect.left
+      ) / scale - 55;
+
+    top =
+      (
+        avatarRect.top -
+        sceneRect.top
+      ) / scale - 130;
+
+  }
+
+  /*
+    Top player:
+    popup slightly to right.
+  */
+
+  if(playerIndex === 0){
+
+    left =
+      (
+        avatarRect.left -
+        sceneRect.left
+      ) / scale + 105;
+
+    top =
+      (
+        avatarRect.top -
+        sceneRect.top
+      ) / scale + 4;
+
+  }
+
+  left =
+    Math.max(
+      18,
+      Math.min(
+        1536 - 225,
+        left
+      )
+    );
+
+  top =
+    Math.max(
+      18,
+      Math.min(
+        1024 - 180,
+        top
+      )
+    );
+
+  popup.style.left =
+    left + "px";
+
+  popup.style.top =
+    top + "px";
+
+  popup.classList.add("show");
+
+  openedPlayerPopup =
+    playerIndex;
+
+}
+
+
+function closePlayerPopup(){
+
+  const popup =
+    $("playerPopup");
+
+  if(popup){
+
+    popup.classList.remove("show");
+
+  }
+
+  openedPlayerPopup = null;
+
+}
+
+
+for(let p=0;p<4;p++){
+
+  const el =
+    $("player" + p);
+
+  if(!el) continue;
+
+  el.addEventListener(
+    "click",
+    event=>{
+
+      event.stopPropagation();
+
+      showPlayerPopup(p);
+
+    }
+  );
+
+}
+
+
+$("scene").addEventListener(
+  "click",
+  event=>{
+
+    if(
+      !event.target.closest(".player") &&
+      !event.target.closest("#playerPopup")
+    ){
+
+      closePlayerPopup();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   PASS BUTTON
+========================================================= */
+
+$("passBtn").addEventListener(
+  "click",
+  ()=>{
+
+    passTurn(2);
+
+  }
+);
+
+
+/* =========================================================
+   EMOJI-ONLY CHAT
+========================================================= */
+
+$("chatBtn").addEventListener(
+  "click",
+  event=>{
+
+    event.stopPropagation();
+
+    $("emojiPanel")
+      .classList
+      .toggle("show");
+
+  }
+);
+
+
+$("emojiPanel").addEventListener(
+  "click",
+  event=>{
+
+    event.stopPropagation();
+
+  }
+);
+
+
+document
+  .querySelectorAll(
+    ".emoji-btn"
+  )
+  .forEach(
+    button=>{
+
+      button.addEventListener(
+        "click",
+        ()=>{
+
+          sendEmoji(
+            button.textContent
+          );
+
+          $("emojiPanel")
+            .classList
+            .remove("show");
+
+        }
+      );
+
+    }
+  );
+
+
+function sendEmoji(emoji){
+
+  /*
+    Current version:
+    local visual emoji.
+
+    Firebase multiplayer later can broadcast
+    only this predefined emoji value.
+  */
+
+  const bubble =
+    document.createElement("div");
+
+  bubble.className =
+    "emoji-bubble";
+
+  bubble.textContent =
+    emoji;
+
+  /*
+    Bubble above local player's avatar.
+  */
+
+  bubble.style.left =
+    "760px";
+
+  bubble.style.top =
+    "640px";
+
+  $("scene")
+    .appendChild(
+      bubble
+    );
+
+  setTimeout(
+    ()=>bubble.remove(),
+    1900
+  );
+
+}
+
+
+document.addEventListener(
+  "click",
+  event=>{
+
+    if(
+      !event.target.closest("#chatBtn") &&
+      !event.target.closest("#emojiPanel")
+    ){
+
+      $("emojiPanel")
+        .classList
+        .remove("show");
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   LOCAL NICKNAME
+
+   Public UI uses nickname only.
+   No Google display name/email is shown here.
+========================================================= */
+
+const PROFILE_KEY =
+  "domino_georgia_profile_v1";
+
+
+function loadProfile(){
+
+  try{
+
+    const raw =
+      localStorage.getItem(
+        PROFILE_KEY
+      );
+
+    if(!raw)
+      return null;
+
+    return JSON.parse(raw);
+
+  }catch(error){
+
+    return null;
+
+  }
+
+}
+
+
+function saveProfile(profile){
+
+  localStorage.setItem(
+    PROFILE_KEY,
+    JSON.stringify(profile)
+  );
+
+}
+
+
+function applyProfile(profile){
+
+  if(
+    !profile ||
+    !profile.nickname
+  )
+    return;
+
+  players[2].nickname =
+    profile.nickname;
+
+  if(
+    Number.isFinite(
+      profile.rating
+    )
+  ){
+
+    players[2].rating =
+      profile.rating;
+
+  }
+
+  if(
+    Number.isFinite(
+      profile.wins
+    )
+  ){
+
+    players[2].wins =
+      profile.wins;
+
+  }
+
+  if(
+    Number.isFinite(
+      profile.losses
+    )
+  ){
+
+    players[2].losses =
+      profile.losses;
+
+  }
+
+}
+
+
+function requestNickname(){
+
+  const existing =
+    loadProfile();
+
+  if(
+    existing &&
+    existing.nickname
+  ){
+
+    applyProfile(existing);
+    return;
+
+  }
+
+  $("loginOverlay")
+    .classList
+    .add("show");
+
+}
+
+
+$("saveNicknameBtn")
+  .addEventListener(
+    "click",
+    ()=>{
+
+      const nickname =
+        $("nicknameInput")
+          .value
+          .trim()
+          .slice(0,18);
+
+      if(
+        nickname.length < 2
+      ){
+
+        toast(
+          "ნიკნეიმი მინიმუმ 2 სიმბოლო უნდა იყოს"
+        );
+
+        return;
+
+      }
+
+      const profile = {
+
+        nickname,
+
+        rating:1000,
+
+        wins:0,
+
+        losses:0
+
+      };
+
+      saveProfile(profile);
+
+      applyProfile(profile);
+
+      $("loginOverlay")
+        .classList
+        .remove("show");
+
+      toast(
+        `კეთილი იყოს შენი მობრძანება, ${nickname}`
+      );
+
+    }
+  );
+
+
+$("nicknameInput")
+  .addEventListener(
+    "keydown",
+    event=>{
+
+      if(
+        event.key === "Enter"
+      ){
+
+        $("saveNicknameBtn")
+          .click();
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   ROOM CODE
+========================================================= */
+
+function makeRoomCode(){
+
+  const alphabet =
+    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  let result =
+    "GE-";
+
+  for(let i=0;i<4;i++){
+
+    result +=
+      alphabet[
+        Math.floor(
+          Math.random() *
+          alphabet.length
+        )
+      ];
+
+  }
+
+  return result;
+
+}
+
+
+const ROOM_KEY =
+  "domino_georgia_room";
+
+
+function loadRoom(){
+
+  let code =
+    localStorage.getItem(
+      ROOM_KEY
+    );
+
+  if(!code){
+
+    code =
+      makeRoomCode();
+
+    localStorage.setItem(
+      ROOM_KEY,
+      code
+    );
+
+  }
+
+  $("roomCode").textContent =
+    code;
+
+  return code;
+
+}
+
+
+/* =========================================================
+   INVITE
+========================================================= */
+
+$("inviteBtn")
+  .addEventListener(
+    "click",
+    async ()=>{
+
+      const code =
+        $("roomCode")
+          .textContent;
+
+      const base =
+        location.href
+          .split("?")[0]
+          .split("#")[0];
+
+      const link =
+        `${base}?room=${encodeURIComponent(code)}`;
+
+      const shareData = {
+
+        title:
+          "DOMINO GEORGIA",
+
+        text:
+          `DOMINO GEORGIA • ოთახი ${code}`,
+
+        url:
+          link
+
+      };
+
+      try{
+
+        if(navigator.share){
+
+          await navigator.share(
+            shareData
+          );
+
+          return;
+
+        }
+
+        if(
+          navigator.clipboard &&
+          window.isSecureContext
+        ){
+
+          await navigator
+            .clipboard
+            .writeText(link);
+
+          toast(
+            "მოწვევის ბმული დაკოპირდა"
+          );
+
+          return;
+
+        }
+
+        toast(
+          `ოთახი: ${code}`
+        );
+
+      }catch(error){
+
+        /*
+          Share sheet cancellation is harmless.
+        */
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   INCOMING ROOM PARAMETER
+
+   This displays the room code.
+
+   IMPORTANT:
+   true real-time multiplayer synchronization
+   will be connected later through Firebase.
+========================================================= */
+
+function readIncomingRoom(){
+
+  const params =
+    new URLSearchParams(
+      location.search
+    );
+
+  const incoming =
+    params.get("room");
+
+  if(!incoming)
+    return;
+
+  const cleaned =
+    incoming
+      .toUpperCase()
+      .replace(
+        /[^A-Z0-9-]/g,
+        ""
+      )
+      .slice(0,12);
+
+  if(!cleaned)
+    return;
+
+  localStorage.setItem(
+    ROOM_KEY,
+    cleaned
+  );
+
+  $("roomCode").textContent =
+    cleaned;
+
+}
+
+
+/* =========================================================
+   GAME STATUS INFO
+========================================================= */
+
+function updateStatusInfo(){
+
+  /*
+    Keep bottom status readable without adding
+    extra permanent controls to the table.
+  */
+
+  const stake =
+    game.stakeTileId
+      ? "აქტიური"
+      : "ჯერ არა";
+
+  const total =
+    calculateOpenEndTotal();
+
+  $("onlineStatus").textContent =
+    game.finished
+      ? "● დასრულდა"
+      : "● ონლაინ";
+
+  $("onlineStatus").title =
+    `სტავკა: ${stake} • ღია ბოლოები: ${total} • დაგროვილი: ${game.carryPoints}`;
+
+}
+
+
+/* =========================================================
+   EXTEND renderAll()
+========================================================= */
+
+const originalRenderAll =
+  renderAll;
+
+
+renderAll = function(){
+
+  originalRenderAll();
+
+  updateStatusInfo();
+
+};
+
+
+/* =========================================================
+   HAND RESULT PROFILE SAVE
+========================================================= */
+
+function persistLocalStats(){
+
+  const current =
+    loadProfile();
+
+  if(!current)
+    return;
+
+  current.nickname =
+    players[2].nickname;
+
+  current.rating =
+    players[2].rating;
+
+  current.wins =
+    players[2].wins;
+
+  current.losses =
+    players[2].losses;
+
+  saveProfile(current);
+
+}
+
+
+window.addEventListener(
+  "beforeunload",
+  persistLocalStats
+);
+
+
+/* =========================================================
+   PWA SERVICE WORKER
+========================================================= */
+
+if(
+  "serviceWorker" in navigator
+){
+
+  window.addEventListener(
+    "load",
+    ()=>{
+
+      navigator
+        .serviceWorker
+        .register(
+          "./service-worker.js"
+        )
+        .catch(
+          error=>{
+
+            console.log(
+              "Service worker:",
+              error
+            );
+
+          }
+        );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   PREVENT ACCIDENTAL PAGE MOVEMENT
+========================================================= */
+
+document.addEventListener(
+  "touchmove",
+  event=>{
+
+    if(
+      event.target.closest(
+        "#nicknameInput"
+      )
+    )
+      return;
+
+    event.preventDefault();
+
+  },
+  {
+    passive:false
+  }
+);
+
+
+/* =========================================================
+   BOARD CLICK
+
+   Cancel selected tile if player taps empty table.
+========================================================= */
+
+$("felt").addEventListener(
+  "click",
+  event=>{
+
+    if(
+      event.target.closest(
+        ".port-choice"
+      )
+    )
+      return;
+
+    if(
+      game.selectedTileId
+    ){
+
+      game.selectedTileId =
+        null;
+
+      clearPortChoices();
+
+      renderHand();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   DEBUG SAFETY CHECK
+========================================================= */
+
+function validateGameState(){
+
+  /*
+    28 domino invariant:
+    hands + board should always equal 28
+    during an active hand.
+  */
+
+  const handCount =
+    game.hands.reduce(
+      (sum,hand)=>
+        sum + hand.length,
+      0
+    );
+
+  const boardCount =
+    game.tilesOnBoard.length;
+
+  if(
+    handCount + boardCount !== 28
+  ){
+
+    console.warn(
+      "Domino count mismatch:",
+      handCount,
+      boardCount
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   APP START
+========================================================= */
+
+function startApp(){
+
+  resizeScene();
+
+  const profile =
+    loadProfile();
+
+  if(profile){
+
+    applyProfile(profile);
+
+  }
+
+  loadRoom();
+
+  readIncomingRoom();
+
+  requestNickname();
+
+  renderScores();
+
+  /*
+    Start a fresh Georgian domino match.
+  */
+
+  startHand();
+
+}
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  ()=>{
+
+    startApp();
+
+  }
+);
+
+
+/* =========================================================
+   DEVELOPMENT CONSOLE HELPERS
+========================================================= */
+
+window.DOMINO_GEORGIA = {
+
+  game,
+
+  players,
+
+  newMatch(){
+
+    game.teamScores =
+      [0,0];
+
+    game.carryPoints = 0;
+
+    game.handNumber = 1;
+
+    game.firstHand = true;
+
+    game.starter = null;
+
+    game.previousWinner = null;
+
+    game.finished = false;
+
+    game.matchThresholdReached = false;
+
+    startHand();
+
+  },
+
+  state(){
+
+    return game;
+
+  },
+
+  validate(){
+
+    validateGameState();
+
+  }
+
+};
+
+
+/* =========================================================
+   PART 4/4 END
+========================================================= */
+
+</script>
+
+</body>
+</html>
