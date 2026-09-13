@@ -1148,3 +1148,1208 @@ button{
    PART 1/4 END
    IMPORTANT: STYLE CONTINUES IN PART 2
 ========================================================= */
+/* =========================================================
+   PART 2/4
+   DOMINOES + HAND + BUTTONS + HTML
+========================================================= */
+
+
+/* =========================================================
+   DOMINO TILE
+========================================================= */
+
+.domino{
+  position:absolute;
+
+  width:76px;
+  height:42px;
+
+  display:flex;
+  overflow:hidden;
+
+  border:2px solid #82745d;
+  border-radius:8px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fffdf0 0%,
+      #f3ead4 42%,
+      #d7cbb0 78%,
+      #b9aa8c 100%
+    );
+
+  box-shadow:
+    inset 2px 2px 2px rgba(255,255,255,.85),
+    inset -3px -3px 4px rgba(66,48,25,.24),
+    0 5px 7px rgba(0,0,0,.72);
+
+  transform-origin:center center;
+}
+
+.domino.vertical{
+  width:42px;
+  height:76px;
+  flex-direction:column;
+}
+
+.domino-half{
+  position:relative;
+  width:50%;
+  height:100%;
+}
+
+.domino-half:first-child{
+  border-right:2px solid #817763;
+}
+
+.domino.vertical .domino-half{
+  width:100%;
+  height:50%;
+}
+
+.domino.vertical .domino-half:first-child{
+  border-right:0;
+  border-bottom:2px solid #817763;
+}
+
+
+/* =========================================================
+   DOMINO PIPS
+========================================================= */
+
+.pip{
+  position:absolute;
+
+  width:8px;
+  height:8px;
+
+  border-radius:50%;
+
+  background:
+    radial-gradient(
+      circle at 35% 30%,
+      #454545,
+      #050505 70%
+    );
+
+  box-shadow:
+    inset 1px 1px 1px rgba(255,255,255,.25);
+}
+
+.p-center{
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+.p-tl{
+  left:18%;
+  top:18%;
+}
+
+.p-tr{
+  right:18%;
+  top:18%;
+}
+
+.p-bl{
+  left:18%;
+  bottom:18%;
+}
+
+.p-br{
+  right:18%;
+  bottom:18%;
+}
+
+.p-ml{
+  left:18%;
+  top:50%;
+  transform:translateY(-50%);
+}
+
+.p-mr{
+  right:18%;
+  top:50%;
+  transform:translateY(-50%);
+}
+
+
+/* =========================================================
+   STAKE / სტავკა
+========================================================= */
+
+.domino.stake{
+  box-shadow:
+    0 0 0 3px rgba(237,191,85,.82),
+    0 0 17px rgba(255,210,83,.48),
+    inset 2px 2px 2px rgba(255,255,255,.9),
+    0 6px 8px rgba(0,0,0,.8);
+}
+
+
+/* =========================================================
+   PLAYER HAND WOOD RACK
+========================================================= */
+
+#handRack{
+  position:absolute;
+
+  left:399px;
+  top:773px;
+
+  width:698px;
+  height:125px;
+
+  z-index:150;
+
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+
+  padding:0 22px 11px;
+
+  border-radius:13px 13px 0 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      #7b431f 0%,
+      #4d2512 19%,
+      #241007 76%,
+      #6d3619 78%,
+      #321508 100%
+    );
+
+  border:3px solid #4d2411;
+
+  box-shadow:
+    inset 0 3px 0 #a66437,
+    inset 0 -4px 0 #160904,
+    0 -4px 13px rgba(0,0,0,.55);
+}
+
+#playerHand{
+  height:105px;
+
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+
+  gap:7px;
+}
+
+#playerHand .domino{
+  position:relative;
+
+  left:auto !important;
+  top:auto !important;
+
+  width:58px;
+  height:98px;
+
+  flex-direction:column;
+
+  cursor:pointer;
+
+  transition:
+    transform .16s ease,
+    filter .16s ease,
+    box-shadow .16s ease;
+}
+
+#playerHand .domino-half{
+  width:100%;
+  height:50%;
+}
+
+#playerHand .domino-half:first-child{
+  border-right:0;
+  border-bottom:2px solid #817763;
+}
+
+#playerHand .domino.selected{
+  transform:translateY(-15px);
+
+  box-shadow:
+    0 0 0 4px #e5bd56,
+    0 9px 12px rgba(0,0,0,.8);
+}
+
+#playerHand .domino.unplayable{
+  filter:brightness(.60);
+}
+
+
+/* =========================================================
+   BOTTOM LEFT CONTROLS
+   ONLY "გავიარე" + "ჩატი"
+========================================================= */
+
+#leftControls{
+  position:absolute;
+
+  left:26px;
+  top:775px;
+
+  z-index:180;
+
+  display:flex;
+  gap:10px;
+}
+
+.game-button{
+  height:92px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  gap:11px;
+
+  padding:0 22px;
+
+  color:#e8dfd0;
+
+  border:3px solid #60432f;
+  border-radius:23px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #302e29,
+      #171714
+    );
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.15),
+    0 8px 12px rgba(0,0,0,.7);
+
+  font-size:21px;
+  font-weight:900;
+
+  text-shadow:0 2px 2px #000;
+}
+
+.game-button .icon{
+  font-size:31px;
+}
+
+#passBtn{
+  width:176px;
+}
+
+#chatBtn{
+  width:164px;
+}
+
+.game-button:disabled{
+  opacity:.35;
+}
+
+
+/* =========================================================
+   EMOJI-ONLY CHAT
+========================================================= */
+
+#emojiPanel{
+  position:absolute;
+
+  left:211px;
+  top:580px;
+
+  z-index:1000;
+
+  display:none;
+
+  width:285px;
+
+  padding:12px;
+
+  border:2px solid #805633;
+  border-radius:16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(30,26,20,.98),
+      rgba(8,11,9,.98)
+    );
+
+  box-shadow:
+    0 14px 28px rgba(0,0,0,.82);
+}
+
+#emojiPanel.show{
+  display:block;
+}
+
+.emoji-title{
+  margin-bottom:10px;
+
+  color:#e9d7b5;
+
+  text-align:center;
+
+  font-size:14px;
+  font-weight:900;
+}
+
+.emoji-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:7px;
+}
+
+.emoji-btn{
+  height:45px;
+
+  border:1px solid #4d473c;
+  border-radius:9px;
+
+  background:#16231d;
+
+  font-size:25px;
+}
+
+.emoji-bubble{
+  position:absolute;
+
+  z-index:2000;
+
+  padding:9px 13px;
+
+  border-radius:16px;
+
+  color:#fff;
+
+  background:rgba(10,16,13,.95);
+
+  border:1px solid #8a7047;
+
+  font-size:35px;
+
+  pointer-events:none;
+
+  animation:emojiUp 1.8s ease-out forwards;
+}
+
+@keyframes emojiUp{
+  0%{
+    opacity:0;
+    transform:translateY(20px) scale(.7);
+  }
+
+  15%{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+
+  100%{
+    opacity:0;
+    transform:translateY(-90px) scale(1.05);
+  }
+}
+
+
+/* =========================================================
+   BOTTOM INFORMATION BAR
+========================================================= */
+
+#bottomBar{
+  position:absolute;
+
+  left:15px;
+  top:900px;
+
+  width:1506px;
+  height:110px;
+
+  z-index:100;
+
+  display:grid;
+
+  grid-template-columns:
+    1fr
+    1fr
+    1.05fr
+    1.15fr
+    1.25fr;
+
+  overflow:hidden;
+
+  border:3px solid #58341f;
+  border-radius:20px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #1d1c18,
+      #080a08
+    );
+
+  box-shadow:
+    inset 0 2px 0 #8b5834,
+    0 -5px 12px rgba(0,0,0,.65);
+}
+
+.info-item{
+  display:flex;
+  align-items:center;
+
+  gap:12px;
+
+  padding:12px 17px;
+
+  color:#bdb5a8;
+
+  border-right:1px solid #433426;
+
+  font-size:13px;
+  line-height:19px;
+}
+
+.info-item:last-child{
+  border-right:0;
+}
+
+.info-icon{
+  flex:0 0 auto;
+  font-size:32px;
+}
+
+.info-item strong{
+  display:block;
+
+  margin-bottom:2px;
+
+  color:#f0e0c2;
+
+  font-size:16px;
+}
+
+
+/* =========================================================
+   INVITE
+========================================================= */
+
+#inviteBtn{
+  position:absolute;
+
+  left:17px;
+  bottom:11px;
+
+  height:34px;
+
+  padding:0 13px;
+
+  border:1px solid #6d5135;
+  border-radius:8px;
+
+  color:#e9d9ba;
+
+  background:#18231d;
+
+  font-size:12px;
+  font-weight:bold;
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+#toast{
+  position:absolute;
+
+  left:50%;
+  top:690px;
+
+  transform:
+    translateX(-50%)
+    translateY(15px);
+
+  z-index:5000;
+
+  max-width:600px;
+
+  padding:11px 22px;
+
+  border:1px solid #947343;
+  border-radius:25px;
+
+  color:#ffebbd;
+
+  background:rgba(7,17,12,.96);
+
+  box-shadow:
+    0 8px 20px rgba(0,0,0,.8);
+
+  font-size:15px;
+  font-weight:900;
+
+  opacity:0;
+
+  pointer-events:none;
+
+  transition:.2s ease;
+}
+
+#toast.show{
+  opacity:1;
+
+  transform:
+    translateX(-50%)
+    translateY(0);
+}
+
+
+/* =========================================================
+   NICKNAME OVERLAY
+========================================================= */
+
+#loginOverlay{
+  position:absolute;
+  inset:0;
+
+  z-index:10000;
+
+  display:none;
+  align-items:center;
+  justify-content:center;
+
+  background:rgba(0,0,0,.78);
+}
+
+#loginOverlay.show{
+  display:flex;
+}
+
+#loginCard{
+  width:430px;
+
+  padding:28px;
+
+  border:3px solid #80502c;
+  border-radius:22px;
+
+  color:#eee4d2;
+
+  text-align:center;
+
+  background:
+    linear-gradient(
+      145deg,
+      #193328,
+      #08140f
+    );
+
+  box-shadow:
+    0 25px 55px #000;
+}
+
+#loginCard h2{
+  margin:0 0 8px;
+
+  color:#ffe0a0;
+
+  font-family:Georgia,serif;
+
+  font-size:32px;
+}
+
+#loginCard p{
+  margin:0 0 18px;
+
+  color:#bdb6a9;
+
+  font-size:13px;
+}
+
+#nicknameInput{
+  width:100%;
+  height:49px;
+
+  padding:0 14px;
+
+  border:2px solid #725239;
+  border-radius:10px;
+
+  outline:0;
+
+  color:#fff;
+
+  background:#101b16;
+
+  font-size:17px;
+}
+
+#saveNicknameBtn{
+  width:100%;
+  height:48px;
+
+  margin-top:12px;
+
+  border:2px solid #8e6538;
+  border-radius:10px;
+
+  color:#251407;
+
+  background:
+    linear-gradient(
+      #f0c970,
+      #bd8438
+    );
+
+  font-size:16px;
+  font-weight:900;
+}
+
+
+/* =========================================================
+   END CSS
+========================================================= */
+
+</style>
+</head>
+
+<body>
+
+<div id="viewport">
+
+<div id="scene">
+
+
+<!-- ======================================================
+     TOP SCORE AREA
+====================================================== -->
+
+<div id="topArea">
+
+
+  <!-- TEAM A -->
+
+  <section class="score-panel left">
+
+    <div class="team-title">
+      გუნდი A (1 და 3)
+    </div>
+
+    <div class="chotka" id="chotkaA">
+
+      <div class="chotka-row">
+        <span class="chotka-label">100</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+      <div class="chotka-row">
+        <span class="chotka-label">100</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+      <div class="chotka-row">
+        <span class="chotka-label">100</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+      <div class="chotka-row">
+        <span class="chotka-label">50</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+      <div class="chotka-row">
+        <span class="chotka-label">5</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+    </div>
+
+    <div class="numeric-score">
+      <span id="teamAScore">0</span> / 355
+    </div>
+
+  </section>
+
+
+  <!-- CENTER LOGO -->
+
+  <section id="logoPanel">
+
+    <div id="logoMain">
+      DOMINO
+    </div>
+
+    <div id="logoSub">
+
+      <span class="flag">🇬🇪</span>
+
+      <span>GEORGIA</span>
+
+      <span class="flag">🇬🇪</span>
+
+    </div>
+
+    <div id="logoMotto">
+      კარგი თამაში, კარგი ადამიანები
+    </div>
+
+  </section>
+
+
+  <!-- TEAM B -->
+
+  <section class="score-panel right">
+
+    <div class="team-title">
+      გუნდი B (2 და 4)
+    </div>
+
+    <div class="chotka" id="chotkaB">
+
+      <div class="chotka-row">
+        <span class="chotka-label">100</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+      <div class="chotka-row">
+        <span class="chotka-label">100</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+      <div class="chotka-row">
+        <span class="chotka-label">100</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+      <div class="chotka-row">
+        <span class="chotka-label">50</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+      <div class="chotka-row">
+        <span class="chotka-label">5</span>
+        <div class="chotka-rail"></div>
+        <div class="chotka-beads"></div>
+      </div>
+
+    </div>
+
+    <div class="numeric-score">
+      <span id="teamBScore">0</span> / 355
+    </div>
+
+  </section>
+
+</div>
+
+
+<!-- ======================================================
+     MAIN TABLE AREA
+====================================================== -->
+
+<div id="mainArea">
+
+
+  <aside id="roomPanel">
+
+    <div class="room-label">
+      ოთახი:
+    </div>
+
+    <div
+      class="room-value"
+      id="roomCode"
+    >
+      GE-0001
+    </div>
+
+    <div class="room-label">
+      რეჟიმი:
+    </div>
+
+    <div class="room-value">
+      ქართული დომინო
+    </div>
+
+    <div id="onlineStatus">
+      ● ონლაინ
+    </div>
+
+    <button id="inviteBtn">
+      🔗 მოწვევა
+    </button>
+
+  </aside>
+
+
+  <aside id="quotePanel">
+    კარგი თამაში<br>
+    კარგი ადამიანები ♡
+  </aside>
+
+
+  <div id="tableFrame">
+
+    <div id="felt">
+
+      <div id="watermark">
+
+        <div id="watermarkCrown">
+          ♛
+        </div>
+
+        <div id="watermarkText">
+          DOMINO<br>
+          GEORGIA
+        </div>
+
+      </div>
+
+
+      <!-- MULTI-END BOARD -->
+
+      <div id="boardViewport">
+
+        <div id="dominoBoard"></div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ======================================================
+     PLAYERS — AVATAR ONLY
+====================================================== -->
+
+<div
+  class="player"
+  id="player0"
+  data-player="0"
+>
+  <div class="avatar">
+    👨
+    <span class="online-dot"></span>
+  </div>
+</div>
+
+
+<div
+  class="player"
+  id="player1"
+  data-player="1"
+>
+  <div class="avatar">
+    👨
+    <span class="online-dot"></span>
+  </div>
+</div>
+
+
+<div
+  class="player"
+  id="player2"
+  data-player="2"
+>
+  <div class="avatar">
+    🧔
+    <span class="online-dot"></span>
+  </div>
+</div>
+
+
+<div
+  class="player"
+  id="player3"
+  data-player="3"
+>
+  <div class="avatar">
+    👩
+    <span class="online-dot"></span>
+  </div>
+</div>
+
+
+<!-- PLAYER INFO POPUP -->
+
+<div id="playerPopup">
+
+  <div
+    class="popup-name"
+    id="popupName"
+  >
+    მოთამაშე
+  </div>
+
+  <div
+    class="popup-rating"
+    id="popupRating"
+  >
+    ★ 1000
+  </div>
+
+  <div
+    class="popup-stats"
+    id="popupStats"
+  >
+    მოგება: 0<br>
+    წაგება: 0<br>
+    სტატუსი: ონლაინ
+  </div>
+
+</div>
+
+
+<!-- ======================================================
+     OPPONENT TILES
+====================================================== -->
+
+<div
+  class="hidden-hand hidden-top"
+  id="hidden0"
+></div>
+
+<div
+  class="hidden-hand hidden-right"
+  id="hidden1"
+></div>
+
+<div
+  class="hidden-hand hidden-left"
+  id="hidden3"
+></div>
+
+
+<!-- TURN -->
+
+<div id="turnMessage">
+  შენი სვლაა
+</div>
+
+
+<!-- ======================================================
+     OWN 7 DOMINOES
+====================================================== -->
+
+<div id="handRack">
+
+  <div id="playerHand"></div>
+
+</div>
+
+
+<!-- ======================================================
+     LEFT CONTROLS
+====================================================== -->
+
+<div id="leftControls">
+
+  <button
+    class="game-button"
+    id="passBtn"
+  >
+
+    <span class="icon">↩</span>
+
+    <span>გავიარე</span>
+
+  </button>
+
+
+  <button
+    class="game-button"
+    id="chatBtn"
+  >
+
+    <span class="icon">💬</span>
+
+    <span>ჩატი</span>
+
+  </button>
+
+</div>
+
+
+<!-- ======================================================
+     EMOJI CHAT — NO TEXT INPUT
+====================================================== -->
+
+<div id="emojiPanel">
+
+  <div class="emoji-title">
+    მხოლოდ ემოჯი
+  </div>
+
+  <div class="emoji-grid">
+
+    <button class="emoji-btn">👍</button>
+    <button class="emoji-btn">👏</button>
+    <button class="emoji-btn">😂</button>
+    <button class="emoji-btn">😎</button>
+    <button class="emoji-btn">🤝</button>
+
+    <button class="emoji-btn">🔥</button>
+    <button class="emoji-btn">❤️</button>
+    <button class="emoji-btn">😮</button>
+    <button class="emoji-btn">🤔</button>
+    <button class="emoji-btn">🏆</button>
+
+  </div>
+
+</div>
+
+
+<!-- ======================================================
+     BOTTOM INFO BAR
+====================================================== -->
+
+<div id="bottomBar">
+
+  <div class="info-item">
+
+    <span class="info-icon">
+      🏆
+    </span>
+
+    <div>
+      <strong>მიზანი</strong>
+      355 ქულა
+    </div>
+
+  </div>
+
+
+  <div class="info-item">
+
+    <span class="info-icon">
+      👥
+    </span>
+
+    <div>
+      <strong>გუნდები</strong>
+      1+3 და 2+4
+    </div>
+
+  </div>
+
+
+  <div class="info-item">
+
+    <span class="info-icon">
+      ▶
+    </span>
+
+    <div>
+      <strong>დაწყება</strong>
+      პირველი ხელი: 6–6
+    </div>
+
+  </div>
+
+
+  <div class="info-item">
+
+    <span class="info-icon">
+      🁣
+    </span>
+
+    <div>
+      <strong>ქულები</strong>
+      ღია ბოლოების ჯამი,<br>
+      5-ის ჯერადი
+    </div>
+
+  </div>
+
+
+  <div class="info-item">
+
+    <span class="info-icon">
+      🔗
+    </span>
+
+    <div>
+      <strong>სტავკა</strong>
+      მრავალმხრივი დაფა
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- TOAST -->
+
+<div id="toast"></div>
+
+
+<!-- ======================================================
+     NICKNAME
+====================================================== -->
+
+<div id="loginOverlay">
+
+  <div id="loginCard">
+
+    <h2>
+      DOMINO GEORGIA
+    </h2>
+
+    <p>
+      თამაშში საჯაროდ გამოჩნდება მხოლოდ შენი ნიკნეიმი.
+    </p>
+
+    <input
+      id="nicknameInput"
+      type="text"
+      maxlength="18"
+      autocomplete="off"
+      placeholder="შეიყვანე ნიკნეიმი"
+    >
+
+    <button id="saveNicknameBtn">
+      გაგრძელება
+    </button>
+
+  </div>
+
+</div>
+
+
+</div>
+</div>
+
+
+<!-- PORTRAIT WARNING -->
+
+<div id="rotateWarning">
+
+  <div class="phone">
+    📱↻
+  </div>
+
+  <strong>
+    შეაბრუნე ტელეფონი
+  </strong>
+
+  <span>
+    DOMINO GEORGIA შექმნილია ჰორიზონტალური ეკრანისთვის.
+  </span>
+
+</div>
+
+
+<!-- ===== PART 2/4 END ===== -->
