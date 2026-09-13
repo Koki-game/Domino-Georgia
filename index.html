@@ -7544,5 +7544,666 @@ window.addEventListener(
 );
 
 </script>
+  <!-- ======================================================
+     DOMINO GEORGIA — STAKE RULE FIX
+====================================================== -->
+
+<style>
+
+/* სტავკა მსუბუქად ოქროსფრად გამოჩნდეს */
+.domino.stake-domino{
+  box-shadow:
+    inset 2px 2px 3px rgba(255,255,255,.98),
+    inset -3px -3px 5px rgba(87,68,38,.3),
+    0 4px 0 #9c8866,
+    0 0 13px rgba(255,202,73,.9),
+    0 8px 10px rgba(0,0,0,.55);
+}
+
+</style>
+
+<script>
+
+/* ======================================================
+   STAKE — ROBUST PROMOTION CHECK
+====================================================== */
+
+function ensureStakeRule(){
+
+  /*
+    პირველ ხელში სტავკა არ იქმნება.
+    პირველი ხელი მხოლოდ 6-6-ით იწყება.
+  */
+
+  if(gameState.roundNumber<=1){
+    return;
+  }
+
+
+  /*
+    თუ უკვე გვაქვს სტავკა,
+    მეორე აღარ იქმნება.
+  */
+
+  if(gameState.stakeTileId){
+    return;
+  }
+
+
+  /*
+    opening double მოგვიანო ხელში
+    placeOpeningTile-ში უკვე ავტომატურად
+    უნდა იყოს stake.
+  */
+
+  const openingDouble=
+    gameState.placements.find(
+      tile=>
+        tile.opening &&
+        tile.isDouble
+    );
+
+
+  if(openingDouble){
+
+    promoteOpeningDoubleToStake(
+      openingDouble
+    );
+
+    return;
+  }
+
+
+  /*
+    ხელი თუ non-double-ით გაიხსნა:
+    ვეძებთ პირველ დუპლს,
+    რომელიც ორივე normal მხრიდან
+    უკვე შეერთებულია.
+  */
+
+  const candidate=
+    gameState.placements.find(
+      tile=>
+        tile.isDouble &&
+        !tile.opening &&
+        (tile.normalConnections || 0)>=2
+    );
+
+
+  if(candidate){
+
+    promoteClosedDoubleToStake(
+      candidate
+    );
+
+  }
+
+}
+
+
+/* ======================================================
+   OPENING DOUBLE -> FOUR-SIDED STAKE
+====================================================== */
+
+function promoteOpeningDoubleToStake(tile){
+
+  if(
+    !tile ||
+    gameState.stakeTileId
+  ){
+    return;
+  }
+
+
+  tile.isStake=true;
+
+  gameState.stakeTileId=
+    tile.id;
+
+
+  /*
+    ძველი ports წავშალოთ მხოლოდ
+    ამ opening double-სთვის.
+  */
+
+  gameState.ports.forEach(
+    port=>{
+
+      if(
+        port.sourceTileId===tile.id
+      ){
+
+        port.active=false;
+
+      }
+
+    }
+  );
+
+
+  /*
+    4 დამოუკიდებელი მხარე
+  */
+
+  createPort({
+
+    sourceTileId:tile.id,
+
+    value:tile.a,
+
+    x:tile.x+SHORT_HALF,
+    y:tile.y,
+
+    dir:"E",
+
+    kind:"stake",
+
+    contribution:tile.a
+
+  });
+
+
+  createPort({
+
+    sourceTileId:tile.id,
+
+    value:tile.a,
+
+    x:tile.x-SHORT_HALF,
+    y:tile.y,
+
+    dir:"W",
+
+    kind:"stake",
+
+    contribution:tile.a
+
+  });
+
+
+  createPort({
+
+    sourceTileId:tile.id,
+
+    value:tile.a,
+
+    x:tile.x,
+    y:tile.y-LONG_HALF,
+
+    dir:"N",
+
+    kind:"stake",
+
+    contribution:tile.a
+
+  });
+
+
+  createPort({
+
+    sourceTileId:tile.id,
+
+    value:tile.a,
+
+    x:tile.x,
+    y:tile.y+LONG_HALF,
+
+    dir:"S",
+
+    kind:"stake",
+
+    contribution:tile.a
+
+  });
+
+
+  showMessage(
+    "სტავკა!"
+  );
+
+
+  renderAll();
+
+}
+
+
+/* ======================================================
+   CLOSED DOUBLE -> SIDE BRANCH STAKE
+====================================================== */
+
+function promoteClosedDoubleToStake(tile){
+
+  if(
+    !tile ||
+    gameState.stakeTileId
+  ){
+    return;
+  }
+
+
+  tile.isStake=true;
+
+  gameState.stakeTileId=
+    tile.id;
+
+
+  /*
+    ეს დუპლი უკვე ორივე normal მხრიდან
+    არის დაკავებული.
+
+    ამიტომ ძველ normal port-ებს აღარ ვხსნით.
+    მხოლოდ დარჩენილი ორი გვერდითი მხარე
+    ემატება.
+  */
+
+
+  const vertical=
+    Math.abs(tile.angle)%180===90;
+
+
+  if(vertical){
+
+    /*
+      ვერტიკალური დუპლი:
+      normal ჯაჭვი მარცხენა/მარჯვენაა.
+      stake მხარეები ზემოთ/ქვემოთ.
+    */
+
+    createPort({
+
+      sourceTileId:tile.id,
+
+      value:tile.a,
+
+      x:tile.x,
+      y:tile.y-LONG_HALF,
+
+      dir:"N",
+
+      kind:"stake",
+
+      contribution:tile.a
+
+    });
+
+
+    createPort({
+
+      sourceTileId:tile.id,
+
+      value:tile.a,
+
+      x:tile.x,
+      y:tile.y+LONG_HALF,
+
+      dir:"S",
+
+      kind:"stake",
+
+      contribution:tile.a
+
+    });
+
+  }else{
+
+    /*
+      ჰორიზონტალური დუპლი:
+      normal ჯაჭვი ზემოთ/ქვემოთაა.
+      stake მხარეები მარცხენა/მარჯვენა.
+    */
+
+    createPort({
+
+      sourceTileId:tile.id,
+
+      value:tile.a,
+
+      x:tile.x-LONG_HALF,
+      y:tile.y,
+
+      dir:"W",
+
+      kind:"stake",
+
+      contribution:tile.a
+
+    });
+
+
+    createPort({
+
+      sourceTileId:tile.id,
+
+      value:tile.a,
+
+      x:tile.x+LONG_HALF,
+      y:tile.y,
+
+      dir:"E",
+
+      kind:"stake",
+
+      contribution:tile.a
+
+    });
+
+  }
+
+
+  showMessage(
+    `${tile.a}-${tile.b} — სტავკა!`,
+    2200
+  );
+
+
+  renderAll();
+
+}
+
+
+/* ======================================================
+   CHECK STAKE AFTER EVERY SUCCESSFUL MOVE
+====================================================== */
+
+const oldPlayTileToPort=
+  playTileToPort;
+
+
+playTileToPort=function(
+  player,
+  handIndex,
+  portId
+){
+
+  const result=
+    oldPlayTileToPort(
+      player,
+      handIndex,
+      portId
+    );
+
+
+  if(result){
+
+    /*
+      უკვე დასრულებულ ხელში აღარ გვჭირდება.
+    */
+
+    if(
+      !gameState.matchFinished
+    ){
+
+      ensureStakeRule();
+
+    }
+
+  }
+
+
+  return result;
+
+};
+
+
+/* ======================================================
+   CHECK STAKE AFTER OPENING TOO
+====================================================== */
+
+const oldPlaceOpeningTile=
+  placeOpeningTile;
+
+
+placeOpeningTile=function(
+  player,
+  handIndex
+){
+
+  const result=
+    oldPlaceOpeningTile(
+      player,
+      handIndex
+    );
+
+
+  if(result){
+
+    ensureStakeRule();
+
+  }
+
+
+  return result;
+
+};
+
+
+/* ======================================================
+   VISUAL MARK FOR STAKE
+====================================================== */
+
+const oldRenderBoardStake=
+  renderBoard;
+
+
+renderBoard=function(){
+
+  oldRenderBoardStake();
+
+
+  if(!gameState.stakeTileId){
+    return;
+  }
+
+
+  const index=
+    gameState.placements.findIndex(
+      tile=>
+        tile.id===
+        gameState.stakeTileId
+    );
+
+
+  if(index===-1){
+    return;
+  }
+
+
+  const dominoes=
+    document
+      .getElementById("dominoBoard")
+      .querySelectorAll(".domino");
+
+
+  if(dominoes[index]){
+
+    dominoes[index]
+      .classList.add(
+        "stake-domino"
+      );
+
+  }
+
+};
+
+</script>
+  <!-- ======================================================
+     DOMINO GEORGIA — AUTO PASS PATCH
+====================================================== -->
+
+<style>
+
+/* გავიარე ღილაკი საერთოდ აღარ გვჭირდება */
+#passBtn{
+  display:none !important;
+}
+
+/* ჩატი მარტო რჩება მარცხნივ */
+.bottom-left-actions{
+  gap:0;
+}
+
+#chatBtn{
+  min-width:145px;
+}
+
+</style>
+
+<script>
+
+/* ======================================================
+   HUMAN AUTO PASS
+====================================================== */
+
+let humanAutoPassTimer=null;
+
+
+function checkHumanAutoPass(){
+
+  clearTimeout(
+    humanAutoPassTimer
+  );
+
+
+  /*
+    მხოლოდ ჩვენი მოთამაშის სვლაზე
+  */
+
+  if(
+    gameState.currentPlayer!==0 ||
+    gameState.handFinished ||
+    gameState.matchFinished ||
+    gameState.aiBusy
+  ){
+    return;
+  }
+
+
+  /*
+    ახალი ხელის გახსნისას
+    მოთამაშეს ნებისმიერი ქვა შეუძლია,
+    ამიტომ pass არ შეიძლება.
+  */
+
+  if(
+    gameState.placements.length===0
+  ){
+    return;
+  }
+
+
+  /*
+    ქვა თუ აქვს დასადები,
+    ჩვეულებრივ ელოდება მოთამაშეს.
+  */
+
+  if(
+    hasLegalMove(0)
+  ){
+    return;
+  }
+
+
+  /*
+    არცერთი ქვა არ მიდის:
+    ავტომატური გავიარე.
+  */
+
+  humanAutoPassTimer=
+    setTimeout(
+      ()=>{
+
+        if(
+          gameState.currentPlayer===0 &&
+          !gameState.handFinished &&
+          !gameState.matchFinished &&
+          !gameState.aiBusy &&
+          gameState.placements.length>0 &&
+          !hasLegalMove(0)
+        ){
+
+          showMessage(
+            "ქვა არ გაქვს — ავტომატურად გაიარე",
+            1100
+          );
+
+
+          setTimeout(
+            ()=>{
+
+              passPlayer(0);
+
+            },
+            500
+          );
+
+        }
+
+      },
+      450
+    );
+
+}
+
+
+/* ======================================================
+   CHECK AFTER EVERY RENDER
+====================================================== */
+
+const oldRenderAllAutoPass=
+  renderAll;
+
+
+renderAll=function(){
+
+  oldRenderAllAutoPass();
+
+
+  checkHumanAutoPass();
+
+};
+
+
+/* ======================================================
+   CHECK WHEN TURN CHANGES
+====================================================== */
+
+const oldNextTurnAutoPass=
+  nextTurn;
+
+
+nextTurn=function(){
+
+  oldNextTurnAutoPass();
+
+
+  setTimeout(
+    checkHumanAutoPass,
+    80
+  );
+
+};
+
+
+/* ======================================================
+   CHECK AT START OF ROUND
+====================================================== */
+
+const oldStartRoundAutoPass=
+  startRound;
+
+
+startRound=function(){
+
+  oldStartRoundAutoPass();
+
+
+  setTimeout(
+    checkHumanAutoPass,
+    900
+  );
+
+};
+
+</script>
 </body>
 </html>
