@@ -2770,3 +2770,762 @@ startFirstRound();
 </script>
 
 <!-- PART 2/4 END -->
+<!-- =========================================
+     DOMINO GEORGIA — PART 3/4
+     GEORGIAN TEAM SCORING + RIBA + 355
+========================================= -->
+
+<script>
+
+/* =========================================
+   HAND / TEAM POINT TOTALS
+========================================= */
+
+function handPips(player){
+
+  return game.hands[player].reduce(
+    (sum,tile) => sum + tile.a + tile.b,
+    0
+  );
+
+}
+
+function teamRemainingPips(team){
+
+  if(team === 0){
+
+    /* TEAM A = players 0 + 2 */
+
+    return (
+      handPips(0) +
+      handPips(2)
+    );
+
+  }
+
+  /* TEAM B = players 1 + 3 */
+
+  return (
+    handPips(1) +
+    handPips(3)
+  );
+
+}
+
+
+/* =========================================
+   TEAM NAME
+========================================= */
+
+function teamName(team){
+
+  return team === 0
+    ? "გუნდი A"
+    : "გუნდი B";
+
+}
+
+
+/* =========================================
+   CHOTKA VISUAL
+========================================= */
+
+function drawChotka(
+  elementId,
+  score
+){
+
+  const box =
+    $(elementId);
+
+  if(!box){
+    return;
+  }
+
+  box.innerHTML = "";
+
+
+  /*
+    Visual representation only.
+    Exact score remains visible
+    numerically as X / 355.
+  */
+
+  const maxBeads = 14;
+
+  const visible =
+    Math.min(
+      maxBeads,
+      Math.floor(score / 25)
+    );
+
+
+  for(
+    let i = 0;
+    i < maxBeads;
+    i++
+  ){
+
+    const bead =
+      document.createElement("span");
+
+    bead.className =
+      "bead";
+
+
+    const row =
+      i < 7 ? 0 : 1;
+
+    const column =
+      i % 7;
+
+
+    bead.style.top =
+      row === 0
+        ? "7px"
+        : "19px";
+
+
+    bead.style.left =
+      (8 + column * 13) + "px";
+
+
+    if(i >= visible){
+
+      bead.style.opacity =
+        ".22";
+
+    }
+
+
+    box.appendChild(
+      bead
+    );
+
+  }
+
+}
+
+
+/* =========================================
+   UPDATE TEAM SCORE UI
+========================================= */
+
+function updateTeamScores(){
+
+  $("teamAScore").textContent =
+    game.teamScores[0];
+
+  $("teamBScore").textContent =
+    game.teamScores[1];
+
+
+  drawChotka(
+    "beadsA",
+    game.teamScores[0]
+  );
+
+  drawChotka(
+    "beadsB",
+    game.teamScores[1]
+  );
+
+}
+
+
+/* =========================================
+   ADD SCORE
+========================================= */
+
+function addTeamScore(
+  team,
+  points
+){
+
+  game.teamScores[team] +=
+    points;
+
+
+  /*
+    355 does NOT immediately
+    finish the match.
+  */
+
+  if(
+    game.teamScores[0] >= 355 ||
+    game.teamScores[1] >= 355
+  ){
+
+    game.finishPending =
+      true;
+
+  }
+
+
+  updateTeamScores();
+
+}
+
+
+/* =========================================
+   START NEXT HAND
+========================================= */
+
+function startNextRound(
+  starter
+){
+
+  if(game.matchFinished){
+    return;
+  }
+
+
+  game.roundNumber++;
+
+  game.board = [];
+
+  game.leftEnd = null;
+  game.rightEnd = null;
+
+  game.selectedIndex = null;
+
+  game.roundFinished = false;
+
+  game.consecutivePasses = 0;
+
+  game.ribaStarter = null;
+
+  game.firstRound = false;
+
+
+  dealTiles();
+
+
+  game.roundStarter =
+    starter;
+
+  game.currentPlayer =
+    starter;
+
+
+  renderBoard();
+  renderPlayerHand();
+
+  updateTurnStatus();
+
+
+  if(game.currentPlayer !== 0){
+
+    setTimeout(
+      computerTurn,
+      700
+    );
+
+  }
+
+}
+
+
+/* =========================================
+   FINAL MATCH CHECK
+
+   355 RULE:
+   - reaching 355 alone does not end match
+   - current hand must finish
+   - RIBA cannot finish match
+   - after a NON-RIBA hand,
+     compare totals
+========================================= */
+
+function resolveMatchAfterNormalRound(){
+
+  if(!game.finishPending){
+    return false;
+  }
+
+
+  /*
+    If somehow scores are tied,
+    continue playing.
+  */
+
+  if(
+    game.teamScores[0] ===
+    game.teamScores[1]
+  ){
+
+    showStatus(
+      "⚖️ ქულები თანაბარია — თამაში გრძელდება"
+    );
+
+    return false;
+
+  }
+
+
+  const winner =
+    game.teamScores[0] >
+    game.teamScores[1]
+      ? 0
+      : 1;
+
+
+  game.matchFinished =
+    true;
+
+  game.roundFinished =
+    true;
+
+
+  showStatus(
+    `🏆 ${teamName(winner)} მოიგო — ` +
+    `${game.teamScores[0]} : ${game.teamScores[1]}`
+  );
+
+
+  return true;
+
+}
+
+
+/* =========================================
+   NORMAL HAND FINISH
+
+   Winner's team receives BOTH
+   opposing players' remaining pips,
+   rounded UP to nearest 5.
+========================================= */
+
+finishNormalRound = function(
+  winnerPlayer
+){
+
+  if(game.roundFinished){
+    return;
+  }
+
+
+  game.roundFinished =
+    true;
+
+
+  const winnerTeam =
+    getTeam(
+      winnerPlayer
+    );
+
+
+  const loserTeam =
+    otherTeam(
+      winnerTeam
+    );
+
+
+  const opponentPips =
+    teamRemainingPips(
+      loserTeam
+    );
+
+
+  const newPoints =
+    roundToFive(
+      opponentPips
+    );
+
+
+  /*
+    Equal-riba accumulated points
+    are awarded to the next
+    normal hand winner.
+  */
+
+  const carry =
+    game.pendingPoints;
+
+
+  const totalAward =
+    newPoints + carry;
+
+
+  game.pendingPoints =
+    0;
+
+
+  addTeamScore(
+    winnerTeam,
+    totalAward
+  );
+
+
+  let message =
+    `🏆 ${teamName(winnerTeam)} +${newPoints}`;
+
+
+  if(carry > 0){
+
+    message +=
+      ` + დაგროვილი ${carry}`;
+
+  }
+
+
+  showStatus(
+    message
+  );
+
+
+  /*
+    If 355 had been reached,
+    THIS normal hand may now
+    finish the match.
+  */
+
+  if(
+    resolveMatchAfterNormalRound()
+  ){
+
+    return;
+
+  }
+
+
+  /*
+    Normal hand:
+    player who went out
+    starts next hand.
+  */
+
+  setTimeout(
+    ()=>{
+      startNextRound(
+        winnerPlayer
+      );
+    },
+    1500
+  );
+
+};
+
+
+/* =========================================
+   RIBA FINISH
+========================================= */
+
+finishRiba = function(){
+
+  if(game.roundFinished){
+    return;
+  }
+
+
+  game.roundFinished =
+    true;
+
+
+  const teamA =
+    teamRemainingPips(0);
+
+  const teamB =
+    teamRemainingPips(1);
+
+
+  /* =====================================
+     EQUAL RIBA
+  ===================================== */
+
+  if(teamA === teamB){
+
+    /*
+      Carry the common remaining amount,
+      rounded up to nearest 5.
+    */
+
+    const carry =
+      roundToFive(
+        teamA
+      );
+
+
+    game.pendingPoints +=
+      carry;
+
+
+    showStatus(
+      `🔒 რიბა — თანაბარი ${teamA}:${teamB} • დაგროვდა ${game.pendingPoints}`
+    );
+
+
+    /*
+      RIBA never ends the match.
+    */
+
+    const starter =
+      game.ribaStarter !== null
+        ? game.ribaStarter
+        : game.roundStarter;
+
+
+    setTimeout(
+      ()=>{
+        startNextRound(
+          starter
+        );
+      },
+      1700
+    );
+
+
+    return;
+
+  }
+
+
+  /* =====================================
+     NORMAL RIBA
+  ===================================== */
+
+  const winnerTeam =
+    teamA < teamB
+      ? 0
+      : 1;
+
+
+  const loserPips =
+    winnerTeam === 0
+      ? teamB
+      : teamA;
+
+
+  const points =
+    roundToFive(
+      loserPips
+    );
+
+
+  addTeamScore(
+    winnerTeam,
+    points
+  );
+
+
+  showStatus(
+    `🔒 რიბა • ${teamName(winnerTeam)} +${points}`
+  );
+
+
+  /*
+    IMPORTANT:
+    RIBA does NOT resolve the match
+    even if 355 has been reached.
+  */
+
+
+  const starter =
+    game.ribaStarter !== null
+      ? game.ribaStarter
+      : game.roundStarter;
+
+
+  setTimeout(
+    ()=>{
+      startNextRound(
+        starter
+      );
+    },
+    1700
+  );
+
+};
+
+
+/* =========================================
+   RIBA CLOSER DETECTION
+
+   Save the player who lays the tile
+   immediately before the final
+   playable double.
+
+   This supports the Georgian rule:
+   if the board is effectively closed
+   but somebody can still lay the
+   matching double, that double may
+   still be played, while the previous
+   player remains the riba starter.
+========================================= */
+
+function countPlayersWithMoves(){
+
+  let count = 0;
+
+  for(let p = 0; p < 4; p++){
+
+    if(playerHasMove(p)){
+      count++;
+    }
+
+  }
+
+  return count;
+
+}
+
+
+/*
+  Keep reference to original playTile.
+*/
+
+const originalPlayTile =
+  playTile;
+
+
+playTile = function(
+  player,
+  handIndex,
+  side
+){
+
+  const tile =
+    game.hands[player][handIndex];
+
+
+  if(!tile){
+    return;
+  }
+
+
+  /*
+    Remember who made the move.
+  */
+
+  const playerBefore =
+    player;
+
+
+  originalPlayTile(
+    player,
+    handIndex,
+    side
+  );
+
+
+  if(
+    game.roundFinished ||
+    game.matchFinished
+  ){
+    return;
+  }
+
+
+  /*
+    After this move, inspect all
+    remaining legal moves.
+
+    If only a matching double can
+    still be played, remember the
+    PREVIOUS player as the one who
+    caused the riba.
+  */
+
+  let legalTiles = [];
+
+
+  for(let p = 0; p < 4; p++){
+
+    game.hands[p]
+      .forEach(t=>{
+
+        if(canPlay(t)){
+
+          legalTiles.push({
+            player:p,
+            tile:t
+          });
+
+        }
+
+      });
+
+  }
+
+
+  if(legalTiles.length > 0){
+
+    const onlyDoubles =
+      legalTiles.every(
+        item =>
+          item.tile.a ===
+          item.tile.b
+      );
+
+
+    if(onlyDoubles){
+
+      game.ribaStarter =
+        playerBefore;
+
+    }
+
+  }
+
+};
+
+
+/* =========================================
+   PASS BUTTON VISUAL STATE
+========================================= */
+
+function updatePassButton(){
+
+  if(
+    game.currentPlayer === 0 &&
+    !game.roundFinished &&
+    !playerHasMove(0)
+  ){
+
+    $("passBtn").disabled =
+      false;
+
+    $("passBtn").style.opacity =
+      "1";
+
+  }else{
+
+    $("passBtn").disabled =
+      true;
+
+    $("passBtn").style.opacity =
+      ".45";
+
+  }
+
+}
+
+
+/*
+  Extend renderPlayerHand so the
+  pass button always updates.
+*/
+
+const originalRenderPlayerHand =
+  renderPlayerHand;
+
+
+renderPlayerHand = function(){
+
+  originalRenderPlayerHand();
+
+  updatePassButton();
+
+};
+
+
+/* =========================================
+   SCORE / CHOTKA INITIAL DISPLAY
+========================================= */
+
+updateTeamScores();
+updatePassButton();
+
+</script>
+
+<!-- PART 3/4 END -->
