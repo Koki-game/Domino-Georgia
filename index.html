@@ -8374,5 +8374,133 @@ chooseDirection=function(
 
 
   return bestDirection
+    <!-- ======================================================
+     DOMINO GEORGIA — BOARD SIZE FINAL FIX
+====================================================== -->
+
+<script>
+
+/* ======================================================
+   HARD BOARD ROUTING
+====================================================== */
+
+chooseDirection=function(port,tile){
+
+  const X_LIMIT=285;
+  const Y_LIMIT=110;
+
+  const choices=[
+    port.dir,
+    TURN_RIGHT[port.dir],
+    TURN_LEFT[port.dir]
+  ];
+
+  let inside=[];
+
+  choices.forEach(dir=>{
+
+    const pos=
+      proposedCenter(
+        port,
+        tile,
+        dir
+      );
+
+    const fits=
+      Math.abs(pos.x)<=X_LIMIT &&
+      Math.abs(pos.y)<=Y_LIMIT;
+
+    if(fits){
+
+      inside.push({
+        dir,
+        pos
+      });
+
+    }
+
+  });
+
+
+  /*
+    თუ რამდენიმე მიმართულება ეტევა,
+    პირდაპირი მიმართულება გვირჩევნია.
+  */
+
+  if(inside.length){
+
+    const straight=
+      inside.find(
+        item=>
+          item.dir===port.dir
+      );
+
+    if(straight){
+
+      /*
+        მაგრამ კიდესთან ძალიან ახლოს თუა,
+        ჯობია შემოვაბრუნოთ.
+      */
+
+      if(
+        Math.abs(straight.pos.x)<X_LIMIT-45 &&
+        Math.abs(straight.pos.y)<Y_LIMIT-35
+      ){
+
+        return straight.dir;
+
+      }
+
+    }
+
+
+    /*
+      ვირჩევთ იმას,
+      რომელიც ცენტრთან ახლოს რჩება.
+    */
+
+    inside.sort((a,b)=>{
+
+      const da=
+        Math.abs(a.pos.x)+
+        Math.abs(a.pos.y)*1.5;
+
+      const db=
+        Math.abs(b.pos.x)+
+        Math.abs(b.pos.y)*1.5;
+
+      return da-db;
+
+    });
+
+
+    return inside[0].dir;
+
+  }
+
+
+  /*
+    თუ სამივე ვარიანტი საზღვარს გარეთაა,
+    ვირჩევთ ყველაზე ნაკლებად გადაცდენილს.
+  */
+
+  let best=
+    choices[0];
+
+  let bestOverflow=
+    Infinity;
+
+
+  choices.forEach(dir=>{
+
+    const pos=
+      proposedCenter(
+        port,
+        tile,
+        dir
+      );
+
+
+   
 </body>
 </html>
