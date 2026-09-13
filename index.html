@@ -5230,3 +5230,1182 @@ window.addEventListener(
    SCRIPT ჯერ არ დახურო.
    PART 3/3 პირდაპირ აქედან გაგრძელდება.
 ========================================================= */
+/* =========================================================
+   DOMINO GEORGIA
+   PART 3/3
+   UI + CHAT + PROFILE + START + PWA
+========================================================= */
+
+
+/* =========================================================
+   PLAYER PUBLIC PROFILES
+
+   მხოლოდ nickname / rating / სტატისტიკა.
+   რეალური სახელი და ელფოსტა არ ჩანს.
+========================================================= */
+
+const playerProfiles = [
+
+  {
+    nickname:"Kusto",
+    rating:1100,
+    wins:0,
+    losses:0,
+    status:"ონლაინ"
+  },
+
+  {
+    nickname:"Nika",
+    rating:1185,
+    wins:42,
+    losses:28,
+    status:"ონლაინ"
+  },
+
+  {
+    nickname:"Dato",
+    rating:1240,
+    wins:57,
+    losses:31,
+    status:"ონლაინ"
+  },
+
+  {
+    nickname:"Gio",
+    rating:1160,
+    wins:36,
+    losses:25,
+    status:"ონლაინ"
+  }
+
+];
+
+
+/* =========================================================
+   LOAD LOCAL NICKNAME
+========================================================= */
+
+function loadNickname(){
+
+  const saved =
+    localStorage.getItem(
+      "dominoGeorgiaNickname"
+    );
+
+  if(saved){
+
+    playerProfiles[0].nickname =
+      saved;
+
+  }
+
+}
+
+
+/* =========================================================
+   PLAYER NAME OVERRIDE
+========================================================= */
+
+playerName = function(player){
+
+  return (
+    playerProfiles[player]
+      ?.nickname ||
+    `Player ${player+1}`
+  );
+
+};
+
+
+/* =========================================================
+   PLAYER POPUP
+========================================================= */
+
+const popup =
+  $("playerPopup");
+
+
+function closePlayerPopup(){
+
+  if(!popup){
+    return;
+  }
+
+  popup.classList.remove(
+    "show"
+  );
+
+  popup.dataset.player = "";
+
+}
+
+
+function openPlayerPopup(
+  player,
+  element
+){
+
+  if(!popup){
+    return;
+  }
+
+
+  /*
+    იგივე avatar-ზე მეორედ
+    დაჭერა popup-ს ხურავს.
+  */
+
+  if(
+    popup.classList.contains("show") &&
+    popup.dataset.player===
+      String(player)
+  ){
+
+    closePlayerPopup();
+    return;
+  }
+
+
+  const profile =
+    playerProfiles[player];
+
+
+  $("popupNickname").textContent =
+    profile.nickname;
+
+  $("popupRating").textContent =
+    `★ რეიტინგი: ${profile.rating}`;
+
+  $("popupWins").textContent =
+    `მოგება: ${profile.wins}`;
+
+  $("popupLosses").textContent =
+    `წაგება: ${profile.losses}`;
+
+  $("popupStatus").textContent =
+    `● ${profile.status}`;
+
+
+  const gameRect =
+    $("game")
+      .getBoundingClientRect();
+
+  const rect =
+    element
+      .getBoundingClientRect();
+
+
+  popup.classList.add(
+    "show"
+  );
+
+  popup.dataset.player =
+    String(player);
+
+
+  /*
+    ჯერ დროებით ვათავსებთ,
+    მერე ზომის მიხედვით ვასწორებთ.
+  */
+
+  popup.style.left =
+    "0px";
+
+  popup.style.top =
+    "0px";
+
+
+  const popupRect =
+    popup
+      .getBoundingClientRect();
+
+
+  let left =
+    rect.left -
+    gameRect.left +
+    rect.width/2 -
+    popupRect.width/2;
+
+
+  let top =
+    rect.top -
+    gameRect.top -
+    popupRect.height -
+    10;
+
+
+  /*
+    ზედა მოთამაშეს popup ქვემოთ
+    გამოუჩნდეს.
+  */
+
+  if(player===2){
+
+    top =
+      rect.bottom -
+      gameRect.top +
+      10;
+
+  }
+
+
+  /*
+    მარცხენა მოთამაშეს მარჯვნივ.
+  */
+
+  if(player===3){
+
+    left =
+      rect.right -
+      gameRect.left +
+      10;
+
+    top =
+      rect.top -
+      gameRect.top +
+      rect.height/2 -
+      popupRect.height/2;
+
+  }
+
+
+  /*
+    მარჯვენა მოთამაშეს მარცხნივ.
+  */
+
+  if(player===1){
+
+    left =
+      rect.left -
+      gameRect.left -
+      popupRect.width -
+      10;
+
+    top =
+      rect.top -
+      gameRect.top +
+      rect.height/2 -
+      popupRect.height/2;
+
+  }
+
+
+  /*
+    ეკრანიდან არ გავიდეს.
+  */
+
+  left =
+    Math.max(
+      8,
+      Math.min(
+        left,
+        gameRect.width -
+        popupRect.width -
+        8
+      )
+    );
+
+
+  top =
+    Math.max(
+      8,
+      Math.min(
+        top,
+        gameRect.height -
+        popupRect.height -
+        8
+      )
+    );
+
+
+  popup.style.left =
+    `${left}px`;
+
+  popup.style.top =
+    `${top}px`;
+
+}
+
+
+/* =========================================================
+   AVATAR EVENTS
+========================================================= */
+
+document
+  .querySelectorAll(
+    ".player"
+  )
+  .forEach(
+    element=>{
+
+      element.addEventListener(
+        "click",
+        event=>{
+
+          event.stopPropagation();
+
+          const player =
+            Number(
+              element.dataset.player
+            );
+
+          openPlayerPopup(
+            player,
+            element
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   TABLE CLICK CLOSES POPUP
+========================================================= */
+
+$("tableArea")
+  .addEventListener(
+    "click",
+    ()=>{
+
+      closePlayerPopup();
+
+    }
+  );
+
+
+document
+  .addEventListener(
+    "click",
+    event=>{
+
+      if(
+        !event.target.closest(
+          ".player"
+        ) &&
+        !event.target.closest(
+          "#playerPopup"
+        )
+      ){
+
+        closePlayerPopup();
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   EMOJI CHAT
+========================================================= */
+
+const chatBtn =
+  $("chatBtn");
+
+const emojiPanel =
+  $("emojiPanel");
+
+
+chatBtn.addEventListener(
+  "click",
+  event=>{
+
+    event.stopPropagation();
+
+    emojiPanel.classList.toggle(
+      "show"
+    );
+
+  }
+);
+
+
+/* =========================================================
+   SEND EMOJI
+========================================================= */
+
+document
+  .querySelectorAll(
+    ".emoji-choice"
+  )
+  .forEach(
+    button=>{
+
+      button.addEventListener(
+        "click",
+        event=>{
+
+          event.stopPropagation();
+
+          const emoji =
+            button.textContent.trim();
+
+          emojiPanel.classList.remove(
+            "show"
+          );
+
+          showFloatingEmoji(
+            emoji
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   FLOATING EMOJI
+========================================================= */
+
+function showFloatingEmoji(
+  emoji
+){
+
+  const element =
+    document.createElement(
+      "div"
+    );
+
+  element.className =
+    "floating-emoji";
+
+  element.textContent =
+    emoji;
+
+
+  $("game").appendChild(
+    element
+  );
+
+
+  setTimeout(
+    ()=>{
+
+      element.remove();
+
+    },
+    1900
+  );
+
+}
+
+
+/* =========================================================
+   CLOSE EMOJI PANEL
+========================================================= */
+
+document.addEventListener(
+  "click",
+  event=>{
+
+    if(
+      !event.target.closest(
+        "#emojiPanel"
+      ) &&
+      !event.target.closest(
+        "#chatBtn"
+      )
+    ){
+
+      emojiPanel.classList.remove(
+        "show"
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   BETTER HUMAN HAND RENDER
+
+   მოგვიანო ხელის გახსნისას
+   ყველა ქვა playable-ია.
+========================================================= */
+
+const originalRenderHand =
+  renderHand;
+
+
+renderHand = function(){
+
+  const hand =
+    $("playerHand");
+
+  if(!hand){
+    return;
+  }
+
+
+  hand.innerHTML = "";
+
+
+  gameState.hands[0]
+    .forEach(
+      (tile,index)=>{
+
+        const domino =
+          document.createElement(
+            "div"
+          );
+
+        domino.className =
+          "hand-domino";
+
+
+        const openingChoice =
+          (
+            gameState.currentPlayer===0 &&
+            gameState.roundNumber>1 &&
+            gameState.placements.length===0
+          );
+
+
+        const normalPlayable =
+          (
+            gameState.currentPlayer===0 &&
+            gameState.placements.length>0 &&
+            legalPortsForTile(tile).length>0
+          );
+
+
+        if(
+          openingChoice ||
+          normalPlayable
+        ){
+
+          domino.classList.add(
+            "playable"
+          );
+
+        }
+
+
+        if(
+          gameState.selectedTileIndex===
+          index
+        ){
+
+          domino.classList.add(
+            "selected"
+          );
+
+        }
+
+
+        domino.innerHTML =
+          halfHTML(tile.a) +
+          halfHTML(tile.b);
+
+
+        domino.addEventListener(
+          "click",
+          ()=>{
+
+            selectHumanTile(
+              index
+            );
+
+          }
+        );
+
+
+        hand.appendChild(
+          domino
+        );
+
+      }
+    );
+
+};
+
+
+/* =========================================================
+   BOARD END MARKERS
+
+   უხილავია.
+   გამოიყენება იმისთვის რომ
+   მომავალში კონკრეტული ღია ბოლოს
+   არჩევაც მარტივად დავამატოთ.
+========================================================= */
+
+function renderPortMarkers(){
+
+  const board =
+    $("dominoBoard");
+
+  if(!board){
+    return;
+  }
+
+
+  board
+    .querySelectorAll(
+      ".port-marker"
+    )
+    .forEach(
+      item=>item.remove()
+    );
+
+
+  activePorts()
+    .forEach(
+      port=>{
+
+        const marker =
+          document.createElement(
+            "div"
+          );
+
+        marker.className =
+          "port-marker";
+
+        marker.dataset.port =
+          port.id;
+
+
+        marker.style.position =
+          "absolute";
+
+        marker.style.left =
+          `${port.x-10}px`;
+
+        marker.style.top =
+          `${port.y-10}px`;
+
+        marker.style.width =
+          "20px";
+
+        marker.style.height =
+          "20px";
+
+        marker.style.borderRadius =
+          "50%";
+
+        marker.style.opacity =
+          "0";
+
+        marker.style.pointerEvents =
+          "none";
+
+
+        board.appendChild(
+          marker
+        );
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   EXTEND BOARD RENDER
+========================================================= */
+
+const originalRenderBoard =
+  renderBoard;
+
+
+renderBoard = function(){
+
+  originalRenderBoard();
+
+  renderPortMarkers();
+
+};
+
+
+/* =========================================================
+   CHOTKA VISUAL UPDATE
+========================================================= */
+
+function updateChotka(){
+
+  const boards =
+    document.querySelectorAll(
+      ".team-score"
+    );
+
+
+  boards.forEach(
+    (board,team)=>{
+
+      const score =
+        gameState.teamScores[team];
+
+      const rows =
+        board.querySelectorAll(
+          ".abacus-row"
+        );
+
+
+      /*
+        ვიზუალური ჩოტკა:
+        თითო რიგი სხვადასხვა
+        მნიშვნელობას წარმოადგენს.
+      */
+
+      const values = [
+        100,
+        100,
+        100,
+        50,
+        5
+      ];
+
+
+      let remaining =
+        Math.min(
+          score,
+          355
+        );
+
+
+      rows.forEach(
+        (row,index)=>{
+
+          const beads =
+            row.querySelectorAll(
+              ".bead"
+            );
+
+
+          const rowValue =
+            values[index];
+
+
+          let activeCount = 0;
+
+
+          if(rowValue===100){
+
+            if(remaining>=100){
+
+              activeCount =
+                beads.length;
+
+              remaining -= 100;
+
+            }
+
+          }else if(rowValue===50){
+
+            if(remaining>=50){
+
+              activeCount =
+                beads.length;
+
+              remaining -= 50;
+
+            }
+
+          }else{
+
+            /*
+              ბოლო რიგი 5-იანებია.
+            */
+
+            activeCount =
+              Math.min(
+                beads.length,
+                Math.floor(
+                  remaining/5
+                )
+              );
+
+          }
+
+
+          beads.forEach(
+            (bead,i)=>{
+
+              bead.classList.toggle(
+                "off",
+                i>=activeCount
+              );
+
+            }
+          );
+
+        }
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   EXTEND SCORE UPDATE
+========================================================= */
+
+const originalUpdateTeamScores =
+  updateTeamScores;
+
+
+updateTeamScores = function(){
+
+  originalUpdateTeamScores();
+
+  updateChotka();
+
+};
+
+
+/* =========================================================
+   CURRENT OPEN ENDS INFO
+
+   bottom info-ის ბოლო უჯრაში
+   ვაჩვენებთ ღია ბოლოების ჯამს.
+========================================================= */
+
+function updateOpenEndsInfo(){
+
+  const boxes =
+    document.querySelectorAll(
+      ".info-box"
+    );
+
+  if(boxes.length<5){
+    return;
+  }
+
+
+  const total =
+    gameState.placements.length
+      ? openEndTotal()
+      : 0;
+
+
+  const last =
+    boxes[4];
+
+
+  last.innerHTML = `
+
+    <span class="info-icon">
+      🔗
+    </span>
+
+    <span>
+
+      <strong>
+        ღია ბოლოები
+      </strong>
+
+      ჯამი: ${total}
+
+    </span>
+
+  `;
+
+}
+
+
+/* =========================================================
+   EXTEND RENDER ALL
+========================================================= */
+
+const originalRenderAll =
+  renderAll;
+
+
+renderAll = function(){
+
+  originalRenderAll();
+
+  updateOpenEndsInfo();
+
+};
+
+
+/* =========================================================
+   FIRST-HAND 6-6 VISUAL SAFETY
+
+   პირველი 6-6 ჩვეულებრივ საწყის
+   double-ად რჩება.
+
+   მოგვიანო ხელში გახსნილი double
+   ავტომატურად სტავკაა.
+========================================================= */
+
+function validateOpeningBoard(){
+
+  if(
+    gameState.roundNumber===1 &&
+    gameState.placements.length
+  ){
+
+    const first =
+      gameState.placements[0];
+
+
+    if(
+      first.a===6 &&
+      first.b===6
+    ){
+
+      first.angle = 90;
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   BOARD SCALE EXTRA SAFETY
+========================================================= */
+
+function safeFitBoard(){
+
+  validateOpeningBoard();
+
+  fitBoard();
+
+}
+
+
+window.addEventListener(
+  "orientationchange",
+  ()=>{
+
+    setTimeout(
+      safeFitBoard,
+      300
+    );
+
+  }
+);
+
+
+/* =========================================================
+   PREVENT DOUBLE TAP ZOOM
+========================================================= */
+
+let lastTouchEnd = 0;
+
+
+document.addEventListener(
+  "touchend",
+  event=>{
+
+    const now =
+      Date.now();
+
+
+    if(
+      now-lastTouchEnd<=300
+    ){
+
+      event.preventDefault();
+
+    }
+
+
+    lastTouchEnd =
+      now;
+
+  },
+  {
+    passive:false
+  }
+);
+
+
+/* =========================================================
+   APP VISIBILITY
+
+   დაბრუნებისას დაფა თავიდან
+   სწორად მოერგოს ეკრანს.
+========================================================= */
+
+document.addEventListener(
+  "visibilitychange",
+  ()=>{
+
+    if(
+      document.visibilityState===
+      "visible"
+    ){
+
+      setTimeout(
+        ()=>{
+
+          renderAll();
+
+          safeFitBoard();
+
+        },
+        150
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   PWA SERVICE WORKER
+========================================================= */
+
+function registerServiceWorker(){
+
+  if(
+    "serviceWorker" in navigator
+  ){
+
+    window.addEventListener(
+      "load",
+      ()=>{
+
+        navigator
+          .serviceWorker
+          .register(
+            "./service-worker.js"
+          )
+          .catch(
+            error=>{
+
+              console.log(
+                "Service Worker:",
+                error
+              );
+
+            }
+          );
+
+      }
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   GAME START
+========================================================= */
+
+function bootDominoGeorgia(){
+
+  loadNickname();
+
+  updateTeamScores();
+
+  updateChotka();
+
+  registerServiceWorker();
+
+
+  /*
+    მცირე დაყოვნება საჭიროა,
+    რომ ეკრანის ზომები უკვე
+    სწორად იყოს დათვლილი.
+  */
+
+  setTimeout(
+    ()=>{
+
+      startRound();
+
+      setTimeout(
+        ()=>{
+
+          validateOpeningBoard();
+
+          renderAll();
+
+          safeFitBoard();
+
+        },
+        100
+      );
+
+    },
+    150
+  );
+
+}
+
+
+/* =========================================================
+   START AFTER DOM READY
+========================================================= */
+
+if(
+  document.readyState===
+  "loading"
+){
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    bootDominoGeorgia
+  );
+
+}else{
+
+  bootDominoGeorgia();
+
+}
+
+
+/* =========================================================
+   DEBUG SAFETY
+
+   თუ შემთხვევით დაფაზე პირველი
+   ქვა არ გამოჩნდა, console-ში
+   მიზეზის პოვნა მარტივი იქნება.
+========================================================= */
+
+window.addEventListener(
+  "error",
+  event=>{
+
+    console.error(
+      "DOMINO GEORGIA ERROR:",
+      event.message,
+      event.filename,
+      event.lineno
+    );
+
+  }
+);
+
+
+/* =========================================================
+   PART 3/3 END
+========================================================= */
+
+</script>
+
+</div>
+
+<div class="rotate">
+
+  <div>
+    📱↻
+  </div>
+
+  <h2>
+    გადაატრიალე ტელეფონი
+  </h2>
+
+  <p>
+    DOMINO GEORGIA მუშაობს ჰორიზონტალურ რეჟიმში
+  </p>
+
+</div>
+
+</body>
+</html>
