@@ -6972,6 +6972,577 @@ window.addEventListener(
 
 </div>
 
+<!-- =======================================================
+     DOMINO GEORGIA — FINAL VISUAL + ENDPOINT CHOICE PATCH
+======================================================= -->
 
+<style>
+
+/* =========================================================
+   CHOTKA FIX
+========================================================= */
+
+.team-score{
+  overflow:hidden;
+}
+
+.score-body{
+  grid-template-columns:
+    11% 64% 25%;
+}
+
+.abacus{
+  overflow:hidden;
+}
+
+.beads{
+  gap:1px;
+}
+
+.bead{
+  width:clamp(7px,.62vw,10px);
+  height:clamp(12px,1.35vw,20px);
+}
+
+.team-total{
+  position:relative;
+  z-index:20;
+
+  font-size:
+    clamp(15px,1.7vw,28px);
+}
+
+
+/* =========================================================
+   ROOM INFO FIX
+========================================================= */
+
+.room-info{
+  top:23%;
+  height:23.5%;
+
+  padding:
+    12px 10px;
+}
+
+.room-info small{
+  margin-bottom:5px;
+}
+
+.room-info strong{
+  margin-bottom:8px;
+}
+
+
+/* =========================================================
+   BOTTOM PLAYER ABOVE HAND
+========================================================= */
+
+.player-bottom{
+  bottom:22%;
+}
+
+
+/* =========================================================
+   HAND / RACK
+========================================================= */
+
+.hand-rack{
+  bottom:8.2%;
+  height:11.5%;
+}
+
+#playerHand{
+  bottom:9%;
+  height:14%;
+}
+
+
+/* =========================================================
+   TABLE — MORE CLEAN SPACE
+========================================================= */
+
+#boardViewport{
+  left:7%;
+  right:7%;
+
+  top:17%;
+  bottom:22%;
+}
+
+
+/* =========================================================
+   BOTTOM INFO BAR
+========================================================= */
+
+.bottom-info{
+  bottom:.35%;
+  height:7.5%;
+}
+
+.info-box{
+  padding:
+    2px 5px;
+}
+
+
+/* =========================================================
+   ENDPOINT CHOICE
+
+   როცა ერთი ქვა რამდენიმე მხარეს მიდის,
+   ეს წრეები აჩვენებს ყველა ვარიანტს.
+========================================================= */
+
+.port-choice-final{
+
+  position:absolute;
+
+  width:34px;
+  height:34px;
+
+  transform:
+    translate(-50%,-50%);
+
+  z-index:5000;
+
+  border:
+    3px solid #ffe0a0;
+
+  border-radius:50%;
+
+  color:#fff5d6;
+
+  background:
+    radial-gradient(
+      circle,
+      #a26325,
+      #512309 68%,
+      #241005
+    );
+
+  box-shadow:
+    0 0 0 3px rgba(255,196,74,.22),
+    0 0 15px rgba(255,196,74,.95),
+    0 4px 7px rgba(0,0,0,.8);
+
+  font-size:15px;
+  font-weight:900;
+
+  cursor:pointer;
+
+  pointer-events:auto;
+
+  animation:
+    endpointPulse 1s infinite alternate;
+}
+
+
+@keyframes endpointPulse{
+
+  from{
+    transform:
+      translate(-50%,-50%)
+      scale(.92);
+
+    filter:
+      brightness(.95);
+  }
+
+  to{
+    transform:
+      translate(-50%,-50%)
+      scale(1.12);
+
+    filter:
+      brightness(1.25);
+  }
+
+}
+
+
+/* selected hand tile */
+
+.hand-domino.selected{
+
+  transform:
+    translateY(-13px)
+    scale(1.05);
+
+  filter:
+    brightness(1.1)
+    drop-shadow(
+      0 0 9px rgba(255,205,69,.95)
+    );
+}
+
+
+/* phone landscape */
+
+@media(max-height:560px){
+
+  .player-bottom{
+    bottom:19%;
+  }
+
+  .room-info{
+    height:22%;
+  }
+
+  .bottom-info{
+    height:7.3%;
+  }
+
+  .port-choice-final{
+    width:30px;
+    height:30px;
+
+    font-size:13px;
+  }
+
+}
+
+</style>
+
+
+<script>
+
+/* =========================================================
+   CLEAR ENDPOINT CHOICES
+========================================================= */
+
+function clearFinalPortChoices(){
+
+  const board=
+    document.getElementById(
+      "dominoBoard"
+    );
+
+  if(!board){
+    return;
+  }
+
+
+  board
+    .querySelectorAll(
+      ".port-choice-final"
+    )
+    .forEach(
+      element=>element.remove()
+    );
+
+}
+
+
+/* =========================================================
+   SHOW ALL LEGAL ENDPOINTS
+========================================================= */
+
+function showFinalPortChoices(
+  ports,
+  handIndex
+){
+
+  const board=
+    document.getElementById(
+      "dominoBoard"
+    );
+
+
+  if(!board){
+    return;
+  }
+
+
+  clearFinalPortChoices();
+
+
+  ports.forEach(
+    port=>{
+
+      const button=
+        document.createElement(
+          "button"
+        );
+
+
+      button.type=
+        "button";
+
+
+      button.className=
+        "port-choice-final";
+
+
+      /*
+        ღია ბოლოს რიცხვი
+        წრეში ჩანს.
+      */
+
+      button.textContent=
+        port.value;
+
+
+      button.style.left=
+        `${port.x}px`;
+
+
+      button.style.top=
+        `${port.y}px`;
+
+
+      button.addEventListener(
+        "click",
+        event=>{
+
+          event.stopPropagation();
+
+
+          clearFinalPortChoices();
+
+
+          gameState.selectedIndex=
+            null;
+
+
+          playTileToPort(
+
+            0,
+
+            handIndex,
+
+            port.id
+
+          );
+
+        }
+      );
+
+
+      board.appendChild(
+        button
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   HUMAN PLAY OVERRIDE
+
+   1 legal end  -> automatic
+   2+ legal ends -> PLAYER CHOOSES
+========================================================= */
+
+humanPlay=function(
+  handIndex
+){
+
+  if(
+    gameState.currentPlayer!==0 ||
+    gameState.handFinished ||
+    gameState.matchFinished ||
+    gameState.aiBusy
+  ){
+
+    return;
+  }
+
+
+  const tile=
+    gameState.hands[0][handIndex];
+
+
+  if(!tile){
+    return;
+  }
+
+
+  clearFinalPortChoices();
+
+
+  /*
+    ახალი ხელის გახსნა.
+    გამარჯვებულს შეუძლია ნებისმიერი ქვა.
+  */
+
+  if(
+    gameState.placements.length===0
+  ){
+
+    gameState.selectedIndex=
+      null;
+
+
+    placeOpeningTile(
+      0,
+      handIndex
+    );
+
+
+    if(
+      gameState.hands[0]
+        .length===0
+    ){
+
+      finishNormalHand(0);
+
+      return;
+    }
+
+
+    nextTurn();
+
+    return;
+  }
+
+
+  const legal=
+    legalPortsForTile(
+      tile
+    );
+
+
+  /*
+    საერთოდ ვერ ედება.
+  */
+
+  if(
+    legal.length===0
+  ){
+
+    gameState.selectedIndex=
+      null;
+
+
+    renderHand();
+
+
+    showMessage(
+      "ეს ქვა ვერ ედება"
+    );
+
+    return;
+  }
+
+
+  /*
+    ზუსტად ერთი ადგილია.
+    პირდაპირ დაიდება.
+  */
+
+  if(
+    legal.length===1
+  ){
+
+    gameState.selectedIndex=
+      null;
+
+
+    playTileToPort(
+
+      0,
+
+      handIndex,
+
+      legal[0].id
+
+    );
+
+
+    return;
+  }
+
+
+  /*
+    ორი ან მეტი შესაბამისი ბოლოა.
+
+    არ ვაკეთებთ ავტომატურ არჩევანს.
+    მოთამაშე ირჩევს თვითონ.
+  */
+
+  gameState.selectedIndex=
+    handIndex;
+
+
+  renderHand();
+
+
+  showFinalPortChoices(
+    legal,
+    handIndex
+  );
+
+
+  showMessage(
+    `აირჩიე მხარე — ${legal.length} ვარიანტი`,
+    2500
+  );
+
+};
+
+
+/* =========================================================
+   CLICK TABLE = CANCEL END CHOICE
+========================================================= */
+
+const tableAreaFinal=
+  document.getElementById(
+    "tableArea"
+  );
+
+
+if(tableAreaFinal){
+
+  tableAreaFinal.addEventListener(
+    "click",
+    event=>{
+
+      if(
+        event.target.closest(
+          ".port-choice-final"
+        )
+      ){
+
+        return;
+      }
+
+
+      if(
+        gameState.selectedIndex!==null
+      ){
+
+        gameState.selectedIndex=
+          null;
+
+
+        clearFinalPortChoices();
+
+
+        renderHand();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   AFTER RESIZE
+========================================================= */
+
+window.addEventListener(
+  "resize",
+  ()=>{
+
+    clearFinalPortChoices();
+
+  }
+);
+
+</script>
 </body>
 </html>
