@@ -8252,6 +8252,461 @@ chooseDirection=function(port,tile){
       );
 
 
-   
+   <!-- ======================================================
+     DOMINO GEORGIA — TEAM HEADER REDESIGN
+====================================================== -->
+
+<style>
+
+/* ======================================================
+   HIDE OLD CHOTKA
+====================================================== */
+
+.score-labels,
+.abacus{
+  display:none !important;
+}
+
+
+/* ======================================================
+   TOP PANEL SLIGHTLY CLEANER
+====================================================== */
+
+.top-panel{
+  height:18.8% !important;
+}
+
+.table-area{
+  top:21.2% !important;
+}
+
+
+/* ======================================================
+   TEAM SCORE BOX
+====================================================== */
+
+.score-body{
+  height:75% !important;
+
+  display:grid !important;
+
+  grid-template-columns:
+    1fr auto !important;
+
+  align-items:center !important;
+
+  padding:
+    4px 16px 10px 16px !important;
+}
+
+
+/* ======================================================
+   TEAM AVATARS
+====================================================== */
+
+.team-avatar-strip{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:10px;
+}
+
+
+.team-avatar{
+
+  position:relative;
+
+  width:
+    clamp(48px,4.7vw,72px);
+
+  height:
+    clamp(48px,4.7vw,72px);
+
+  flex:none;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  border-radius:50%;
+
+  border:
+    4px solid #d7a64b;
+
+  background:
+    radial-gradient(
+      circle at 35% 28%,
+      #85502b,
+      #251008 72%
+    );
+
+  box-shadow:
+    inset 0 0 0 3px #4a2e19,
+    0 4px 8px rgba(0,0,0,.75);
+
+  font-size:
+    clamp(24px,2.5vw,38px);
+}
+
+
+.team-avatar::after{
+
+  content:"";
+
+  position:absolute;
+
+  right:-2px;
+  bottom:1px;
+
+  width:15px;
+  height:15px;
+
+  border-radius:50%;
+
+  border:3px solid #fff;
+
+  background:#20e85c;
+
+  box-shadow:
+    0 0 7px #20e85c;
+}
+
+
+/* ======================================================
+   PLAYER NUMBER BADGE
+====================================================== */
+
+.team-avatar-number{
+
+  position:absolute;
+
+  left:-5px;
+  top:-5px;
+
+  width:21px;
+  height:21px;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  border-radius:50%;
+
+  border:
+    2px solid #e3b761;
+
+  color:#fff3cf;
+
+  background:#2a140a;
+
+  font-size:11px;
+  font-weight:900;
+
+  box-shadow:
+    0 2px 4px #000;
+}
+
+
+/* ======================================================
+   TEAM SCORE NUMBER
+====================================================== */
+
+.team-total{
+
+  min-width:
+    clamp(112px,10vw,165px);
+
+  padding:
+    8px 12px;
+
+  border:
+    2px solid rgba(178,102,48,.55);
+
+  border-radius:14px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(40,17,8,.62),
+      rgba(18,8,4,.72)
+    );
+
+  color:#ffe1a0 !important;
+
+  font-size:
+    clamp(20px,2.15vw,34px) !important;
+
+  text-align:center;
+
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.08),
+    0 3px 7px rgba(0,0,0,.5);
+}
+
+
+/* ======================================================
+   TEAM TITLE
+====================================================== */
+
+.team-title{
+
+  height:25% !important;
+
+  font-size:
+    clamp(13px,1.4vw,22px) !important;
+
+  letter-spacing:.5px;
+}
+
+
+/* ======================================================
+   TEAM B — AVATARS ON RIGHT SIDE
+====================================================== */
+
+.team-score.team-b .score-body{
+
+  grid-template-columns:
+    auto 1fr !important;
+}
+
+
+.team-score.team-b .team-avatar-strip{
+
+  order:2;
+
+  justify-content:flex-end;
+}
+
+
+.team-score.team-b .team-total{
+
+  order:1;
+}
+
+
+/* ======================================================
+   MOBILE LANDSCAPE
+====================================================== */
+
+@media(max-height:560px){
+
+  .top-panel{
+    height:19.5% !important;
+  }
+
+  .table-area{
+    top:21.7% !important;
+  }
+
+  .team-avatar{
+    width:46px;
+    height:46px;
+    font-size:23px;
+  }
+
+  .team-total{
+    min-width:95px;
+
+    font-size:
+      clamp(17px,1.8vw,27px) !important;
+  }
+
+}
+
+</style>
+
+
+<script>
+
+/* ======================================================
+   BUILD TEAM AVATARS
+====================================================== */
+
+function buildTeamHeader(){
+
+  const scoreBoards=
+    document.querySelectorAll(
+      ".team-score"
+    );
+
+
+  if(scoreBoards.length<2){
+    return;
+  }
+
+
+  const teamA=
+    scoreBoards[0];
+
+  const teamB=
+    scoreBoards[1];
+
+
+  teamA.classList.add(
+    "team-a"
+  );
+
+
+  teamB.classList.add(
+    "team-b"
+  );
+
+
+  const bodyA=
+    teamA.querySelector(
+      ".score-body"
+    );
+
+
+  const bodyB=
+    teamB.querySelector(
+      ".score-body"
+    );
+
+
+  if(
+    !bodyA ||
+    !bodyB
+  ){
+    return;
+  }
+
+
+  /*
+    თუ ერთხელ უკვე შეიქმნა,
+    მეორედ აღარ ვამატებთ.
+  */
+
+  if(
+    !bodyA.querySelector(
+      ".team-avatar-strip"
+    )
+  ){
+
+    const avatarsA=
+      document.createElement(
+        "div"
+      );
+
+
+    avatarsA.className=
+      "team-avatar-strip";
+
+
+    avatarsA.innerHTML=`
+
+      <div class="team-avatar">
+
+        😺
+
+        <span class="team-avatar-number">
+          1
+        </span>
+
+      </div>
+
+
+      <div class="team-avatar">
+
+        🌆
+
+        <span class="team-avatar-number">
+          3
+        </span>
+
+      </div>
+
+    `;
+
+
+    bodyA.insertBefore(
+
+      avatarsA,
+
+      document.getElementById(
+        "teamAScore"
+      )
+
+    );
+
+  }
+
+
+  if(
+    !bodyB.querySelector(
+      ".team-avatar-strip"
+    )
+  ){
+
+    const avatarsB=
+      document.createElement(
+        "div"
+      );
+
+
+    avatarsB.className=
+      "team-avatar-strip";
+
+
+    avatarsB.innerHTML=`
+
+      <div class="team-avatar">
+
+        🧢
+
+        <span class="team-avatar-number">
+          2
+        </span>
+
+      </div>
+
+
+      <div class="team-avatar">
+
+        😎
+
+        <span class="team-avatar-number">
+          4
+        </span>
+
+      </div>
+
+    `;
+
+
+    bodyB.appendChild(
+      avatarsB
+    );
+
+  }
+
+}
+
+
+/* ======================================================
+   RUN
+====================================================== */
+
+if(
+  document.readyState===
+  "loading"
+){
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    buildTeamHeader
+  );
+
+}else{
+
+  buildTeamHeader();
+
+}
+
+</script>
 </body>
 </html>
