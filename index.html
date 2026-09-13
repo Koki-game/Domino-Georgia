@@ -8205,5 +8205,174 @@ startRound=function(){
 };
 
 </script>
+  <!-- ======================================================
+     DOMINO GEORGIA — SMART BOARD SIZE / ROUTING PATCH
+====================================================== -->
+
+<script>
+
+/* ======================================================
+   SMART ROUTING
+
+   ჯაჭვი ძალიან შორს აღარ გაიქცევა.
+   მაგიდის კიდემდე მისვლამდე შემობრუნდება.
+====================================================== */
+
+chooseDirection=function(
+  port,
+  tile
+){
+
+  const candidates=[
+
+    port.dir,
+
+    TURN_RIGHT[
+      port.dir
+    ],
+
+    TURN_LEFT[
+      port.dir
+    ]
+
+  ];
+
+
+  /*
+    ლოგიკური საზღვრები.
+
+    ამ არეში domino თითქმის სრული
+    ზომით რჩება.
+  */
+
+  const X_LIMIT=270;
+  const Y_LIMIT=115;
+
+
+  let bestDirection=
+    candidates[0];
+
+  let bestScore=
+    -Infinity;
+
+
+  candidates.forEach(
+    direction=>{
+
+      const position=
+        proposedCenter(
+          port,
+          tile,
+          direction
+        );
+
+
+      /*
+        არსებული collision score
+      */
+
+      let score=
+        positionScore(
+          position,
+          port.sourceTileId
+        );
+
+
+      /*
+        თუ ჯაჭვი საზღვრის შიგნითაა,
+        პირდაპირ გაგრძელებას ვამჯობინებთ.
+      */
+
+      if(
+        direction===
+        port.dir
+      ){
+
+        score+=18;
+
+      }
+
+
+      /*
+        X საზღვარი.
+        გარეთ გასვლა ძლიერ ჯარიმდება,
+        ამიტომ ჯაჭვი მანამდე შემობრუნდება.
+      */
+
+      if(
+        Math.abs(position.x)>
+        X_LIMIT
+      ){
+
+        score-=
+          500+
+          (
+            Math.abs(position.x)-
+            X_LIMIT
+          )*12;
+
+      }
+
+
+      /*
+        Y საზღვარი.
+      */
+
+      if(
+        Math.abs(position.y)>
+        Y_LIMIT
+      ){
+
+        score-=
+          500+
+          (
+            Math.abs(position.y)-
+            Y_LIMIT
+          )*12;
+
+      }
+
+
+      /*
+        ცენტრისკენ დაბრუნებას
+        მცირე უპირატესობა.
+      */
+
+      const vector=
+        DIR[direction];
+
+
+      const movingTowardCenter=
+        (
+          position.x*vector.x+
+          position.y*vector.y
+        )<0;
+
+
+      if(movingTowardCenter){
+
+        score+=10;
+
+      }
+
+
+      if(
+        score>
+        bestScore
+      ){
+
+        bestScore=
+          score;
+
+        bestDirection=
+          direction;
+
+      }
+
+    }
+  );
+
+
+  return bestDirection
 </body>
 </html>
