@@ -5284,6 +5284,416 @@ console.log(
 <!-- ===== PART 4/4 END ===== -->
 
 </div>
+<!-- ===== FINAL LAYOUT FIX ===== -->
+<style>
 
+/* მთავარი მაგიდა — მეტი თავისუფალი ადგილი ცენტრში */
+.table-area{
+  left:14%;
+  right:14%;
+  top:23%;
+  bottom:15%;
+}
+
+/* ზედა დაფები */
+.top-panel{
+  left:3.5%;
+  right:3.5%;
+  top:1.2%;
+  height:20%;
+  grid-template-columns:minmax(0,1fr) 31% minmax(0,1fr);
+  gap:8px;
+}
+
+.team-title{
+  font-size:clamp(12px,1.35vw,21px);
+}
+
+.team-total{
+  font-size:clamp(15px,1.65vw,27px);
+}
+
+.bead{
+  width:10px;
+  height:16px;
+}
+
+
+/* DOMINO GEORGIA */
+.logo-main{
+  font-size:clamp(27px,3.5vw,55px);
+}
+
+.logo-sub{
+  margin-top:5px;
+  font-size:clamp(12px,1.45vw,23px);
+}
+
+
+/* ===================================
+   მოთამაშეები
+=================================== */
+
+.player-card{
+  min-width:135px;
+  padding:7px 11px 7px 39px;
+}
+
+.avatar{
+  left:-29px;
+  width:59px;
+  height:59px;
+  border-width:3px;
+  font-size:30px;
+}
+
+.online-dot{
+  width:16px;
+  height:16px;
+}
+
+.player-name{
+  font-size:clamp(10px,1.05vw,17px);
+}
+
+.player-rating{
+  font-size:clamp(9px,.9vw,15px);
+}
+
+
+/* მოთამაშე 1 — ზემოთ */
+.player-top{
+  left:50%;
+  top:20.5%;
+  transform:translateX(-50%);
+}
+
+/* მოთამაშე 4 — მარცხნივ */
+.player-left{
+  left:5.5%;
+  top:48%;
+  transform:translateY(-50%);
+}
+
+/* მოთამაშე 2 — მარჯვნივ */
+.player-right{
+  right:4.5%;
+  top:48%;
+  transform:translateY(-50%);
+}
+
+/* შენი მოთამაშე — ქვემოთ ცენტრში */
+.player-bottom{
+  left:50%;
+  bottom:18%;
+  transform:translateX(-50%);
+}
+
+
+/* ===================================
+   მოწინააღმდეგეების დახურული ქვები
+=================================== */
+
+.hidden-top{
+  left:50%;
+  top:28%;
+}
+
+.hidden-left{
+  left:14.4%;
+  top:42%;
+}
+
+.hidden-right{
+  right:14.4%;
+  top:42%;
+}
+
+.hidden-bottom{
+  display:none;
+}
+
+.tile-back{
+  width:38px;
+  height:51px;
+}
+
+
+/* ===================================
+   ცენტრის დომინო
+=================================== */
+
+#dominoBoard{
+  left:25%;
+  right:25%;
+  top:38%;
+  height:22%;
+  gap:3px;
+}
+
+.domino{
+  width:61px;
+  height:37px;
+}
+
+.domino.double{
+  width:39px;
+  height:72px;
+}
+
+.pip{
+  width:7px;
+  height:7px;
+}
+
+
+/* ===================================
+   ჩემი 7 ქვა — ქვემოთ
+=================================== */
+
+#playerHand{
+  left:50%;
+  bottom:11.5%;
+  height:13.5%;
+
+  padding:5px 13px 3px;
+
+  gap:3px;
+
+  z-index:75;
+}
+
+#playerHand .domino{
+  width:44px;
+  height:76px;
+}
+
+#playerHand .domino.selected{
+  transform:translateY(-8px);
+}
+
+
+/* ===================================
+   მარცხენა ღილაკები
+=================================== */
+
+.bottom-left-actions{
+  left:1.5%;
+  bottom:13.5%;
+  gap:5px;
+}
+
+.action-btn{
+  min-width:118px;
+  height:55px;
+
+  padding:0 12px;
+
+  font-size:clamp(11px,1.05vw,17px);
+}
+
+#chatBtn{
+  min-width:108px;
+}
+
+.action-btn .action-icon{
+  font-size:22px;
+}
+
+
+/* ===================================
+   მარჯვენა ღილაკები
+=================================== */
+
+.bottom-right-actions{
+  right:1.5%;
+  bottom:13.5%;
+  gap:6px;
+}
+
+#ribaBtn,
+#surrenderBtn{
+  height:55px;
+}
+
+#ribaBtn{
+  min-width:125px;
+  padding:0 12px;
+  font-size:clamp(11px,1.05vw,17px);
+}
+
+#surrenderBtn{
+  min-width:145px;
+  padding:0 14px;
+  font-size:clamp(11px,1.05vw,17px);
+}
+
+
+/* ===================================
+   მარცხენა ოთახის ინფორმაცია
+=================================== */
+
+.room-info{
+  left:.7%;
+  top:23%;
+  width:12.5%;
+  height:22%;
+
+  padding:9px 8px;
+}
+
+.room-info small{
+  margin-bottom:4px;
+}
+
+.room-info strong{
+  margin-bottom:7px;
+}
+
+
+/* ===================================
+   პროფილი და გვერდითი მენიუ
+=================================== */
+
+#profileButton{
+  left:1.5%;
+  top:48%;
+  width:11.5%;
+  min-width:0;
+
+  padding:7px;
+}
+
+#sideMenu{
+  left:1.5%;
+  top:60%;
+  width:11.5%;
+  min-width:0;
+  gap:4px;
+}
+
+.side-menu-btn{
+  min-height:31px;
+  padding:3px 5px;
+
+  font-size:clamp(8px,.72vw,11px);
+}
+
+
+/* ===================================
+   ზედა 3 ღილაკი
+=================================== */
+
+.top-actions{
+  right:14.5%;
+  top:22.5%;
+  gap:5px;
+}
+
+.icon-btn{
+  width:47px;
+  height:47px;
+
+  font-size:21px;
+}
+
+
+/* ===================================
+   ქვედა წესების ზოლი
+=================================== */
+
+.bottom-info{
+  left:1%;
+  right:1%;
+  bottom:.8%;
+
+  height:10%;
+}
+
+.info-box{
+  padding:4px 8px;
+  gap:6px;
+}
+
+.info-icon{
+  font-size:clamp(15px,1.55vw,25px);
+}
+
+
+/* ===================================
+   პატარა ტელეფონის landscape
+=================================== */
+
+@media(max-height:500px){
+
+  .top-panel{
+    height:21%;
+  }
+
+  .table-area{
+    top:23%;
+    bottom:14%;
+  }
+
+  .avatar{
+    width:48px;
+    height:48px;
+    font-size:24px;
+  }
+
+  .player-card{
+    min-width:115px;
+    padding:5px 8px 5px 31px;
+  }
+
+  #playerHand{
+    bottom:10.5%;
+    height:14%;
+  }
+
+  #playerHand .domino{
+    width:37px;
+    height:65px;
+  }
+
+  .bottom-left-actions,
+  .bottom-right-actions{
+    bottom:12%;
+  }
+
+  .action-btn,
+  #ribaBtn,
+  #surrenderBtn{
+    height:45px;
+  }
+
+  .action-btn{
+    min-width:92px;
+  }
+
+  #chatBtn{
+    min-width:85px;
+  }
+
+  #ribaBtn{
+    min-width:95px;
+  }
+
+  #surrenderBtn{
+    min-width:110px;
+  }
+
+  #sideMenu{
+    top:59%;
+  }
+
+  .side-menu-btn{
+    min-height:25px;
+  }
+
+}
+
+</style>
+<!-- ===== FINAL LAYOUT FIX END ===== -->
 </body>
 </html>
