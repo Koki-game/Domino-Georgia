@@ -5395,3 +5395,1001 @@ setTimeout(
 
 /* ===== PART 3/4 END ===== */
 </script>
+<script>
+/* =========================================================
+   DOMINO GEORGIA — PART 4
+   SAVE / RESTORE / PROFILE / EMOJI / PWA
+========================================================= */
+
+const DG_SAVE_KEY = "domino_georgia_game_v1";
+const DG_PROFILE_KEY = "domino_georgia_profile_v1";
+
+/* =========================
+   1. უსაფრთხო JSON
+========================= */
+function dgReadJSON(key, fallback = null) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) {
+    console.warn("Storage read error:", e);
+    return fallback;
+  }
+}
+
+function dgWriteJSON(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (e) {
+    console.warn("Storage write error:", e);
+    return false;
+  }
+}
+
+/* =========================
+   2. თამაშის ავტომატური შენახვა
+========================= */
+function saveDominoGame() {
+  if (typeof gameState === "undefined") return;
+
+  const saveData = {
+    version: 1,
+    savedAt: Date.now(),
+    state: gameState
+  };
+
+  dgWriteJSON(DG_SAVE_KEY, saveData);
+}
+
+function restoreDominoGame() {
+  if (typeof gameState === "undefined") return false;
+
+  const saved = dgReadJSON(DG_SAVE_KEY);
+
+  if (!saved || !saved.state) {
+    return false;
+  }
+
+  try {
+    Object.keys(gameState).forEach(key => {
+      delete gameState[key];
+    });
+
+    Object.assign(gameState, saved.state);
+
+    console.log("DOMINO GEORGIA: saved game restored");
+
+    refreshGameAfterRestore();
+
+    return true;
+
+  } catch (e) {
+    console.warn("Restore error:", e);
+    return false;
+  }
+}
+
+/* =========================
+   3. აღდგენის შემდეგ ეკრანის განახლება
+========================= */
+function refreshGameAfterRestore() {
+
+  try {
+    if (typeof renderBoard === "function") {
+      renderBoard();
+    }
+  } catch(e){}
+
+  try {
+    if (typeof renderHand === "function") {
+      renderHand();
+    }
+  } catch(e){}
+
+  try {
+    if (typeof renderHands === "function") {
+      renderHands();
+    }
+  } catch(e){}
+
+  try {
+    if (typeof updateScores === "function") {
+      updateScores();
+    }
+  } catch(e){}
+
+  try {
+    if (typeof updateUI === "function") {
+      updateUI();
+    }
+  } catch(e){}
+
+  try {
+    if (typeof renderGame === "function") {
+      renderGame();
+    }
+  } catch(e){}
+
+  try {
+    if (typeof updateTurnMessage === "function") {
+      updateTurnMessage();
+    }
+  } catch(e){}
+
+  setTimeout(() => {
+    if (typeof fitDominoBoard === "function") {
+      fitDominoBoard();
+    }
+  }, 100);
+}
+
+/* =========================
+   4. ცვლილების ავტომატური აღმოჩენა
+========================= */
+let dgLastState = "";
+
+function dgAutoSaveWatcher() {
+
+  if (typeof gameState === "undefined") return;
+
+  try {
+
+    const current = JSON.stringify(gameState);
+
+    if (current !== dgLastState) {
+
+      dgLastState = current;
+
+      saveDominoGame();
+    }
+
+  } catch(e){}
+}
+
+setInterval(dgAutoSaveWatcher, 700);
+
+/* გვერდის დახურვისას */
+window.addEventListener("beforeunload", () => {
+  saveDominoGame();
+});
+
+/* background-ში გადასვლისას */
+document.addEventListener("visibilitychange", () => {
+
+  if (document.hidden) {
+    saveDominoGame();
+  }
+
+});
+
+/* =========================
+   5. ახალი თამაშის save-ის წაშლა
+========================= */
+function clearSavedDominoGame() {
+
+  localStorage.removeItem(DG_SAVE_KEY);
+
+  dgLastState = "";
+
+  console.log("Saved game cleared");
+}
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+let dominoProfile = dgReadJSON(DG_PROFILE_KEY, {
+  nickname: "მოთამაშე",
+  rating: 1000,
+  wins: 0,
+  losses: 0,
+  games: 0
+});
+
+function saveDominoProfile() {
+  dgWriteJSON(DG_PROFILE_KEY, dominoProfile);
+}
+
+function setDominoNickname(name) {
+
+  const clean = String(name || "")
+    .trim()
+    .replace(/[<>]/g, "")
+    .slice(0, 18);
+
+  if (!clean) return;
+
+  dominoProfile.nickname = clean;
+
+  saveDominoProfile();
+
+  updateDominoProfileUI();
+}
+
+function updateDominoProfileUI() {
+
+  const nicknameElements = document.querySelectorAll(
+    "[data-my-nickname], #myNickname, .my-nickname"
+  );
+
+  nicknameElements.forEach(el => {
+    el.textContent = dominoProfile.nickname;
+  });
+
+  const ratingElements = document.querySelectorAll(
+    "[data-my-rating], #myRating, .my-rating"
+  );
+
+  ratingElements.forEach(el => {
+    el.textContent = "⭐ " + dominoProfile.rating;
+  });
+}
+
+/* =========================================================
+   PLAYER AVATAR POPUP
+========================================================= */
+
+const dgProfilePopup = document.createElement("div");
+
+dgProfilePopup.id = "dgProfilePopup";
+
+dgProfilePopup.innerHTML = `
+  <div class="dg-profile-popup-inner">
+
+    <button
+      id="dgProfileClose"
+      class="dg-profile-close"
+      aria-label="დახურვა"
+    >
+      ×
+    </button>
+
+    <div class="dg-profile-avatar">
+      👤
+    </div>
+
+    <div
+      id="dgPopupNickname"
+      class="dg-profile-name"
+    >
+      მოთამაშე
+    </div>
+
+    <div
+      id="dgPopupRating"
+      class="dg-profile-rating"
+    >
+      ⭐ 1000
+    </div>
+
+    <div class="dg-profile-stats">
+
+      <div>
+        <strong id="dgPopupWins">0</strong>
+        <span>მოგება</span>
+      </div>
+
+      <div>
+        <strong id="dgPopupLosses">0</strong>
+        <span>წაგება</span>
+      </div>
+
+    </div>
+
+    <div
+      id="dgPopupStatus"
+      class="dg-profile-status"
+    >
+      თამაშში
+    </div>
+
+  </div>
+`;
+
+document.body.appendChild(dgProfilePopup);
+
+const dgProfileStyle = document.createElement("style");
+
+dgProfileStyle.textContent = `
+
+#dgProfilePopup{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999999;
+  background:rgba(0,0,0,.28);
+}
+
+#dgProfilePopup.show{
+  display:flex;
+}
+
+.dg-profile-popup-inner{
+  position:relative;
+  width:220px;
+  padding:18px;
+  border-radius:18px;
+
+  color:#fff;
+  text-align:center;
+
+  background:
+    linear-gradient(
+      145deg,
+      #3d2415,
+      #17100c
+    );
+
+  border:2px solid #8d6339;
+
+  box-shadow:
+    0 18px 45px rgba(0,0,0,.65),
+    inset 0 1px rgba(255,255,255,.15);
+}
+
+.dg-profile-close{
+  position:absolute;
+  right:8px;
+  top:5px;
+
+  width:32px;
+  height:32px;
+
+  border:0;
+  background:transparent;
+
+  color:#fff;
+  font-size:26px;
+
+  cursor:pointer;
+}
+
+.dg-profile-avatar{
+  width:64px;
+  height:64px;
+
+  margin:0 auto 8px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  border-radius:50%;
+
+  font-size:32px;
+
+  background:#173d2b;
+
+  border:3px solid #c79a54;
+}
+
+.dg-profile-name{
+  font-weight:900;
+  font-size:18px;
+}
+
+.dg-profile-rating{
+  margin-top:4px;
+  color:#ffd66b;
+}
+
+.dg-profile-stats{
+  display:flex;
+  gap:8px;
+
+  margin-top:13px;
+}
+
+.dg-profile-stats > div{
+  flex:1;
+
+  padding:8px 4px;
+
+  border-radius:10px;
+
+  background:rgba(255,255,255,.07);
+}
+
+.dg-profile-stats strong{
+  display:block;
+  font-size:17px;
+}
+
+.dg-profile-stats span{
+  display:block;
+
+  margin-top:2px;
+
+  font-size:10px;
+
+  opacity:.72;
+}
+
+.dg-profile-status{
+  margin-top:10px;
+
+  font-size:12px;
+
+  color:#8ee7a9;
+}
+
+/* მუდმივი სახელის ბარათები დამალული */
+.player-card .player-name,
+.player-card .player-rating{
+  display:none !important;
+}
+
+/* თუ player-card თვითონ არის ძველი დიდი ბარათი */
+.player-card{
+  min-width:0 !important;
+  width:auto !important;
+
+  padding:0 !important;
+
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+
+/* avatar რჩება */
+.player-card .avatar{
+  cursor:pointer;
+}
+
+/* მოთხოვნილი ღილაკები სრულად გამორთულია */
+.top-actions{
+  display:none !important;
+}
+
+.bottom-right-actions{
+  display:none !important;
+}
+
+#ribaBtn,
+#surrenderBtn{
+  display:none !important;
+}
+
+`;
+
+document.head.appendChild(dgProfileStyle);
+
+/* =========================
+   6. მოთამაშის ინფორმაციის გახსნა
+========================= */
+function openPlayerProfile(data = {}) {
+
+  document.getElementById("dgPopupNickname").textContent =
+    data.nickname || "მოთამაშე";
+
+  document.getElementById("dgPopupRating").textContent =
+    "⭐ " + (data.rating || 1000);
+
+  document.getElementById("dgPopupWins").textContent =
+    data.wins || 0;
+
+  document.getElementById("dgPopupLosses").textContent =
+    data.losses || 0;
+
+  document.getElementById("dgPopupStatus").textContent =
+    data.status || "თამაშში";
+
+  dgProfilePopup.classList.add("show");
+}
+
+function closePlayerProfile() {
+  dgProfilePopup.classList.remove("show");
+}
+
+document.getElementById("dgProfileClose").onclick =
+  closePlayerProfile;
+
+dgProfilePopup.addEventListener("click", e => {
+
+  if (e.target === dgProfilePopup) {
+    closePlayerProfile();
+  }
+
+});
+
+/* avatar-ზე დაჭერა */
+document.addEventListener("click", e => {
+
+  const avatar = e.target.closest(".avatar");
+
+  if (!avatar) return;
+
+  const card = avatar.closest(".player-card");
+
+  let nickname = "მოთამაშე";
+  let rating = 1000;
+
+  if (card) {
+
+    const nameEl =
+      card.querySelector(".player-name");
+
+    const ratingEl =
+      card.querySelector(".player-rating");
+
+    if (nameEl && nameEl.textContent.trim()) {
+      nickname = nameEl.textContent.trim();
+    }
+
+    if (ratingEl) {
+
+      const number =
+        ratingEl.textContent.match(/\d+/);
+
+      if (number) {
+        rating = Number(number[0]);
+      }
+
+    }
+  }
+
+  openPlayerProfile({
+    nickname,
+    rating,
+    wins:0,
+    losses:0,
+    status:"თამაშში"
+  });
+
+});
+
+/* =========================================================
+   EMOJI ONLY CHAT
+========================================================= */
+
+const DG_EMOJIS = [
+  "👍",
+  "👏",
+  "😂",
+  "😎",
+  "🤔",
+  "😮",
+  "🔥",
+  "💪",
+  "🎯",
+  "🏆",
+  "🇬🇪",
+  "👋"
+];
+
+function createEmojiPanel() {
+
+  let panel =
+    document.getElementById("emojiPanel");
+
+  if (!panel) {
+
+    panel = document.createElement("div");
+
+    panel.id = "emojiPanel";
+
+    document.body.appendChild(panel);
+  }
+
+  panel.innerHTML = "";
+
+  DG_EMOJIS.forEach(emoji => {
+
+    const button =
+      document.createElement("button");
+
+    button.type = "button";
+
+    button.textContent = emoji;
+
+    button.onclick = () => {
+
+      showDominoEmoji(
+        emoji,
+        dominoProfile.nickname
+      );
+
+      panel.classList.remove("open");
+    };
+
+    panel.appendChild(button);
+
+  });
+
+}
+
+function showDominoEmoji(
+  emoji,
+  nickname = "მოთამაშე"
+) {
+
+  const bubble =
+    document.createElement("div");
+
+  bubble.className =
+    "dg-emoji-bubble";
+
+  const name =
+    document.createElement("div");
+
+  name.className =
+    "dg-emoji-name";
+
+  name.textContent =
+    nickname;
+
+  const icon =
+    document.createElement("div");
+
+  icon.className =
+    "dg-emoji-icon";
+
+  icon.textContent =
+    emoji;
+
+  bubble.appendChild(name);
+  bubble.appendChild(icon);
+
+  document.body.appendChild(bubble);
+
+  setTimeout(() => {
+
+    bubble.classList.add("show");
+
+  }, 20);
+
+  setTimeout(() => {
+
+    bubble.classList.remove("show");
+
+    setTimeout(() => {
+      bubble.remove();
+    }, 250);
+
+  }, 2200);
+
+}
+
+const dgEmojiStyle =
+  document.createElement("style");
+
+dgEmojiStyle.textContent = `
+
+#emojiPanel{
+  position:fixed;
+
+  left:18px;
+  bottom:82px;
+
+  width:210px;
+
+  display:none;
+  grid-template-columns:
+    repeat(4,1fr);
+
+  gap:6px;
+
+  padding:10px;
+
+  border-radius:15px;
+
+  background:
+    rgba(24,14,8,.97);
+
+  border:
+    1px solid #8e6439;
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,.55);
+
+  z-index:99990;
+}
+
+#emojiPanel.open{
+  display:grid;
+}
+
+#emojiPanel button{
+  height:40px;
+
+  border:0;
+
+  border-radius:9px;
+
+  font-size:22px;
+
+  background:
+    rgba(255,255,255,.09);
+
+  cursor:pointer;
+}
+
+.dg-emoji-bubble{
+  position:fixed;
+
+  left:50%;
+  top:45%;
+
+  transform:
+    translate(-50%,-50%)
+    scale(.7);
+
+  opacity:0;
+
+  min-width:110px;
+
+  padding:8px 14px;
+
+  border-radius:16px;
+
+  text-align:center;
+
+  background:
+    rgba(18,12,8,.94);
+
+  border:
+    1px solid #ad8050;
+
+  color:white;
+
+  z-index:999999;
+
+  transition:
+    .2s ease;
+}
+
+.dg-emoji-bubble.show{
+  opacity:1;
+
+  transform:
+    translate(-50%,-50%)
+    scale(1);
+}
+
+.dg-emoji-name{
+  font-size:11px;
+  opacity:.72;
+}
+
+.dg-emoji-icon{
+  font-size:38px;
+  line-height:44px;
+}
+
+`;
+
+document.head.appendChild(
+  dgEmojiStyle
+);
+
+createEmojiPanel();
+
+/* ძველი ჩატის ღილაკი = emoji */
+const dgChatButton =
+  document.getElementById("chatBtn");
+
+if (dgChatButton) {
+
+  dgChatButton.onclick = () => {
+
+    const panel =
+      document.getElementById("emojiPanel");
+
+    panel.classList.toggle("open");
+  };
+
+}
+
+/* =========================================================
+   BOARD AUTO SCALE
+   დომინოები არ უნდა გავიდეს მწვანე მაგიდიდან
+========================================================= */
+
+function fitDominoBoard() {
+
+  const board =
+    document.getElementById("dominoBoard");
+
+  const table =
+    document.querySelector(".table-area");
+
+  if (!board || !table) return;
+
+  /*
+    თუ Part 3-ში გვაქვს ცალკე board-inner,
+    მას ვაპატარავებთ.
+  */
+
+  const inner =
+    board.querySelector(
+      ".board-inner"
+    ) || board;
+
+  inner.style.transform = "";
+
+  inner.style.transformOrigin =
+    "center center";
+
+  const tableRect =
+    table.getBoundingClientRect();
+
+  const boardRect =
+    inner.getBoundingClientRect();
+
+  if (
+    boardRect.width <= 0 ||
+    boardRect.height <= 0
+  ) return;
+
+  /*
+    მაგიდის კიდეებთან მცირე ადგილი
+  */
+
+  const maxWidth =
+    tableRect.width * 0.88;
+
+  const maxHeight =
+    tableRect.height * 0.72;
+
+  const scaleX =
+    maxWidth / boardRect.width;
+
+  const scaleY =
+    maxHeight / boardRect.height;
+
+  let scale =
+    Math.min(
+      1,
+      scaleX,
+      scaleY
+    );
+
+  /*
+    ძალიან პატარა მნიშვნელობისგან დაცვა
+  */
+
+  scale =
+    Math.max(
+      0.30,
+      scale
+    );
+
+  inner.style.transform =
+    `scale(${scale})`;
+}
+
+/* resize */
+window.addEventListener(
+  "resize",
+  () => {
+    setTimeout(
+      fitDominoBoard,
+      50
+    );
+  }
+);
+
+/* orientation */
+window.addEventListener(
+  "orientationchange",
+  () => {
+    setTimeout(
+      fitDominoBoard,
+      250
+    );
+  }
+);
+
+/* DOM ცვლილებებისას */
+const dgBoard =
+  document.getElementById("dominoBoard");
+
+if (dgBoard) {
+
+  const observer =
+    new MutationObserver(() => {
+
+      requestAnimationFrame(
+        fitDominoBoard
+      );
+
+    });
+
+  observer.observe(
+    dgBoard,
+    {
+      childList:true,
+      subtree:true
+    }
+  );
+}
+
+/* =========================================================
+   PWA SERVICE WORKER
+========================================================= */
+
+if ("serviceWorker" in navigator) {
+
+  window.addEventListener(
+    "load",
+    async () => {
+
+      try {
+
+        const registration =
+          await navigator
+            .serviceWorker
+            .register(
+              "./service-worker.js"
+            );
+
+        console.log(
+          "DOMINO GEORGIA PWA ready",
+          registration.scope
+        );
+
+      } catch(error) {
+
+        console.warn(
+          "Service worker error:",
+          error
+        );
+
+      }
+
+    }
+  );
+
+}
+
+/* =========================================================
+   START
+========================================================= */
+
+window.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    updateDominoProfileUI();
+
+    const restored =
+      restoreDominoGame();
+
+    if (!restored) {
+
+      console.log(
+        "DOMINO GEORGIA: new game"
+      );
+
+    }
+
+    setTimeout(
+      fitDominoBoard,
+      300
+    );
+
+  }
+);
+
+/* =========================================================
+   DEBUG HELPERS
+========================================================= */
+
+/*
+  საჭიროების შემთხვევაში Console-ში:
+
+  saveDominoGame()
+  restoreDominoGame()
+  clearSavedDominoGame()
+
+  nickname:
+  setDominoNickname("Kusto")
+*/
+
+</script>
+
+</body>
+</html>
