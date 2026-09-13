@@ -1,540 +1,238 @@
 <!DOCTYPE html>
 <html lang="ka">
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
+>
+
 <meta name="theme-color" content="#2a1007">
+
 <title>DOMINO GEORGIA</title>
+
 <link rel="manifest" href="./manifest.json">
 
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080402;font-family:Arial,sans-serif;user-select:none}
-button{font-family:inherit}
+
+/* =========================================================
+   RESET
+========================================================= */
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html,
+body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+
+  background:#060302;
+
+  color:#fff;
+
+  font-family:
+    Arial,
+    "Noto Sans Georgian",
+    sans-serif;
+
+  user-select:none;
+}
+
+button{
+  font-family:inherit;
+}
+
+
+/* =========================================================
+   GAME
+========================================================= */
+
 #game{
- position:fixed;inset:0;overflow:hidden;color:#f6dfb3;
- background:
- radial-gradient(ellipse at 50% 45%,#713315 0,#3d180b 55%,#180703 100%);
-}
-#game:before{
- content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
- background:
- repeating-linear-gradient(4deg,transparent 0 13px,rgba(255,188,105,.07) 14px,transparent 17px),
- repeating-linear-gradient(92deg,transparent 0 42px,rgba(0,0,0,.16) 44px,transparent 48px);
-}
+  position:fixed;
+  inset:0;
 
-/* ===== TOP ===== */
-.top{
- position:absolute;left:.5%;right:.5%;top:.5%;height:21%;
- display:grid;grid-template-columns:34% 32% 34%;gap:.6%;z-index:40;
-}
-.scorebox,.brand{
- border:4px solid #2a0e05;
- box-shadow:inset 0 0 0 2px #8c4823,inset 0 -15px 24px #180702,0 5px 10px #000;
- background:linear-gradient(180deg,#6b2d12,#421708 60%,#210a04);
-}
-.scorebox{border-radius:24px;overflow:hidden}
-.scoretitle{
- height:27%;display:flex;align-items:center;justify-content:center;
- font:900 clamp(13px,1.5vw,23px) Georgia,serif;color:#ffe1a5;text-shadow:0 3px 3px #000;
-}
-.scorebody{height:73%;display:grid;grid-template-columns:11% 65% 24%;padding:2px 8px 7px}
-.labels,.rails{display:flex;flex-direction:column;justify-content:space-evenly}
-.labels{font:900 clamp(9px,.85vw,14px) Georgia,serif}
-.rail{position:relative;height:17%;display:flex;align-items:center}
-.rail:before{
- content:"";position:absolute;left:0;right:2%;height:3px;border-radius:4px;
- background:linear-gradient(#e9a35f,#7b3516);box-shadow:0 1px 2px #000;
-}
-.beadrow{position:relative;display:flex;gap:2px;padding-left:3px}
-.bead{
- width:clamp(8px,.72vw,12px);height:clamp(13px,1.45vw,23px);border-radius:50%;
- border:1px solid #160702;
- background:linear-gradient(90deg,#211008,#a85d2e 40%,#e09a56 52%,#58220d 80%,#170703);
- box-shadow:inset 1px 0 rgba(255,255,255,.3),0 1px 2px #000;
-}
-.bead.dark{filter:brightness(.35)}
-.total{
- display:flex;align-items:center;justify-content:center;white-space:nowrap;
- font:900 clamp(17px,1.8vw,30px) Georgia,serif;color:#ffe1a1;text-shadow:0 3px 4px #000;
+  overflow:hidden;
+
+  background:
+    radial-gradient(
+      ellipse at 50% 45%,
+      #6d3217 0%,
+      #3a160a 52%,
+      #170603 100%
+    );
 }
 
-/* ===== LOGO ===== */
-.brand{
- border-radius:0 0 22px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;
- background:radial-gradient(ellipse at 50% 20%,#8b411c,#4a1b0b 55%,#210904);
-}
-.brand-main{
- font:900 clamp(31px,4.1vw,65px) Georgia,serif;letter-spacing:2px;line-height:.9;
- color:#ffe8b5;text-shadow:0 3px #6e3215,0 7px 8px #000;
-}
-.brand-sub{
- margin-top:8px;display:flex;align-items:center;gap:16px;
- font:500 clamp(13px,1.55vw,24px) Georgia,serif;letter-spacing:9px;
-}
-.flag{letter-spacing:0}
 
-/* ===== SIDE PANELS ===== */
-.room{
- position:absolute;left:.7%;top:23%;width:12%;z-index:25;padding:13px 10px;
- background:linear-gradient(180deg,rgba(27,15,9,.94),rgba(11,7,5,.9));
- border:2px solid #4c2918;border-radius:0 0 14px 0;box-shadow:4px 4px 10px #0008;
- font:clamp(9px,.9vw,14px) Georgia,serif;line-height:1.55;
-}
-.room b{display:block;margin:8px 0;font-size:clamp(12px,1.1vw,18px);color:#ffe0aa}
-.online{margin-top:10px;color:#35e66b}
-.note{
- position:absolute;right:.7%;top:23%;width:11%;z-index:25;padding:16px 7px;
- border:2px solid #4b4540;border-radius:0 0 0 22px;background:#121110eF;
- box-shadow:0 5px 12px #000;color:#ddd0ba;text-align:center;
- font:italic clamp(10px,.95vw,15px) Georgia,serif;line-height:1.65;
-}
+/* wood grain */
 
-/* ===== LARGE TABLE ===== */
-.table{
- position:absolute;left:13.4%;right:13.4%;top:22.8%;bottom:13.5%;z-index:10;overflow:hidden;
- border:6px solid #2c1107;outline:2px solid #9a552c;border-radius:7px;
- background:
- radial-gradient(ellipse at center,rgba(20,121,81,.42),transparent 67%),
- repeating-linear-gradient(35deg,rgba(255,255,255,.012) 0 2px,transparent 3px 8px),
- linear-gradient(145deg,#07583c,#06462f 48%,#033222);
- box-shadow:inset 0 0 55px #00170fbb,inset 0 0 4px #fff4,0 5px 12px #000;
-}
-.watermark{
- position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);
- text-align:center;color:rgba(215,208,155,.085);pointer-events:none;
-}
-.watermark .crown{font-size:clamp(45px,5vw,80px)}
-.watermark div:last-child{font:24px Georgia,serif;letter-spacing:8px}
+#game::before{
+  content:"";
 
-/* ===== BOARD ===== */
-#boardViewport{position:absolute;left:5%;right:5%;top:12%;bottom:17%;overflow:hidden;z-index:30}
-#dominoBoard{position:absolute;left:50%;top:50%;width:1px;height:1px;transform-origin:center}
+  position:absolute;
+  inset:0;
 
-/* ===== PREMIUM IVORY DOMINO ===== */
-.domino{
- position:absolute;width:82px;height:45px;display:flex;border-radius:10px;
- border:1px solid #a59470;
- background:linear-gradient(145deg,#fffef2 0,#f8efd3 38%,#dfcfaa 76%,#bba77c 100%);
- box-shadow:
- inset 2px 2px 3px #fff,
- inset -3px -3px 5px #725a353f,
- 0 4px 0 #96815e,
- 0 7px 9px #0008;
- transform-origin:center;
-}
-.domino:after{
- content:"";position:absolute;left:50%;top:5px;bottom:5px;width:2px;transform:translateX(-50%);
- background:linear-gradient(90deg,#75664c,#fff9e6,#77674c);
-}
-.half{position:relative;width:50%;height:100%}
-.pip{
- position:absolute;width:8px;height:8px;border-radius:50%;
- background:radial-gradient(circle at 35% 30%,#454542,#10100f 45%,#000 80%);
- box-shadow:inset 1px 1px 1px #ffffff33,inset -1px -1px 2px #000,0 1px 1px #fff6;
-}
-.pc{left:50%;top:50%;transform:translate(-50%,-50%)}
-.tl{left:23%;top:22%;transform:translate(-50%,-50%)}
-.tr{right:23%;top:22%;transform:translate(50%,-50%)}
-.bl{left:23%;bottom:22%;transform:translate(-50%,50%)}
-.br{right:23%;bottom:22%;transform:translate(50%,50%)}
-.ml{left:23%;top:50%;transform:translate(-50%,-50%)}
-.mr{right:23%;top:50%;transform:translate(50%,-50%)}
+  pointer-events:none;
 
-/* ===== HIDDEN TILES ===== */
-.hidden{position:absolute;z-index:38;display:flex;gap:3px}
-#hiddenTop{left:50%;top:3%;transform:translateX(-50%)}
-#hiddenLeft{left:1.3%;top:50%;transform:translateY(-50%);flex-direction:column}
-#hiddenRight{right:1.3%;top:50%;transform:translateY(-50%);flex-direction:column}
-.back{
- width:43px;height:25px;border:2px solid #181513;border-radius:5px;
- background:
- repeating-linear-gradient(45deg,#171717 0 2px,#282828 3px 5px);
- box-shadow:inset 0 0 0 2px #46413a,0 3px 4px #0009;
-}
-#hiddenTop .back{width:50px;height:29px}
+  opacity:.52;
 
-/* ===== AVATARS ===== */
-.player{position:absolute;z-index:90;width:68px;height:68px;cursor:pointer}
-.player.top{left:50%;top:19.4%;transform:translateX(-50%)}
-.player.bottom{left:50%;bottom:12.2%;transform:translateX(-50%)}
-.player.left{left:9%;top:52%;transform:translateY(-50%)}
-.player.right{right:9%;top:52%;transform:translateY(-50%)}
-.avatar{
- width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;
- border:4px solid #d5a74d;background:radial-gradient(circle at 35% 25%,#7a4726,#241008 72%);
- box-shadow:inset 0 0 0 3px #4a2d19,0 5px 9px #000;font-size:34px;
-}
-.dot{
- position:absolute;right:-1px;bottom:2px;width:20px;height:20px;border-radius:50%;
- border:4px solid white;background:#1ee65b;box-shadow:0 0 8px #1ee65b;
-}
+  background:
 
-/* ===== POPUP ONLY ON TAP ===== */
-#playerPopup{
- position:absolute;z-index:300;display:none;min-width:155px;padding:10px 13px;
- border:2px solid #8c512a;border-radius:13px;background:#1a0e09f7;color:#f4dfb9;
- box-shadow:0 7px 16px #000b;font-size:12px;line-height:1.5;
-}
-#playerPopup.show{display:block}
-#playerPopup b{display:block;color:#ffe09d;font-size:15px;margin-bottom:4px}
+    repeating-linear-gradient(
+      3deg,
+      transparent 0,
+      transparent 10px,
+      rgba(255,194,117,.05) 11px,
+      transparent 13px
+    ),
 
-/* ===== OWN WOOD RACK ===== */
-.rack{
- position:absolute;left:50%;bottom:8.8%;transform:translateX(-50%);z-index:48;
- width:min(47%,690px);height:11%;border:4px solid #3b1709;border-radius:12px 12px 4px 4px;
- background:linear-gradient(#965025,#672b11 45%,#381407);
- box-shadow:inset 0 3px 3px #ffc07844,inset 0 -12px 15px #0006,0 -3px 8px #0008;
-}
-.rack:before{
- content:"";position:absolute;left:3%;right:3%;top:9%;height:8px;border-radius:8px;
- background:linear-gradient(#d08343,#682a10);box-shadow:0 3px 4px #210b04;
-}
-
-/* ===== OWN 7 TILES ===== */
-#playerHand{
- position:absolute;left:50%;bottom:9.5%;transform:translateX(-50%);z-index:70;
- height:14%;display:flex;align-items:flex-end;justify-content:center;gap:7px;
-}
-.handtile{
- position:relative;width:clamp(42px,3.7vw,58px);height:clamp(72px,6.8vw,102px);
- display:flex;flex-direction:column;flex:none;border:1px solid #a59470;border-radius:9px;
- background:linear-gradient(145deg,#fffef2,#f8efd3 38%,#dfcfaa 76%,#bba77c);
- box-shadow:inset 2px 2px 3px #fff,inset -3px -3px 5px #725a3544,0 4px 0 #96815e,0 7px 9px #0009;
- cursor:pointer;transition:.16s;
-}
-.handtile:after{
- content:"";position:absolute;left:5px;right:5px;top:50%;height:2px;transform:translateY(-50%);
- background:linear-gradient(#847458,#fff8e5);
-}
-.handtile .half{width:100%;height:50%}
-.handtile.playable{filter:brightness(1.07) drop-shadow(0 0 5px #ffd97688)}
-.handtile:active{transform:translateY(-10px)}
-
-/* ===== ONLY TWO BUTTONS ===== */
-.actions{
- position:absolute;left:1.6%;bottom:13.3%;z-index:120;display:flex;gap:7px;
-}
-.action{
- height:clamp(49px,7.3vh,72px);min-width:clamp(112px,11.5vw,180px);padding:0 15px;
- border:3px solid #5d3926;border-radius:18px;color:#fff1dc;
- background:linear-gradient(#3b3731,#171512);box-shadow:inset 0 2px 2px #fff2,0 5px 8px #000b;
- font-size:clamp(13px,1.35vw,21px);font-weight:900;
-}
-
-/* ===== CHAT ===== */
-#emojiPanel{
- position:absolute;left:12%;bottom:21%;z-index:250;display:none;
- grid-template-columns:repeat(4,46px);gap:6px;padding:9px;border:2px solid #754226;
- border-radius:14px;background:#17100bf7;box-shadow:0 8px 18px #000c;
-}
-#emojiPanel.show{display:grid}
-.emoji{width:46px;height:42px;border:1px solid #654128;border-radius:9px;background:#302218;font-size:24px}
-
-/* ===== THIN BOTTOM INFO ===== */
-.bottomInfo{
- position:absolute;left:.7%;right:.7%;bottom:.5%;height:8%;z-index:65;
- display:grid;grid-template-columns:repeat(5,1fr);overflow:hidden;
- border:3px solid #4b2817;border-radius:21px;background:linear-gradient(#30241c,#11100e);
- box-shadow:inset 0 2px #ffffff12,0 4px 8px #000b;
-}
-.info{
- display:flex;align-items:center;justify-content:center;gap:6px;padding:3px 6px;
- border-right:1px solid #76503766;color:#d7c5a9;text-align:center;font-size:clamp(8px,.72vw,12px);
-}
-.info:last-child{border:0}
-.info i{font-style:normal;font-size:clamp(18px,1.7vw,27px)}
-.info b{display:block;color:#f5dfb9;font-size:clamp(9px,.82vw,14px)}
-
-/* ===== MESSAGE ===== */
-#message{
- position:absolute;left:50%;top:29%;transform:translateX(-50%);z-index:200;
- padding:7px 17px;border-radius:20px;background:#130c08e8;border:1px solid #e2b76866;
- color:#ffe4af;font-weight:900;opacity:0;transition:.2s;pointer-events:none;
-}
-#message.show{opacity:1}
-
-/* ===== PHONE LANDSCAPE ===== */
-@media(max-height:550px){
- .top{height:21.5%}
- .table{top:23%;bottom:13%}
- .player{width:53px;height:53px}
- .avatar{font-size:25px}
- .dot{width:16px;height:16px}
- .rack{bottom:8%;height:11%}
- #playerHand{bottom:8.8%;height:14%}
- .handtile{width:38px;height:66px}
- .actions{bottom:12.7%}
- .action{height:45px;min-width:90px;font-size:12px}
- .bottomInfo{height:8%}
-}
-
-.rotate{
- display:none;position:fixed;inset:0;z-index:9999;background:#1d0b04;color:#ffe1a7;
- align-items:center;justify-content:center;flex-direction:column;text-align:center;
-}
-.rotate span{font-size:55px}
-@media(orientation:portrait){.rotate{display:flex}}
-</style>
-</head>
-
-<body>
-<div id="game">
-
-  <div class="top">
-
-    <div class="scorebox">
-      <div class="scoretitle">გუნდი A (1 და 3)</div>
-      <div class="scorebody">
-        <div class="labels">
-          <span>100</span><span>100</span><span>100</span><span>50</span><span>5</span>
-        </div>
-        <div class="rails" id="abacusA">
-          <div class="rail"><div class="beadrow"></div></div>
-          <div class="rail"><div class="beadrow"></div></div>
-          <div class="rail"><div class="beadrow"></div></div>
-          <div class="rail"><div class="beadrow"></div></div>
-          <div class="rail"><div class="beadrow"></div></div>
-        </div>
-        <div class="total" id="scoreA">0 / 355</div>
-      </div>
-    </div>
-
-    <div class="brand">
-      <div class="brand-main">DOMINO</div>
-      <div class="brand-sub"><span class="flag">🇬🇪</span><span>GEORGIA</span><span class="flag">🇬🇪</span></div>
-    </div>
-
-    <div class="scorebox">
-      <div class="scoretitle">გუნდი B (2 და 4)</div>
-      <div class="scorebody">
-        <div class="labels">
-          <span>100</span><span>100</span><span>100</span><span>50</span><span>5</span>
-        </div>
-        <div class="rails" id="abacusB">
-          <div class="rail"><div class="beadrow"></div></div>
-          <div class="rail"><div class="beadrow"></div></div>
-          <div class="rail"><div class="beadrow"></div></div>
-          <div class="rail"><div class="beadrow"></div></div>
-          <div class="rail"><div class="beadrow"></div></div>
-        </div>
-        <div class="total" id="scoreB">0 / 355</div>
-      </div>
-    </div>
-
-  </div>
-
-  <aside class="room">
-    ოთახი:
-    <b>თბილისი 1</b>
-    მაგიდა #2847<br>
-    4 მოთამაშე<br>
-    355 ქულამდე
-    <div class="online">● Online</div>
-  </aside>
-
-  <aside class="note">
-    კარგი თამაში<br>
-    კარგი ადამიანები<br>
-    ♡
-  </aside>
-
-  <main class="table" id="table">
-    <div class="watermark">
-      <div class="crown">♛</div>
-      <div>DOMINO<br>GEORGIA</div>
-    </div>
-
-    <div class="hidden" id="hiddenTop"></div>
-    <div class="hidden" id="hiddenLeft"></div>
-    <div class="hidden" id="hiddenRight"></div>
-
-    <div id="boardViewport">
-      <div id="dominoBoard"></div>
-    </div>
-  </main>
-
-  <div class="player top" data-player="2">
-    <div class="avatar">🌆</div><div class="dot"></div>
-  </div>
-
-  <div class="player left" data-player="3">
-    <div class="avatar">😎</div><div class="dot"></div>
-  </div>
-
-  <div class="player right" data-player="1">
-    <div class="avatar">🧢</div><div class="dot"></div>
-  </div>
-
-  <div class="player bottom" data-player="0">
-    <div class="avatar">😺</div><div class="dot"></div>
-  </div>
-
-  <div id="playerPopup">
-    <b id="popName">Kusto</b>
-    <div id="popRating">★ რეიტინგი: 1100</div>
-    <div id="popWins">მოგება: 0</div>
-    <div id="popLoss">წაგება: 0</div>
-    <div class="online">● ონლაინ</div>
-  </div>
-
-  <div class="rack"></div>
-  <div id="playerHand"></div>
-
-  <div class="actions">
-    <button class="action" id="passBtn">↩ &nbsp; გავიარე</button>
-    <button class="action" id="chatBtn">💬 &nbsp; ჩატი</button>
-  </div>
-
-  <div id="emojiPanel">
-    <button class="emoji">👍</button><button class="emoji">👏</button>
-    <button class="emoji">😄</button><button class="emoji">😎</button>
-    <button class="emoji">🤝</button><button class="emoji">🔥</button>
-    <button class="emoji">😮</button><button class="emoji">❤️</button>
-  </div>
-
-  <div id="message">DOMINO GEORGIA</div>
-
-  <div class="bottomInfo">
-    <div class="info"><i>🏆</i><span><b>მიზანი</b>355 ქულა</span></div>
-    <div class="info"><i>👥</i><span><b>გუნდები</b>1+3 და 2+4</span></div>
-    <div class="info"><i>▶</i><span><b>პირველი ხელი</b>6-6 იწყებს</span></div>
-    <div class="info"><i>✦</i><span><b>ქულები</b>ღია ბოლოები</span></div>
-    <div class="info"><i>🔗</i><span><b>რიბა</b>გუნდის ქულებით</span></div>
-  </div>
-
-<!-- PART 1/3 END — PART 2 პირდაპირ აქედან გაგრძელდება -->
-  <script>
-/* =========================================================
-   DOMINO GEORGIA — PART 2/3
-   GAME ENGINE + PREMIUM DOMINO RENDER
-========================================================= */
-
-const $ = id => document.getElementById(id);
-
-const TARGET_SCORE = 355;
-
-const PIPS = {
-  0: [],
-  1: ["pc"],
-  2: ["tl","br"],
-  3: ["tl","pc","br"],
-  4: ["tl","tr","bl","br"],
-  5: ["tl","tr","pc","bl","br"],
-  6: ["tl","tr","ml","mr","bl","br"]
-};
-
-const game = {
-  hands:[[],[],[],[]],
-  scores:[0,0],
-  carry:0,
-  currentPlayer:0,
-  round:1,
-  firstRound:true,
-  placed:[],
-  ports:[],
-  nextTileId:1,
-  nextPortId:1,
-  selected:null,
-  busy:false,
-  finished:false,
-  thresholdReached:false,
-  lastPlayer:null,
-  passCount:0
-};
-
-
-/* =========================================================
-   CREATE 28 DOMINOES
-========================================================= */
-
-function createSet(){
-  const set=[];
-
-  for(let a=0;a<=6;a++){
-    for(let b=a;b<=6;b++){
-      set.push({
-        a,
-        b,
-        id:`D${a}${b}`
-      });
-    }
-  }
-
-  return set;
+    repeating-linear-gradient(
+      91deg,
+      rgba(0,0,0,.04) 0,
+      rgba(0,0,0,.04) 2px,
+      transparent 3px,
+      transparent 37px
+    );
 }
 
 
 /* =========================================================
-   SHUFFLE
+   TOP PANEL
 ========================================================= */
 
-function shuffle(array){
-  const arr=[...array];
+.top-panel{
+  position:absolute;
 
-  for(let i=arr.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [arr[i],arr[j]]=[arr[j],arr[i]];
-  }
+  left:.55%;
+  right:.55%;
+  top:.45%;
 
-  return arr;
+  height:20.5%;
+
+  z-index:50;
+
+  display:grid;
+
+  grid-template-columns:
+    34.2%
+    30.4%
+    34.2%;
+
+  gap:.6%;
 }
 
 
 /* =========================================================
-   DEAL 7 EACH
+   SCOREBOARD
 ========================================================= */
 
-function deal(){
-  const set=shuffle(createSet());
+.team-score{
+  position:relative;
 
-  game.hands=[[],[],[],[]];
+  overflow:hidden;
 
-  for(let i=0;i<28;i++){
-    game.hands[i%4].push(set[i]);
-  }
+  border:4px solid #2a0e05;
+  border-radius:22px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #713619 0%,
+      #4a1b0c 47%,
+      #230a04 100%
+    );
+
+  box-shadow:
+    inset 0 0 0 2px #8c4822,
+    inset 0 -17px 26px rgba(0,0,0,.54),
+    0 5px 10px #000;
+}
+
+.team-score::before{
+  content:"";
+
+  position:absolute;
+  inset:0;
+
+  opacity:.32;
+
+  background:
+    repeating-linear-gradient(
+      5deg,
+      transparent 0,
+      transparent 8px,
+      rgba(255,204,133,.1) 9px,
+      transparent 11px
+    );
+
+  pointer-events:none;
+}
+
+
+.team-title{
+  position:relative;
+  z-index:2;
+
+  height:25%;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  color:#ffe0a4;
+
+  font-family:Georgia,serif;
+  font-size:clamp(13px,1.55vw,24px);
+  font-weight:900;
+
+  text-shadow:
+    0 2px 2px #000,
+    0 4px 5px rgba(0,0,0,.45);
+}
+
+
+.score-body{
+  position:relative;
+  z-index:2;
+
+  height:75%;
+
+  display:grid;
+
+  grid-template-columns:
+    12% 63% 25%;
+
+  padding:
+    1px 8px 7px 8px;
 }
 
 
 /* =========================================================
-   TEAM
-   player 0 + 2 = A
-   player 1 + 3 = B
+   SCORE LABELS
 ========================================================= */
 
-function teamOf(player){
-  return player%2===0 ? 0 : 1;
-}
+.score-labels{
+  display:grid;
 
+  grid-template-rows:
+    repeat(5,1fr);
 
-/* =========================================================
-   PIP TOTAL
-========================================================= */
+  align-items:center;
 
-function tilePoints(tile){
-  return tile.a+tile.b;
-}
+  color:#ffe0a5;
 
-function handPoints(hand){
-  return hand.reduce((sum,t)=>sum+t.a+t.b,0);
-}
+  font-family:Georgia,serif;
+  font-size:clamp(9px,.88vw,15px);
+  font-weight:900;
 
-function round5(value){
-  if(value<=0) return 0;
-  return Math.ceil(value/5)*5;
-}
-
-
-/* =========================================================
-   PIP HTML
-========================================================= */
-
-function halfHTML(value){
-  return `
-    <div class="half">
-      ${PIPS[value].map(p=>`<span class="pip ${p}"></span>`).join("")}
-    </div>
-  `;
+  text-shadow:0 2px 2px #000;
 }
 
 
@@ -542,1258 +240,804 @@ function halfHTML(value){
    ABACUS
 ========================================================= */
 
-function createAbacus(){
-  ["abacusA","abacusB"].forEach(id=>{
-    const box=$(id);
-    if(!box) return;
+.abacus{
+  display:grid;
 
-    box.querySelectorAll(".beadrow").forEach((row,rowIndex)=>{
-      row.innerHTML="";
+  grid-template-rows:
+    repeat(5,1fr);
 
-      const count = rowIndex===4 ? 14 : 12;
-
-      for(let i=0;i<count;i++){
-        const bead=document.createElement("span");
-        bead.className="bead";
-        row.appendChild(bead);
-      }
-    });
-  });
-}
-
-function updateAbacus(){
-  ["abacusA","abacusB"].forEach((id,team)=>{
-    const score=Math.min(game.scores[team],355);
-    const rows=$(id)?.querySelectorAll(".beadrow");
-
-    if(!rows) return;
-
-    let remaining=score;
-
-    rows.forEach((row,index)=>{
-      const beads=[...row.children];
-      let active=0;
-
-      if(index<3){
-        if(remaining>=100){
-          active=beads.length;
-          remaining-=100;
-        }else{
-          active=Math.floor((remaining/100)*beads.length);
-          remaining=0;
-        }
-      }
-
-      else if(index===3){
-        if(remaining>=50){
-          active=beads.length;
-          remaining-=50;
-        }else{
-          active=Math.floor((remaining/50)*beads.length);
-          remaining=0;
-        }
-      }
-
-      else{
-        active=Math.min(
-          beads.length,
-          Math.floor(remaining/5)
-        );
-      }
-
-      beads.forEach((bead,i)=>{
-        bead.classList.toggle("dark",i>=active);
-      });
-    });
-  });
-}
-
-function updateScores(){
-  $("scoreA").textContent=`${game.scores[0]} / 355`;
-  $("scoreB").textContent=`${game.scores[1]} / 355`;
-  updateAbacus();
+  gap:1px;
 }
 
 
-/* =========================================================
-   MESSAGE
-========================================================= */
+.abacus-row{
+  position:relative;
 
-let messageTimer=null;
-
-function message(text,time=1500){
-  const el=$("message");
-  if(!el) return;
-
-  clearTimeout(messageTimer);
-
-  el.textContent=text;
-  el.classList.add("show");
-
-  messageTimer=setTimeout(()=>{
-    el.classList.remove("show");
-  },time);
+  display:flex;
+  align-items:center;
 }
 
 
-/* =========================================================
-   HIDDEN OPPONENT TILES
-========================================================= */
+.rail{
+  position:absolute;
 
-function renderHidden(){
-  const top=$("hiddenTop");
-  const left=$("hiddenLeft");
-  const right=$("hiddenRight");
+  left:1px;
+  right:2px;
 
-  if(!top || !left || !right) return;
+  height:3px;
 
-  top.innerHTML="";
-  left.innerHTML="";
-  right.innerHTML="";
+  border-radius:4px;
 
-  for(let i=0;i<game.hands[2].length;i++){
-    top.insertAdjacentHTML("beforeend",`<div class="back"></div>`);
-  }
-
-  for(let i=0;i<game.hands[3].length;i++){
-    left.insertAdjacentHTML("beforeend",`<div class="back"></div>`);
-  }
-
-  for(let i=0;i<game.hands[1].length;i++){
-    right.insertAdjacentHTML("beforeend",`<div class="back"></div>`);
-  }
-}
-
-
-/* =========================================================
-   PORT GRAPH
-
-   თითო ღია ბოლოს აქვს:
-   value = რა რიცხვი უნდა დაემთხვეს
-   x,y = მდებარეობა
-   dx,dy = რომელი მიმართულებით იზრდება
-   contribution = რამდენს ითვლის ღია ბოლო ქულაში
-
-   ჩვეულებრივი ბოლო: value
-   ღია დუპლი: value * 2
-========================================================= */
-
-function newPort(value,x,y,dx,dy,doubleOpen=false){
-  return {
-    id:game.nextPortId++,
-    value,
-    x,
-    y,
-    dx,
-    dy,
-    open:true,
-    doubleOpen,
-    contribution:doubleOpen ? value*2 : value
-  };
-}
-
-function activePorts(){
-  return game.ports.filter(p=>p.open);
-}
-
-function openEndTotal(){
-  return activePorts().reduce(
-    (sum,p)=>sum+p.contribution,
-    0
-  );
-}
-
-
-/* =========================================================
-   GEOMETRY
-
-   Logical board coordinates.
-   Board will later scale automatically.
-========================================================= */
-
-const NORMAL_STEP = 82;
-const DOUBLE_STEP = 52;
-
-function directionAngle(dx,dy){
-  if(dx===1) return 0;
-  if(dx===-1) return 180;
-  if(dy===1) return 90;
-  return -90;
-}
-
-function opposite(dx,dy){
-  return {dx:-dx,dy:-dy};
-}
-
-
-/* =========================================================
-   OPENING TILE
-========================================================= */
-
-function placeOpeningTile(player,handIndex){
-  const tile=game.hands[player][handIndex];
-  if(!tile) return false;
-
-  game.hands[player].splice(handIndex,1);
-
-  const isDouble=tile.a===tile.b;
-
-  const placement={
-    id:game.nextTileId++,
-    a:tile.a,
-    b:tile.b,
-    x:0,
-    y:0,
-    angle:isDouble ? 90 : 0,
-    isDouble,
-    opening:true
-  };
-
-  game.placed.push(placement);
-
-  if(isDouble){
-    /*
-      დუპლის ორი საწყისი მხარე.
-      დარჩენილი ღია მხარე ითვლის ორმაგ მნიშვნელობას.
-    */
-
-    game.ports.push(
-      newPort(tile.a,-42,0,-1,0,true),
-      newPort(tile.a, 42,0, 1,0,true)
-    );
-  }else{
-    game.ports.push(
-      newPort(tile.a,-42,0,-1,0,false),
-      newPort(tile.b, 42,0, 1,0,false)
-    );
-  }
-
-  game.lastPlayer=player;
-  game.passCount=0;
-
-  /*
-    სპეციალური გახსნა:
-    მხოლოდ 5-5 = +10.
-  */
-
-  if(tile.a===5 && tile.b===5){
-    addLiveScore(player,10);
-    message("5–5 გახსნა • +10");
-  }
-
-  renderAll();
-  return true;
-}
-
-
-/* =========================================================
-   LEGAL PORTS
-========================================================= */
-
-function legalPortsForTile(tile){
-  return activePorts().filter(
-    p=>tile.a===p.value || tile.b===p.value
-  );
-}
-
-function canPlayTile(tile){
-  if(game.placed.length===0) return true;
-  return legalPortsForTile(tile).length>0;
-}
-
-function hasLegalMove(player){
-  return game.hands[player].some(canPlayTile);
-}
-
-
-/* =========================================================
-   BOARD PATH / TURNING
-
-   თუ ჯაჭვი ძალიან გრძელდება,
-   მიმართულება იცვლება და მწვანე მაგიდაზე რჩება.
-========================================================= */
-
-function chooseDirection(port){
-  let dx=port.dx;
-  let dy=port.dy;
-
-  const nextX=port.x + dx*NORMAL_STEP;
-  const nextY=port.y + dy*NORMAL_STEP;
-
-  const X_LIMIT=330;
-  const Y_LIMIT=145;
-
-  if(nextX>X_LIMIT){
-    dx=0;
-    dy=1;
-  }
-
-  else if(nextX<-X_LIMIT){
-    dx=0;
-    dy=-1;
-  }
-
-  else if(nextY>Y_LIMIT){
-    dx=-1;
-    dy=0;
-  }
-
-  else if(nextY<-Y_LIMIT){
-    dx=1;
-    dy=0;
-  }
-
-  return {dx,dy};
-}
-
-
-/* =========================================================
-   ATTACH TILE TO PORT
-========================================================= */
-
-function attachTile(player,handIndex,portId){
-  const tile=game.hands[player][handIndex];
-  const port=game.ports.find(p=>p.id===portId && p.open);
-
-  if(!tile || !port) return false;
-
-  if(tile.a!==port.value && tile.b!==port.value){
-    return false;
-  }
-
-  const matchA=tile.a===port.value;
-
-  /*
-    touching = ის ნახევარი, რომელიც აუცილებლად
-    ეხება ძველ ღია ბოლოს.
-    outer = ახალი გარეთა მნიშვნელობა.
-  */
-
-  const touching=matchA ? tile.a : tile.b;
-  const outer=matchA ? tile.b : tile.a;
-  const isDouble=tile.a===tile.b;
-
-  const dir=chooseDirection(port);
-  const dx=dir.dx;
-  const dy=dir.dy;
-
-  let x=port.x;
-  let y=port.y;
-  let angle;
-
-  if(isDouble){
-    /*
-      დუპლი ჯაჭვზე განივად დგება.
-  */
-    if(dx!==0){
-      angle=90;
-      x+=dx*(DOUBLE_STEP/2);
-    }else{
-      angle=0;
-      y+=dy*(DOUBLE_STEP/2);
-    }
-  }else{
-    angle=directionAngle(dx,dy);
-
-    x+=dx*(NORMAL_STEP/2);
-    y+=dy*(NORMAL_STEP/2);
-  }
-
-  const placement={
-    id:game.nextTileId++,
-    a:tile.a,
-    b:tile.b,
-    touching,
-    outer,
-    x,
-    y,
-    angle,
-    isDouble,
-    opening:false
-  };
-
-  /*
-    ვიზუალური ორიენტაცია:
-    touching half ყოველთვის ძველ ქვას ეხება.
-  */
-
-  if(!isDouble){
-    if(dx===1){
-      placement.renderA=touching;
-      placement.renderB=outer;
-    }
-
-    else if(dx===-1){
-      placement.renderA=outer;
-      placement.renderB=touching;
-    }
-
-    else if(dy===1){
-      placement.renderA=touching;
-      placement.renderB=outer;
-    }
-
-    else{
-      placement.renderA=outer;
-      placement.renderB=touching;
-    }
-  }
-
-  port.open=false;
-
-  game.hands[player].splice(handIndex,1);
-
-  game.placed.push(placement);
-
-  /*
-    ახალი ღია ბოლო.
-  */
-
-  if(isDouble){
-    const endX=x + dx*(DOUBLE_STEP/2);
-    const endY=y + dy*(DOUBLE_STEP/2);
-
-    game.ports.push(
-      newPort(
-        outer,
-        endX,
-        endY,
-        dx,
-        dy,
-        true
-      )
-    );
-  }else{
-    const endX=x + dx*(NORMAL_STEP/2);
-    const endY=y + dy*(NORMAL_STEP/2);
-
-    game.ports.push(
-      newPort(
-        outer,
-        endX,
-        endY,
-        dx,
-        dy,
-        false
-      )
-    );
-  }
-
-  game.lastPlayer=player;
-  game.passCount=0;
-
-  /*
-    ღია ბოლოების ქულა
-  */
-
-  const total=openEndTotal();
-
-  if(total===35){
-    renderAll();
-    instant35Win(player);
-    return true;
-  }
-
-  if(total>0 && total%5===0){
-    addLiveScore(player,total);
-    message(`ღია ბოლოები ${total} • +${total}`);
-  }
-
-  renderAll();
-
-  if(game.hands[player].length===0){
-    finishNormalHand(player);
-    return true;
-  }
-
-  return true;
-}
-
-
-/* =========================================================
-   LIVE SCORE
-========================================================= */
-
-function addLiveScore(player,points){
-  if(points<=0) return;
-
-  const team=teamOf(player);
-  game.scores[team]+=points;
-
-  if(game.scores[team]>=TARGET_SCORE){
-    game.thresholdReached=true;
-  }
-
-  updateScores();
-}
-
-
-/* =========================================================
-   EXACT 35 = INSTANT MATCH WIN
-========================================================= */
-
-function instant35Win(player){
-  if(game.finished) return;
-
-  game.finished=true;
-  game.busy=true;
-
-  const team=teamOf(player);
-
-  message(
-    `35! გუნდი ${team===0 ? "A" : "B"} იგებს მატჩს!`,
-    5000
-  );
-}
-
-
-/* =========================================================
-   HUMAN HAND
-========================================================= */
-
-function renderHand(){
-  const hand=$("playerHand");
-  if(!hand) return;
-
-  hand.innerHTML="";
-
-  game.hands[0].forEach((tile,index)=>{
-    const el=document.createElement("div");
-
-    el.className="handtile";
-
-    if(
-      game.currentPlayer===0 &&
-      canPlayTile(tile)
-    ){
-      el.classList.add("playable");
-    }
-
-    el.innerHTML=
-      halfHTML(tile.a)+
-      halfHTML(tile.b);
-
-    el.addEventListener("click",()=>{
-      humanPlay(index);
-    });
-
-    hand.appendChild(el);
-  });
-}
-
-
-/* =========================================================
-   HUMAN PLAY
-========================================================= */
-
-function humanPlay(handIndex){
-  if(game.finished || game.busy) return;
-  if(game.currentPlayer!==0) return;
-
-  const tile=game.hands[0][handIndex];
-  if(!tile) return;
-
-  /*
-    ცარიელი დაფა — მომდევნო ხელის გამარჯვებულს
-    შეუძლია ნებისმიერი ქვით გახსნა.
-  */
-
-  if(game.placed.length===0){
-    game.busy=true;
-
-    if(placeOpeningTile(0,handIndex)){
-      afterMove(0);
-    }
-
-    return;
-  }
-
-  const legal=legalPortsForTile(tile);
-
-  if(legal.length===0){
-    message("ეს ქვა ვერ მიდის");
-    return;
-  }
-
-  /*
-    თუ რამდენიმე ღია ბოლოა, ახლა ვირჩევთ
-    პირველ შესაბამისს.
-    მესამე ნაწილში დავამატებთ კონკრეტული
-    ღია ბოლოს არჩევის UI-ს.
-  */
-
-  game.busy=true;
-
-  if(attachTile(0,handIndex,legal[0].id)){
-    if(!game.finished && game.hands[0].length>0){
-      afterMove(0);
-    }
-  }else{
-    game.busy=false;
-  }
-}
-
-
-/* =========================================================
-   AI TILE CHOICE
-========================================================= */
-
-function chooseAITile(player){
-  const hand=game.hands[player];
-
-  if(game.placed.length===0){
-    let best=0;
-
-    for(let i=1;i<hand.length;i++){
-      if(tilePoints(hand[i])>tilePoints(hand[best])){
-        best=i;
-      }
-    }
-
-    return {
-      handIndex:best,
-      port:null
-    };
-  }
-
-  let options=[];
-
-  hand.forEach((tile,index)=>{
-    const ports=legalPortsForTile(tile);
-
-    ports.forEach(port=>{
-      options.push({
-        handIndex:index,
-        port,
-        value:tilePoints(tile)
-      });
-    });
-  });
-
-  if(!options.length) return null;
-
-  /*
-    AI ჯერ უფრო მაღალი ქულის ქვას უშვებს.
-  */
-
-  options.sort((a,b)=>b.value-a.value);
-
-  return options[0];
-}
-
-
-/* =========================================================
-   AI MOVE
-========================================================= */
-
-function aiMove(player){
-  if(game.finished) return;
-
-  const choice=chooseAITile(player);
-
-  if(!choice){
-    passPlayer(player);
-    return;
-  }
-
-  if(game.placed.length===0){
-    placeOpeningTile(
-      player,
-      choice.handIndex
+  background:
+    linear-gradient(
+      180deg,
+      #d58a49,
+      #713217
     );
 
-    afterMove(player);
-    return;
-  }
-
-  const success=attachTile(
-    player,
-    choice.handIndex,
-    choice.port.id
-  );
-
-  if(
-    success &&
-    !game.finished &&
-    game.hands[player].length>0
-  ){
-    afterMove(player);
-  }
+  box-shadow:
+    0 1px 2px #000;
 }
 
 
-/* =========================================================
-   NEXT TURN
-========================================================= */
+.beads{
+  position:relative;
+  z-index:2;
 
-function afterMove(player){
-  if(game.finished) return;
+  display:flex;
 
-  game.currentPlayer=(player+1)%4;
-  game.busy=false;
+  align-items:center;
 
-  renderAll();
+  gap:2px;
 
-  if(game.currentPlayer!==0){
-    game.busy=true;
-
-    setTimeout(()=>{
-      game.busy=false;
-      aiMove(game.currentPlayer);
-    },650);
-  }
+  padding-left:3px;
 }
 
 
-/* =========================================================
-   PASS
-========================================================= */
+.bead{
+  width:clamp(8px,.72vw,12px);
+  height:clamp(13px,1.55vw,24px);
 
-function passPlayer(player){
-  if(game.finished) return;
+  border-radius:50%;
 
-  if(hasLegalMove(player)){
-    if(player===0){
-      message("გაქვს სათამაშო ქვა");
-    }
-    return;
-  }
+  border:1px solid #1b0803;
 
-  game.passCount++;
-
-  message(
-    player===0
-      ? "გავიარე"
-      : `მოთამაშე ${player+1} გავიდა`
-  );
-
-  /*
-    ოთხივე მოთამაშე თუ ზედიზედ ვერ თამაშობს,
-    დაფა დაბლოკილია — რიბა.
-  */
-
-  if(game.passCount>=4){
-    finishRiba();
-    return;
-  }
-
-  game.currentPlayer=(player+1)%4;
-  game.busy=false;
-
-  renderAll();
-
-  if(game.currentPlayer!==0){
-    game.busy=true;
-
-    setTimeout(()=>{
-      game.busy=false;
-      aiMove(game.currentPlayer);
-    },550);
-  }
-}
-
-$("passBtn").addEventListener("click",()=>{
-  if(game.currentPlayer!==0 || game.busy || game.finished){
-    return;
-  }
-
-  passPlayer(0);
-});
-
-
-/* =========================================================
-   NORMAL HAND FINISH
-========================================================= */
-
-function finishNormalHand(player){
-  if(game.finished) return;
-
-  game.busy=true;
-
-  const winnerTeam=teamOf(player);
-  const loserTeam=1-winnerTeam;
-
-  const loserPlayers =
-    loserTeam===0
-      ? [0,2]
-      : [1,3];
-
-  const raw=
-    handPoints(game.hands[loserPlayers[0]])+
-    handPoints(game.hands[loserPlayers[1]]);
-
-  const earned=
-    round5(raw)+game.carry;
-
-  game.carry=0;
-
-  game.scores[winnerTeam]+=earned;
-
-  if(game.scores[winnerTeam]>=TARGET_SCORE){
-    game.thresholdReached=true;
-  }
-
-  updateScores();
-  renderAll();
-
-  /*
-    თუ 355 უკვე მიღწეული იყო,
-    მატჩი მხოლოდ არარიბა ხელის შემდეგ მთავრდება.
-  */
-
-  if(game.thresholdReached){
-    resolveMatchAfterNormalHand();
-    return;
-  }
-
-  message(
-    `გუნდი ${winnerTeam===0?"A":"B"} • +${earned}`,
-    2200
-  );
-
-  setTimeout(()=>{
-    startNextRound(player);
-  },2300);
-}
-
-
-/* =========================================================
-   RIBA
-========================================================= */
-
-function teamRemaining(team){
-  const players=
-    team===0 ? [0,2] : [1,3];
-
-  return (
-    handPoints(game.hands[players[0]])+
-    handPoints(game.hands[players[1]])
-  );
-}
-
-function finishRiba(){
-  if(game.finished) return;
-
-  game.busy=true;
-
-  const a=teamRemaining(0);
-  const b=teamRemaining(1);
-
-  /*
-    თანაბარი რიბა:
-    არავინ იღებს ქულას.
-    საერთო ნაშთი მრგვალდება 5-მდე
-    და ემატება carry-ს.
-  */
-
-  if(a===b){
-    const carryAdd=round5(a);
-
-    game.carry+=carryAdd;
-
-    message(
-      `რიბა ${a}:${b} • გადადის ${carryAdd}`,
-      2500
+  background:
+    linear-gradient(
+      90deg,
+      #211007,
+      #a45a2a 37%,
+      #e0a05d 51%,
+      #743116 73%,
+      #1c0904
     );
 
-    /*
-      რიბის დამხურავი — ბოლო მოთამაშე.
-    */
+  box-shadow:
+    inset 1px 0 rgba(255,255,255,.35),
+    0 1px 2px #000;
+}
 
-    const starter=
-      game.lastPlayer ?? 0;
 
-    setTimeout(()=>{
-      startNextRound(starter);
-    },2600);
-
-    return;
-  }
-
-  const winnerTeam=
-    a<b ? 0 : 1;
-
-  const loserPoints=
-    winnerTeam===0 ? b : a;
-
-  const earned=
-    round5(loserPoints)+game.carry;
-
-  game.carry=0;
-  game.scores[winnerTeam]+=earned;
-
-  if(game.scores[winnerTeam]>=TARGET_SCORE){
-    game.thresholdReached=true;
-  }
-
-  updateScores();
-
-  message(
-    `რიბა • გუნდი ${winnerTeam===0?"A":"B"} +${earned}`,
-    2600
-  );
-
-  /*
-    რიბის შემდეგ მატჩი არ მთავრდება,
-    თუნდაც 355 გადასცდეს.
-  */
-
-  const starter=
-    game.lastPlayer ?? 0;
-
-  setTimeout(()=>{
-    startNextRound(starter);
-  },2700);
+.bead.off{
+  filter:
+    brightness(.35)
+    saturate(.65);
 }
 
 
 /* =========================================================
-   MATCH RESOLUTION AFTER NON-RIBA HAND
+   TEAM TOTAL
 ========================================================= */
 
-function resolveMatchAfterNormalHand(){
-  game.finished=true;
-  game.busy=true;
+.team-total{
+  display:flex;
 
-  const a=game.scores[0];
-  const b=game.scores[1];
+  align-items:center;
+  justify-content:center;
 
-  if(a===b){
-    /*
-      თუ ზუსტად თანაბარია,
-      ვაგრძელებთ კიდევ ერთ ხელს.
-  */
-    game.finished=false;
-    game.thresholdReached=true;
+  color:#ffe2a3;
 
-    message(
-      `${a}:${b} • კიდევ ერთი ხელი`,
-      2200
+  white-space:nowrap;
+
+  font-family:Georgia,serif;
+  font-size:clamp(16px,1.9vw,31px);
+  font-weight:900;
+
+  text-shadow:
+    0 3px 4px #000;
+}
+
+
+/* =========================================================
+   CENTER LOGO
+========================================================= */
+
+.logo{
+  position:relative;
+
+  overflow:hidden;
+
+  display:flex;
+  flex-direction:column;
+
+  align-items:center;
+  justify-content:center;
+
+  border:4px solid #2c0f05;
+
+  border-radius:
+    0 0 21px 21px;
+
+  background:
+    radial-gradient(
+      ellipse at 50% 18%,
+      #944820,
+      #4c1b0b 54%,
+      #220904 100%
     );
 
-    setTimeout(()=>{
-      startNextRound(
-        game.lastPlayer ?? 0
-      );
-    },2300);
+  box-shadow:
+    inset 0 0 0 3px rgba(173,89,43,.55),
+    inset 0 -16px 24px rgba(0,0,0,.52),
+    0 7px 12px #000;
+}
 
-    return;
-  }
 
-  const winner=
-    a>b ? "A" : "B";
+.logo::before{
+  content:"";
 
-  message(
-    `გუნდი ${winner} იგებს • ${a}:${b}`,
-    6000
-  );
+  position:absolute;
+  inset:0;
+
+  background:
+    repeating-linear-gradient(
+      4deg,
+      transparent 0,
+      transparent 8px,
+      rgba(255,208,143,.06) 9px,
+      transparent 11px
+    );
+}
+
+
+.logo-main{
+  position:relative;
+  z-index:2;
+
+  color:#ffe9b8;
+
+  font-family:Georgia,serif;
+
+  font-size:
+    clamp(30px,4vw,62px);
+
+  font-weight:900;
+
+  letter-spacing:2px;
+
+  line-height:.88;
+
+  text-shadow:
+    0 3px 0 #763817,
+    0 7px 8px #000;
+}
+
+
+.logo-sub{
+  position:relative;
+  z-index:2;
+
+  margin-top:10px;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  gap:15px;
+
+  color:#ffe3ac;
+
+  font-family:Georgia,serif;
+
+  font-size:
+    clamp(13px,1.55vw,24px);
+
+  letter-spacing:9px;
+}
+
+
+.logo-flag{
+  letter-spacing:0;
 }
 
 
 /* =========================================================
-   RESET BOARD FOR NEXT ROUND
+   SIDE ROOM
 ========================================================= */
 
-function clearRound(){
-  game.placed=[];
-  game.ports=[];
-  game.nextTileId=1;
-  game.nextPortId=1;
-  game.selected=null;
-  game.passCount=0;
-  game.lastPlayer=null;
-}
+.room-info{
+  position:absolute;
 
+  left:.6%;
+  top:22.5%;
 
-/* =========================================================
-   NEXT ROUND
-========================================================= */
+  width:11.7%;
 
-function startNextRound(starter){
-  game.round++;
-  clearRound();
-  deal();
+  height:28%;
 
-  game.currentPlayer=starter;
-  game.busy=false;
+  z-index:30;
 
-  renderAll();
+  padding:
+    14px 11px;
 
-  message(
-    `ხელი ${game.round} • იწყებს მოთამაშე ${starter+1}`,
-    1400
-  );
+  border:
+    2px solid #4d2816;
 
-  if(starter!==0){
-    game.busy=true;
+  border-radius:
+    0 0 14px 0;
 
-    setTimeout(()=>{
-      game.busy=false;
-      aiMove(starter);
-    },900);
-  }
-}
-
-
-/* =========================================================
-   FIRST ROUND — MANDATORY 6-6
-========================================================= */
-
-function findSixSix(){
-  for(let p=0;p<4;p++){
-    const index=game.hands[p].findIndex(
-      t=>t.a===6 && t.b===6
+  background:
+    linear-gradient(
+      180deg,
+      rgba(30,16,9,.96),
+      rgba(13,8,5,.95)
     );
 
-    if(index!==-1){
-      return {
-        player:p,
-        index
-      };
-    }
-  }
+  box-shadow:
+    4px 5px 11px rgba(0,0,0,.55);
+}
 
-  return null;
+
+.room-info small{
+  display:block;
+
+  margin-bottom:8px;
+
+  color:#d9c8ad;
+
+  font-size:
+    clamp(8px,.78vw,13px);
+}
+
+
+.room-info strong{
+  display:block;
+
+  margin-bottom:12px;
+
+  color:#f7dfb2;
+
+  font-family:Georgia,serif;
+
+  font-size:
+    clamp(12px,1.05vw,17px);
+}
+
+
+.online{
+  margin-top:10px;
+
+  color:#31e86b;
+
+  font-size:
+    clamp(9px,.85vw,14px);
 }
 
 
 /* =========================================================
-   START GAME
-
-   მნიშვნელოვანი:
-   ჯერ ვაჩვენებთ 7 ქვას.
-   შემდეგ 6-6 ავტომატურად იდება ცენტრში.
+   RIGHT NOTE
 ========================================================= */
 
-function startGame(){
-  game.hands=[[],[],[],[]];
-  game.scores=[0,0];
-  game.carry=0;
-  game.round=1;
-  game.firstRound=true;
-  game.finished=false;
-  game.thresholdReached=false;
+.side-note{
+  position:absolute;
 
-  clearRound();
-  deal();
+  right:.6%;
+  top:22.5%;
 
-  const opener=findSixSix();
+  width:10.7%;
 
-  if(!opener){
-    message("6-6 ვერ მოიძებნა");
-    return;
-  }
+  height:23%;
 
-  game.currentPlayer=opener.player;
+  z-index:30;
 
-  /*
-    პირველ რიგში ხელები გამოჩნდება.
-  */
+  display:flex;
 
-  renderAll();
+  align-items:center;
+  justify-content:center;
 
-  setTimeout(()=>{
-    placeOpeningTile(
-      opener.player,
-      opener.index
+  padding:10px;
+
+  border:2px solid #46413c;
+
+  border-radius:
+    0 0 0 20px;
+
+  color:#ddd2c2;
+
+  text-align:center;
+
+  font-family:Georgia,serif;
+  font-style:italic;
+
+  font-size:
+    clamp(9px,.9vw,15px);
+
+  line-height:1.7;
+
+  background:
+    linear-gradient(
+      145deg,
+      #181716,
+      #090909
     );
 
-    game.firstRound=false;
-
-    /*
-      6-6-ის დადების შემდეგ
-      შემდეგი მოთამაშე აგრძელებს.
-    */
-
-    afterMove(opener.player);
-
-  },700);
+  box-shadow:
+    0 5px 12px #000;
 }
 
 
 /* =========================================================
-   BOARD DOMINO RENDER
+   MAIN GREEN TABLE
 ========================================================= */
 
-function renderBoard(){
-  const board=$("dominoBoard");
-  if(!board) return;
+.table-area{
+  position:absolute;
 
-  board.innerHTML="";
+  left:13.4%;
+  right:13.4%;
 
-  game.placed.forEach(tile=>{
-    const el=document.createElement("div");
+  top:22.7%;
+  bottom:12.6%;
 
-    el.className="domino";
+  z-index:10;
 
-    const a=
-      tile.renderA!==undefined
-        ? tile.renderA
-        : tile.a;
+  overflow:hidden;
 
-    const b=
-      tile.renderB!==undefined
-        ? tile.renderB
-        : tile.b;
+  border:6px solid #2c1107;
+  border-radius:6px;
 
-    el.innerHTML=
-      halfHTML(a)+
-      halfHTML(b);
+  outline:
+    2px solid #98522a;
 
-    el.style.left=`${tile.x-41}px`;
-    el.style.top=`${tile.y-22.5}px`;
+  background:
 
-    el.style.transform=
-      `rotate(${tile.angle}deg)`;
+    radial-gradient(
+      ellipse at 50% 44%,
+      rgba(21,121,80,.44),
+      transparent 64%
+    ),
 
-    board.appendChild(el);
-  });
+    repeating-linear-gradient(
+      35deg,
+      rgba(255,255,255,.013) 0,
+      rgba(255,255,255,.013) 2px,
+      transparent 3px,
+      transparent 8px
+    ),
 
-  fitBoard();
-}
-
-
-/* =========================================================
-   AUTOMATIC BOARD SCALE
-
-   მთელი დომინოს ჯაჭვი მცირდება ერთად,
-   თუ მაგიდის საზღვარს უახლოვდება.
-========================================================= */
-
-function fitBoard(){
-  const board=$("dominoBoard");
-  const viewport=$("boardViewport");
-
-  if(!board || !viewport) return;
-
-  if(game.placed.length===0){
-    board.style.transform=
-      "translate(-50%,-50%)";
-    return;
-  }
-
-  let minX=Infinity;
-  let maxX=-Infinity;
-  let minY=Infinity;
-  let maxY=-Infinity;
-
-  game.placed.forEach(t=>{
-    const horizontal=
-      Math.abs(t.angle)%180===0;
-
-    const w=horizontal ? 82 : 45;
-    const h=horizontal ? 45 : 82;
-
-    minX=Math.min(minX,t.x-w/2);
-    maxX=Math.max(maxX,t.x+w/2);
-    minY=Math.min(minY,t.y-h/2);
-    maxY=Math.max(maxY,t.y+h/2);
-  });
-
-  const width=Math.max(1,maxX-minX);
-  const height=Math.max(1,maxY-minY);
-
-  const vw=viewport.clientWidth;
-  const vh=viewport.clientHeight;
-
-  const padding=24;
-
-  const scale=Math.min(
-    1,
-    (vw-padding*2)/width,
-    (vh-padding*2)/height
-  );
-
-  const centerX=(minX+maxX)/2;
-  const centerY=(minY+maxY)/2;
-
-  board.style.transform=
-    `translate(-50%,-50%)
-     scale(${scale})
-     translate(${-centerX}px,${-centerY}px)`;
-}
-
-
-/* =========================================================
-   FULL RENDER
-========================================================= */
-
-function renderAll(){
-  updateScores();
-  renderHidden();
-  renderHand();
-  renderBoard();
-}
-
-
-/* =========================================================
-   RESIZE
-========================================================= */
-
-window.addEventListener("resize",()=>{
-  requestAnimationFrame(fitBoard);
-});
-
-
-/* =========================================================
-   PART 2/3 END
-
-   IMPORTANT:
-   SCRIPT ჯერ არ დახურო.
-   PART 3/3 პირდაპირ აქედან გაგრძელდება.
-========================================================= */
-/* =========================================================
-   DOMINO GEORGIA — PART 3/3
-   PROFILE + CHAT + PWA + START
-========================================================= */
-
-
-/* =========================================================
-   PLAYER PROFILES
-   საჯაროდ მხოლოდ nickname და თამაშის სტატისტიკა
-========================================================= */
-
-const profiles = [
-  {
-    name:"Kusto",
-    rating:1100,
-    wins:0,
-    losses:0
-  },
-  {
-    name:"მოთამაშე 2",
-    rating:1020,
-    wins:34,
-    losses:27
-  },
-  {
-    name:"მოთამაშე 3",
-    rating:1250,
-    wins:51,
-    losses:29
-  },
-  {
-    name:"მოთამაშე 4",
-    rating:980,
-    wins:31,
-    losses:35
-  }
-];
-
-
-/* =========================================================
-   LOAD SAVED NICKNAME
-========================================================= */
-
-function loadNickname(){
-  const saved=
-    localStorage.getItem(
-      "dominoGeorgiaNickname"
+    linear-gradient(
+      145deg,
+      #07583b,
+      #06472f 48%,
+      #03301f
     );
 
-  if(saved && saved.trim()){
-    profiles[0].name=saved.trim();
-  }
+  box-shadow:
+    inset 0 0 62px rgba(0,0,0,.65),
+    inset 0 0 6px rgba(255,255,255,.18),
+    0 5px 14px #000;
+}
+
+
+/* =========================================================
+   WATERMARK
+========================================================= */
+
+.watermark{
+  position:absolute;
+
+  left:50%;
+  top:52%;
+
+  transform:
+    translate(-50%,-50%);
+
+  text-align:center;
+
+  color:
+    rgba(219,207,154,.075);
+
+  pointer-events:none;
+}
+
+
+.watermark-crown{
+  font-size:
+    clamp(50px,6vw,90px);
+
+  line-height:.9;
+}
+
+
+.watermark-text{
+  margin-top:12px;
+
+  font-family:Georgia,serif;
+
+  font-size:
+    clamp(13px,1.35vw,21px);
+
+  letter-spacing:8px;
+}
+
+
+/* =========================================================
+   BOARD VIEWPORT
+========================================================= */
+
+#boardViewport{
+  position:absolute;
+
+  left:8%;
+  right:8%;
+
+  top:19%;
+  bottom:19%;
+
+  overflow:hidden;
+
+  z-index:45;
+
+  pointer-events:auto;
+}
+
+
+#dominoBoard{
+  position:absolute;
+
+  left:50%;
+  top:50%;
+
+  width:1px;
+  height:1px;
+
+  transform-origin:center;
+}
+
+
+/* =========================================================
+   PREMIUM DOMINO
+========================================================= */
+
+.domino{
+  position:absolute;
+
+  width:82px;
+  height:46px;
+
+  display:flex;
+
+  overflow:hidden;
+
+  border:
+    1px solid #a89772;
+
+  border-radius:10px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fffef1 0%,
+      #fbf2d8 35%,
+      #e8dab8 71%,
+      #c4b088 100%
+    );
+
+  box-shadow:
+    inset 2px 2px 3px rgba(255,255,255,.98),
+    inset -3px -3px 5px rgba(87,68,38,.3),
+    0 4px 0 #9c8866,
+    0 8px 10px rgba(0,0,0,.52);
+
+  transform-origin:center;
+
+  transition:
+    left .2s ease,
+    top .2s ease,
+    transform .2s ease;
+}
+
+
+.domino::after{
+  content:"";
+
+  position:absolute;
+
+  left:50%;
+
+  top:5px;
+  bottom:5px;
+
+  width:2px;
+
+  transform:
+    translateX(-50%);
+
+  border-radius:2px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #776b55,
+      #fff8e5,
+      #78684f
+    );
+
+  box-shadow:
+    0 0 1px #5a4a32;
+}
+
+
+.domino-half{
+  position:relative;
+
+  width:50%;
+  height:100%;
+}
+
+
+/* =========================================================
+   PIPS
+========================================================= */
+
+.pip{
+  position:absolute;
+
+  width:8px;
+  height:8px;
+
+  border-radius:50%;
+
+  background:
+    radial-gradient(
+      circle at 35% 30%,
+      #444441 0%,
+      #171716 38%,
+      #000 78%
+    );
+
+  box-shadow:
+    inset 1px 1px 1px rgba(255,255,255,.23),
+    inset -1px -1px 2px #000,
+    0 1px 1px rgba(255,255,255,.25);
+}
+
+.p1{
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+.p2{
+  left:23%;
+  top:22%;
+  transform:translate(-50%,-50%);
+}
+
+.p3{
+  right:23%;
+  bottom:22%;
+  transform:translate(50%,50%);
+}
+
+.p4{
+  right:23%;
+  top:22%;
+  transform:translate(50%,-50%);
+}
+
+.p5{
+  left:23%;
+  bottom:22%;
+  transform:translate(-50%,50%);
+}
+
+.p6{
+  left:23%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+.p7{
+  right:23%;
+  top:50%;
+  transform:translate(50%,-50%);
+}
+
+
+/* =========================================================
+   FACE-DOWN OPPONENT HANDS
+========================================================= */
+
+.hidden-hand{
+  position:absolute;
+
+  z-index:38;
+
+  display:flex;
+
+  pointer-events:none;
+}
+
+
+.hidden-top{
+  left:50%;
+  top:3%;
+
+  transform:
+    translateX(-50%);
+
+  gap:4px;
+}
+
+
+.hidden-left{
+  left:1.4%;
+  top:50%;
+
+  transform:
+    translateY(-50%);
+
+  flex-direction:column;
+
+  gap:4px;
+}
+
+
+.hidden-right{
+  right:1.4%;
+  top:50%;
+
+  transform:
+    translateY(-50%);
+
+  flex-direction:column;
+
+  gap:4px;
+}
+
+
+.tile-back{
+  width:44px;
+  height:27px;
+
+  border:
+    2px solid #161513;
+
+  border-radius:5px;
+
+  background:
+    repeating-linear-gradient(
+      45deg,
+      #141414 0,
+      #141414 3px,
+      #2a2928 3px,
+      #2a2928 6px
+    );
+
+  box-shadow:
+    inset 0 0 0 2px #45413d,
+    0 3px 5px rgba(0,0,0,.72);
+}
+
+
+.hidden-left .tile-back,
+.hidden-right .tile-back{
+  width:47px;
+  height:27px;
+}
+
+
+/* =========================================================
+   PLAYERS — AVATAR ONLY
+========================================================= */
+
+.player{
+  position:absolute;
+
+  z-index:100;
+
+  width:70px;
+  height:70px;
+
+  cursor:pointer;
+}
+
+
+.player-top{
+  left:50%;
+  top:18.9%;
+
+  transform:
+    translateX(-50%);
+}
+
+
+.player-left{
+  left:8.3%;
+  top:51.5%;
+
+  transform:
+    translateY(-50%);
+}
+
+
+.player-right{
+  right:8.3%;
+  top:51.5%;
+
+  transform:
+    translateY(-50%);
+}
+
+
+.player-bottom{
+  left:50%;
+  bottom:11.7%;
+
+  transform:
+    translateX(-50%);
+}
+
+
+.avatar{
+  position:absolute;
+  inset:0;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  border-radius:50%;
+
+  border:
+    4px solid #d5a64c;
+
+  background:
+    radial-gradient(
+      circle at 38% 28%,
+      #80502d,
+      #241008 72%
+    );
+
+  box-shadow:
+    inset 0 0 0 3px #4a2d19,
+    0 5px 9px #000;
+
+  font-size:34px;
+}
+
+
+.online-dot{
+  position:absolute;
+
+  right:-1px;
+  bottom:1px;
+
+  width:20px;
+  height:20px;
+
+  border-radius:50%;
+
+  border:
+    4px solid #fff;
+
+  background:#1de65a;
+
+  box-shadow:
+    0 0 8px #1de65a;
 }
 
 
@@ -1801,475 +1045,1128 @@ function loadNickname(){
    PLAYER POPUP
 ========================================================= */
 
-const popup=$("playerPopup");
+#playerPopup{
+  position:absolute;
 
-function closePopup(){
-  if(!popup) return;
+  z-index:500;
 
-  popup.classList.remove("show");
-  popup.dataset.player="";
-}
+  display:none;
 
+  min-width:165px;
 
-function showPlayerPopup(player,avatar){
-  if(!popup) return;
+  padding:
+    10px 13px;
 
-  /*
-    იგივე ავატარზე მეორედ დაჭერა = დახურვა
-  */
+  border:
+    2px solid #85502b;
 
-  if(
-    popup.classList.contains("show") &&
-    popup.dataset.player===String(player)
-  ){
-    closePopup();
-    return;
-  }
+  border-radius:13px;
 
-  const p=profiles[player];
+  color:#f4dfbb;
 
-  $("popName").textContent=p.name;
-  $("popRating").textContent=`★ რეიტინგი: ${p.rating}`;
-  $("popWins").textContent=`მოგება: ${p.wins}`;
-  $("popLoss").textContent=`წაგება: ${p.losses}`;
-
-  popup.classList.add("show");
-  popup.dataset.player=String(player);
-
-  /*
-    ჯერ ვაჩვენებთ, რომ popup-ის ზომა გავიგოთ.
-  */
-
-  popup.style.left="0px";
-  popup.style.top="0px";
-
-  const gameRect=$("game").getBoundingClientRect();
-  const avatarRect=avatar.getBoundingClientRect();
-  const popRect=popup.getBoundingClientRect();
-
-  let left=
-    avatarRect.left-gameRect.left+
-    avatarRect.width/2-
-    popRect.width/2;
-
-  let top=
-    avatarRect.top-gameRect.top-
-    popRect.height-8;
-
-
-  /*
-    მარჯვენა მოთამაშე
-  */
-
-  if(player===1){
-    left=
-      avatarRect.left-
-      gameRect.left-
-      popRect.width-
-      10;
-
-    top=
-      avatarRect.top-
-      gameRect.top+
-      avatarRect.height/2-
-      popRect.height/2;
-  }
-
-
-  /*
-    ზედა მოთამაშე
-  */
-
-  if(player===2){
-    top=
-      avatarRect.bottom-
-      gameRect.top+
-      10;
-  }
-
-
-  /*
-    მარცხენა მოთამაშე
-  */
-
-  if(player===3){
-    left=
-      avatarRect.right-
-      gameRect.left+
-      10;
-
-    top=
-      avatarRect.top-
-      gameRect.top+
-      avatarRect.height/2-
-      popRect.height/2;
-  }
-
-
-  left=Math.max(
-    8,
-    Math.min(
-      left,
-      gameRect.width-popRect.width-8
-    )
-  );
-
-  top=Math.max(
-    8,
-    Math.min(
-      top,
-      gameRect.height-popRect.height-8
-    )
-  );
-
-  popup.style.left=`${left}px`;
-  popup.style.top=`${top}px`;
-}
-
-
-/* =========================================================
-   AVATAR CLICK
-========================================================= */
-
-document
-.querySelectorAll(".player")
-.forEach(avatar=>{
-
-  avatar.addEventListener(
-    "click",
-    event=>{
-
-      event.stopPropagation();
-
-      const player=
-        Number(avatar.dataset.player);
-
-      showPlayerPopup(
-        player,
-        avatar
-      );
-    }
-  );
-
-});
-
-
-document.addEventListener(
-  "click",
-  event=>{
-
-    if(
-      !event.target.closest(".player") &&
-      !event.target.closest("#playerPopup")
-    ){
-      closePopup();
-    }
-
-  }
-);
-
-
-/* =========================================================
-   EMOJI CHAT
-========================================================= */
-
-const chatButton=$("chatBtn");
-const emojiPanel=$("emojiPanel");
-
-chatButton.addEventListener(
-  "click",
-  event=>{
-
-    event.stopPropagation();
-
-    emojiPanel.classList.toggle(
-      "show"
+  background:
+    linear-gradient(
+      180deg,
+      rgba(48,25,14,.98),
+      rgba(16,10,7,.98)
     );
 
-  }
-);
+  box-shadow:
+    0 8px 18px rgba(0,0,0,.78);
+
+  font-size:12px;
+
+  line-height:1.55;
+}
 
 
-/* =========================================================
-   FLOATING EMOJI
-========================================================= */
+#playerPopup.show{
+  display:block;
+}
 
-function floatingEmoji(emoji){
 
-  const el=
-    document.createElement("div");
+.popup-name{
+  margin-bottom:5px;
 
-  el.textContent=emoji;
+  color:#ffe0a1;
 
-  Object.assign(
-    el.style,
-    {
-      position:"absolute",
-      left:"50%",
-      top:"44%",
-      transform:"translate(-50%,-50%)",
-      zIndex:"500",
-      fontSize:"58px",
-      pointerEvents:"none",
-      filter:"drop-shadow(0 5px 5px #000)",
-      transition:"all 1.4s ease",
-      opacity:"1"
-    }
-  );
-
-  $("game").appendChild(el);
-
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-
-      el.style.top="31%";
-      el.style.opacity="0";
-
-    });
-  });
-
-  setTimeout(()=>{
-    el.remove();
-  },1500);
+  font-size:15px;
+  font-weight:900;
 }
 
 
 /* =========================================================
-   EMOJI BUTTONS
+   WOOD RACK
 ========================================================= */
 
-document
-.querySelectorAll(".emoji")
-.forEach(button=>{
+.hand-rack{
+  position:absolute;
 
-  button.addEventListener(
-    "click",
-    event=>{
+  left:50%;
+  bottom:8.4%;
 
-      event.stopPropagation();
+  transform:
+    translateX(-50%);
 
-      const emoji=
-        button.textContent.trim();
+  z-index:62;
 
-      emojiPanel.classList.remove(
-        "show"
-      );
+  width:min(47%,700px);
+  height:12%;
 
-      floatingEmoji(emoji);
-    }
-  );
+  border:
+    4px solid #381408;
 
-});
+  border-radius:
+    13px 13px 3px 3px;
 
-
-document.addEventListener(
-  "click",
-  event=>{
-
-    if(
-      !event.target.closest("#emojiPanel") &&
-      !event.target.closest("#chatBtn")
-    ){
-      emojiPanel.classList.remove(
-        "show"
-      );
-    }
-
-  }
-);
-
-
-/* =========================================================
-   VISUAL DOMINO SAFETY
-
-   ეკრანის დაბრუნების/გადატრიალების შემდეგ
-   დომინოს ჯაჭვი ისევ მაგიდაში ეტევა.
-========================================================= */
-
-function refreshBoard(){
-  requestAnimationFrame(()=>{
-    renderAll();
-
-    requestAnimationFrame(()=>{
-      fitBoard();
-    });
-  });
-}
-
-
-window.addEventListener(
-  "orientationchange",
-  ()=>{
-    setTimeout(
-      refreshBoard,
-      300
-    );
-  }
-);
-
-
-document.addEventListener(
-  "visibilitychange",
-  ()=>{
-
-    if(
-      document.visibilityState==="visible"
-    ){
-      setTimeout(
-        refreshBoard,
-        150
-      );
-    }
-
-  }
-);
-
-
-/* =========================================================
-   PREVENT DOUBLE-TAP ZOOM
-========================================================= */
-
-let lastTouchEnd=0;
-
-document.addEventListener(
-  "touchend",
-  event=>{
-
-    const now=Date.now();
-
-    if(now-lastTouchEnd<=300){
-      event.preventDefault();
-    }
-
-    lastTouchEnd=now;
-
-  },
-  {
-    passive:false
-  }
-);
-
-
-/* =========================================================
-   SERVICE WORKER
-========================================================= */
-
-function registerPWA(){
-
-  if(!("serviceWorker" in navigator)){
-    return;
-  }
-
-  window.addEventListener(
-    "load",
-    ()=>{
-
-      navigator
-      .serviceWorker
-      .register("./service-worker.js")
-      .catch(error=>{
-        console.log(
-          "Service Worker:",
-          error
-        );
-      });
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   APP START
-
-   აქედან რეალურად იწყება თამაში.
-========================================================= */
-
-function bootDominoGeorgia(){
-
-  loadNickname();
-
-  createAbacus();
-
-  updateScores();
-
-  registerPWA();
-
-  /*
-    პატარა დაყოვნება:
-    ჯერ მაგიდის რეალური ზომები იტვირთება.
-  */
-
-  setTimeout(()=>{
-
-    startGame();
-
-    /*
-      დამატებითი გადახატვა:
-      საკუთარი 7 ქვა აუცილებლად გამოჩნდეს,
-      ხოლო პირველი 6-6 ცენტრში მოთავსდეს.
-    */
-
-    setTimeout(()=>{
-      refreshBoard();
-    },850);
-
-  },150);
-
-}
-
-
-/* =========================================================
-   DOM READY
-========================================================= */
-
-if(document.readyState==="loading"){
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    bootDominoGeorgia
-  );
-
-}else{
-
-  bootDominoGeorgia();
-
-}
-
-
-/* =========================================================
-   ERROR LOG
-========================================================= */
-
-window.addEventListener(
-  "error",
-  event=>{
-
-    console.error(
-      "DOMINO GEORGIA:",
-      event.message,
-      event.filename,
-      event.lineno
+  background:
+    linear-gradient(
+      180deg,
+      #985027,
+      #672a11 46%,
+      #381307
     );
 
-  }
-);
+  box-shadow:
+    inset 0 3px 3px rgba(255,194,122,.28),
+    inset 0 -12px 16px rgba(0,0,0,.48),
+    0 -3px 8px rgba(0,0,0,.65);
+}
+
+
+.hand-rack::before{
+  content:"";
+
+  position:absolute;
+
+  left:3%;
+  right:3%;
+
+  top:10%;
+
+  height:8px;
+
+  border-radius:7px;
+
+  background:
+    linear-gradient(
+      #d48646,
+      #692b11
+    );
+
+  box-shadow:
+    0 3px 4px #210a04;
+}
 
 
 /* =========================================================
-   PART 3/3 END
+   PLAYER HAND
 ========================================================= */
 
-</script>
+#playerHand{
+  position:absolute;
 
-</div>
+  left:50%;
+  bottom:9.3%;
 
-<div class="rotate">
-  <span>📱↻</span>
-  <h2>გადაატრიალე ტელეფონი</h2>
-  <div>DOMINO GEORGIA</div>
-</div>
+  transform:
+    translateX(-50%);
 
-</body>
-</html>
+  z-index:80;
+
+  height:14.8%;
+
+  display:flex;
+
+  align-items:flex-end;
+  justify-content:center;
+
+  gap:6px;
+}
+
+
+.hand-domino{
+  position:relative;
+
+  width:clamp(42px,3.7vw,59px);
+  height:clamp(73px,6.7vw,103px);
+
+  flex:none;
+
+  display:flex;
+  flex-direction:column;
+
+  overflow:hidden;
+
+  border:
+    1px solid #aa9976;
+
+  border-radius:9px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fffef2,
+      #f9efd2 37%,
+      #e2d2ad 74%,
+      #bda980
+    );
+
+  box-shadow:
+    inset 2px 2px 3px #fff,
+    inset -3px -3px 5px rgba(95,73,39,.28),
+    0 4px 0 #927f60,
+    0 8px 10px rgba(0,0,0,.58);
+
+  cursor:pointer;
+
+  transition:
+    transform .15s ease,
+    filter .15s ease;
+}
+
+
+.hand-domino::after{
+  content:"";
+
+  position:absolute;
+
+  left:5px;
+  right:5px;
+  top:50%;
+
+  height:2px;
+
+  transform:
+    translateY(-50%);
+
+  background:
+    linear-gradient(
+      #82735a,
+      #fff9e6
+    );
+}
+
+
+.hand-domino .domino-half{
+  width:100%;
+  height:50%;
+}
+
+
+.hand-domino.playable{
+  filter:
+    brightness(1.06)
+    drop-shadow(
+      0 0 6px rgba(255,214,102,.55)
+    );
+}
+
+
+.hand-domino.selected{
+  transform:
+    translateY(-12px)
+    scale(1.04);
+
+  filter:
+    brightness(1.09)
+    drop-shadow(
+      0 0 8px rgba(255,210,76,.8)
+    );
+}
+
+
+/* =========================================================
+   LEFT BUTTONS ONLY
+========================================================= */
+
+.bottom-left-actions{
+  position:absolute;
+
+  left:1.4%;
+  bottom:12.6%;
+
+  z-index:130;
+
+  display:flex;
+
+  gap:7px;
+}
+
+
+.action-btn{
+  height:
+    clamp(50px,7.4vh,74px);
+
+  min-width:
+    clamp(112px,11.3vw,180px);
+
+  padding:
+    0 17px;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  gap:9px;
+
+  border:
+    3px solid #5d3c29;
+
+  border-radius:18px;
+
+  color:#fff0db;
+
+  background:
+    linear-gradient(
+      #3b3731,
+      #171512
+    );
+
+  box-shadow:
+    inset 0 2px 2px rgba(255,255,255,.1),
+    0 5px 9px rgba(0,0,0,.76);
+
+  font-size:
+    clamp(13px,1.32vw,21px);
+
+  font-weight:900;
+
+  cursor:pointer;
+}
+
+
+.action-btn:disabled{
+  opacity:.4;
+  filter:grayscale(.7);
+}
+
+
+/* =========================================================
+   EMOJI PANEL
+========================================================= */
+
+#emojiPanel{
+  position:absolute;
+
+  left:12%;
+  bottom:21%;
+
+  z-index:400;
+
+  display:none;
+
+  grid-template-columns:
+    repeat(4,46px);
+
+  gap:6px;
+
+  padding:9px;
+
+  border:
+    2px solid #744326;
+
+  border-radius:14px;
+
+  background:
+    rgba(19,13,9,.98);
+
+  box-shadow:
+    0 8px 18px #000;
+}
+
+
+#emojiPanel.show{
+  display:grid;
+}
+
+
+.emoji-choice{
+  width:46px;
+  height:42px;
+
+  border:
+    1px solid #644028;
+
+  border-radius:9px;
+
+  background:#2d2118;
+
+  font-size:24px;
+}
+
+
+/* =========================================================
+   TURN MESSAGE
+========================================================= */
+
+#turnMessage{
+  position:absolute;
+
+  left:50%;
+  top:28%;
+
+  z-index:300;
+
+  transform:
+    translateX(-50%);
+
+  opacity:0;
+
+  padding:
+    7px 18px;
+
+  border:
+    1px solid rgba(255,211,118,.35);
+
+  border-radius:20px;
+
+  color:#ffe4ae;
+
+  background:
+    rgba(16,11,7,.89);
+
+  box-shadow:
+    0 4px 10px rgba(0,0,0,.6);
+
+  font-size:
+    clamp(11px,1vw,16px);
+
+  font-weight:900;
+
+  pointer-events:none;
+
+  transition:.2s;
+}
+
+
+#turnMessage.show{
+  opacity:1;
+}
+
+
+/* =========================================================
+   BOTTOM INFO BAR
+========================================================= */
+
+.bottom-info{
+  position:absolute;
+
+  left:.7%;
+  right:.7%;
+  bottom:.5%;
+
+  height:8.1%;
+
+  z-index:70;
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(6,1fr);
+
+  overflow:hidden;
+
+  border:
+    3px solid #4d2918;
+
+  border-radius:22px;
+
+  background:
+    linear-gradient(
+      #30241c,
+      #11100e
+    );
+
+  box-shadow:
+    inset 0 2px rgba(255,255,255,.07),
+    0 4px 8px rgba(0,0,0,.72);
+}
+
+
+.info-box{
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  gap:7px;
+
+  padding:
+    3px 7px;
+
+  border-right:
+    1px solid rgba(152,104,67,.34);
+
+  color:#d8c7ab;
+
+  text-align:center;
+
+  font-size:
+    clamp(7px,.72vw,12px);
+}
+
+
+.info-box:last-child{
+  border-right:0;
+}
+
+
+.info-icon{
+  font-size:
+    clamp(17px,1.7vw,27px);
+}
+
+
+.info-box strong{
+  display:block;
+
+  margin-bottom:2px;
+
+  color:#f5dfb8;
+
+  font-size:
+    clamp(8px,.82vw,14px);
+}
+
+
+/* =========================================================
+   MOBILE LANDSCAPE
+========================================================= */
+
+@media(max-height:560px){
+
+  .top-panel{
+    height:21.5%;
+  }
+
+  .table-area{
+    top:23.4%;
+    bottom:12.5%;
+  }
+
+  .player{
+    width:54px;
+    height:54px;
+  }
+
+  .avatar{
+    font-size:26px;
+  }
+
+  .online-dot{
+    width:16px;
+    height:16px;
+  }
+
+  .player-top{
+    top:20%;
+  }
+
+  .player-bottom{
+    bottom:11.5%;
+  }
+
+  #playerHand{
+    bottom:8.8%;
+    height:14%;
+    gap:4px;
+  }
+
+  .hand-domino{
+    width:38px;
+    height:66px;
+  }
+
+  .hand-rack{
+    bottom:7.8%;
+    height:11.7%;
+  }
+
+  .bottom-left-actions{
+    bottom:12%;
+  }
+
+  .action-btn{
+    height:45px;
+    min-width:90px;
+    font-size:12px;
+  }
+
+  .bottom-info{
+    height:8%;
+  }
+
+}
+
+
+/* =========================================================
+   ROTATE
+========================================================= */
+
+.rotate{
+  display:none;
+
+  position:fixed;
+  inset:0;
+
+  z-index:9999;
+
+  align-items:center;
+  justify-content:center;
+
+  flex-direction:column;
+
+  background:
+    radial-gradient(
+      circle,
+      #4b220f,
+      #150603
+    );
+
+  color:#ffe1aa;
+
+  text-align:center;
+}
+
+
+.rotate div{
+  font-size:55px;
+}
+
+
+.rotate h2{
+  margin-top:12px;
+}
+
+
+@media(orientation:portrait){
+
+  .rotate{
+    display:flex;
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="game">
+
+  <!-- =====================================================
+       TOP SCOREBOARD
+  ====================================================== -->
+
+  <div class="top-panel">
+
+    <!-- TEAM A -->
+
+    <section class="team-score">
+
+      <div class="team-title">
+        გუნდი A (1 და 3)
+      </div>
+
+      <div class="score-body">
+
+        <div class="score-labels">
+
+          <span>100</span>
+          <span>100</span>
+          <span>100</span>
+          <span>50</span>
+          <span>5</span>
+
+        </div>
+
+        <div
+          class="abacus"
+          id="abacusA"
+        >
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+        </div>
+
+        <div
+          class="team-total"
+          id="teamAScore"
+        >
+          0 / 355
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- LOGO -->
+
+    <header class="logo">
+
+      <div class="logo-main">
+        DOMINO
+      </div>
+
+      <div class="logo-sub">
+
+        <span class="logo-flag">
+          🇬🇪
+        </span>
+
+        <span>
+          GEORGIA
+        </span>
+
+        <span class="logo-flag">
+          🇬🇪
+        </span>
+
+      </div>
+
+    </header>
+
+
+    <!-- TEAM B -->
+
+    <section class="team-score">
+
+      <div class="team-title">
+        გუნდი B (2 და 4)
+      </div>
+
+      <div class="score-body">
+
+        <div class="score-labels">
+
+          <span>100</span>
+          <span>100</span>
+          <span>100</span>
+          <span>50</span>
+          <span>5</span>
+
+        </div>
+
+        <div
+          class="abacus"
+          id="abacusB"
+        >
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+          <div class="abacus-row">
+            <div class="rail"></div>
+            <div class="beads"></div>
+          </div>
+
+        </div>
+
+        <div
+          class="team-total"
+          id="teamBScore"
+        >
+          0 / 355
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+
+  <!-- =====================================================
+       LEFT ROOM
+  ====================================================== -->
+
+  <aside class="room-info">
+
+    <small>
+      ოთახი:
+    </small>
+
+    <strong id="roomName">
+      თბილისი 1
+    </strong>
+
+    <small>
+      მაგიდა #2847
+    </small>
+
+    <small>
+      4 მოთამაშე
+    </small>
+
+    <small>
+      355 ქულამდე
+    </small>
+
+    <div class="online">
+      ● Online
+    </div>
+
+  </aside>
+
+
+  <!-- =====================================================
+       RIGHT NOTE
+  ====================================================== -->
+
+  <aside class="side-note">
+
+    კარგი თამაში<br>
+    კარგი ადამიანები<br>
+    ♡
+
+  </aside>
+
+
+  <!-- =====================================================
+       TABLE
+  ====================================================== -->
+
+  <main
+    class="table-area"
+    id="tableArea"
+  >
+
+    <div class="watermark">
+
+      <div class="watermark-crown">
+        ♛
+      </div>
+
+      <div class="watermark-text">
+        DOMINO<br>
+        GEORGIA
+      </div>
+
+    </div>
+
+
+    <!-- HIDDEN HANDS -->
+
+    <div
+      class="hidden-hand hidden-top"
+      id="topHiddenHand"
+    ></div>
+
+    <div
+      class="hidden-hand hidden-left"
+      id="leftHiddenHand"
+    ></div>
+
+    <div
+      class="hidden-hand hidden-right"
+      id="rightHiddenHand"
+    ></div>
+
+
+    <!-- BOARD -->
+
+    <div id="boardViewport">
+
+      <div id="dominoBoard"></div>
+
+    </div>
+
+  </main>
+
+
+  <!-- =====================================================
+       PLAYERS
+  ====================================================== -->
+
+  <div
+    class="player player-top"
+    data-player="2"
+  >
+
+    <div class="avatar">
+      🌆
+    </div>
+
+    <div class="online-dot"></div>
+
+  </div>
+
+
+  <div
+    class="player player-left"
+    data-player="3"
+  >
+
+    <div class="avatar">
+      😎
+    </div>
+
+    <div class="online-dot"></div>
+
+  </div>
+
+
+  <div
+    class="player player-right"
+    data-player="1"
+  >
+
+    <div class="avatar">
+      🧢
+    </div>
+
+    <div class="online-dot"></div>
+
+  </div>
+
+
+  <div
+    class="player player-bottom"
+    data-player="0"
+  >
+
+    <div class="avatar">
+      🐺
+    </div>
+
+    <div class="online-dot"></div>
+
+  </div>
+
+
+  <!-- =====================================================
+       PLAYER POPUP
+  ====================================================== -->
+
+  <div id="playerPopup">
+
+    <div
+      class="popup-name"
+      id="popupName"
+    >
+      Kusto
+    </div>
+
+    <div id="popupRating">
+      ★ რეიტინგი: 1100
+    </div>
+
+    <div id="popupWins">
+      მოგება: 0
+    </div>
+
+    <div id="popupLosses">
+      წაგება: 0
+    </div>
+
+    <div class="online">
+      ● ონლაინ
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       OWN RACK + HAND
+  ====================================================== -->
+
+  <div class="hand-rack"></div>
+
+  <div id="playerHand"></div>
+
+
+  <!-- =====================================================
+       LEFT ACTIONS ONLY
+  ====================================================== -->
+
+  <div class="bottom-left-actions">
+
+    <button
+      class="action-btn"
+      id="passBtn"
+      type="button"
+    >
+      ↩ &nbsp; გავიარე
+    </button>
+
+    <button
+      class="action-btn"
+      id="chatBtn"
+      type="button"
+    >
+      💬 &nbsp; ჩატი
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       EMOJI CHAT
+  ====================================================== -->
+
+  <div id="emojiPanel">
+
+    <button class="emoji-choice">👍</button>
+    <button class="emoji-choice">👏</button>
+    <button class="emoji-choice">😄</button>
+    <button class="emoji-choice">😎</button>
+
+    <button class="emoji-choice">🤝</button>
+    <button class="emoji-choice">🔥</button>
+    <button class="emoji-choice">😮</button>
+    <button class="emoji-choice">❤️</button>
+
+  </div>
+
+
+  <!-- =====================================================
+       MESSAGE
+  ====================================================== -->
+
+  <div id="turnMessage">
+    DOMINO GEORGIA
+  </div>
+
+
+  <!-- =====================================================
+       BOTTOM INFO
+  ====================================================== -->
+
+  <div class="bottom-info">
+
+    <div class="info-box">
+
+      <span class="info-icon">
+        🏆
+      </span>
+
+      <span>
+        <strong>მიზანი</strong>
+        355 ქულა
+      </span>
+
+    </div>
+
+
+    <div class="info-box">
+
+      <span class="info-icon">
+        👥
+      </span>
+
+      <span>
+        <strong>გუნდები</strong>
+        1+3 და 2+4
+      </span>
+
+    </div>
+
+
+    <div class="info-box">
+
+      <span class="info-icon">
+        ▶
+      </span>
+
+      <span>
+        <strong>პირველი ხელი</strong>
+        6-6 იწყებს
+      </span>
+
+    </div>
+
+
+    <div class="info-box">
+
+      <span class="info-icon">
+        ✦
+      </span>
+
+      <span>
+        <strong>ქულები</strong>
+        ღია ბოლოები
+      </span>
+
+    </div>
+
+
+    <div class="info-box">
+
+      <span class="info-icon">
+        🔗
+      </span>
+
+      <span>
+        <strong>რიბა</strong>
+        გუნდის ჯამი
+      </span>
+
+    </div>
+
+
+    <div class="info-box">
+
+      <span class="info-icon">
+        🏁
+      </span>
+
+      <span>
+        <strong>მატჩი</strong>
+        ხელის შემდეგ
+      </span>
+
+    </div>
+
+  </div>
+
+
+<!-- =========================================================
+     PART 1/3 END
+
+     PART 2 პირდაპირ აქედან გაგრძელდება.
+     ჯერ არაფერი დახურო.
+========================================================= -->
