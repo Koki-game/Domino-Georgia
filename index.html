@@ -6173,3 +6173,805 @@ window.addEventListener(
    SCRIPT არ დახურო.
    PART 3 პირდაპირ აქედან გაგრძელდება.
 ========================================================= */
+/* =========================================================
+   DOMINO GEORGIA — PART 3/3
+   PROFILE + CHAT + PWA + START
+========================================================= */
+
+
+/* =========================================================
+   PLAYER PROFILES
+========================================================= */
+
+const playerProfiles=[
+
+  {
+    nickname:"Kusto",
+    rating:1100,
+    wins:0,
+    losses:0
+  },
+
+  {
+    nickname:"მოთამაშე 2",
+    rating:1020,
+    wins:34,
+    losses:27
+  },
+
+  {
+    nickname:"მოთამაშე 3",
+    rating:1250,
+    wins:51,
+    losses:29
+  },
+
+  {
+    nickname:"მოთამაშე 4",
+    rating:980,
+    wins:31,
+    losses:35
+  }
+
+];
+
+
+/* =========================================================
+   LOAD NICKNAME
+========================================================= */
+
+function loadNickname(){
+
+  const saved=
+    localStorage.getItem(
+      "dominoGeorgiaNickname"
+    );
+
+
+  if(
+    saved &&
+    saved.trim()
+  ){
+
+    playerProfiles[0].nickname=
+      saved.trim();
+
+    playerNames[0]=
+      saved.trim();
+
+  }else{
+
+    playerNames[0]=
+      playerProfiles[0].nickname;
+
+  }
+
+}
+
+
+/* =========================================================
+   PLAYER POPUP
+========================================================= */
+
+const playerPopup=
+  $("playerPopup");
+
+
+function closePlayerPopup(){
+
+  if(!playerPopup){
+    return;
+  }
+
+
+  playerPopup.classList.remove(
+    "show"
+  );
+
+
+  playerPopup.dataset.player=
+    "";
+
+}
+
+
+function openPlayerPopup(
+  player,
+  avatarElement
+){
+
+  if(
+    !playerPopup ||
+    !avatarElement
+  ){
+    return;
+  }
+
+
+  /*
+    იგივე ავატარზე მეორედ დაჭერა
+    popup-ს ხურავს.
+  */
+
+  if(
+    playerPopup.classList.contains(
+      "show"
+    ) &&
+    playerPopup.dataset.player===
+    String(player)
+  ){
+
+    closePlayerPopup();
+
+    return;
+  }
+
+
+  const profile=
+    playerProfiles[player];
+
+
+  if(!profile){
+    return;
+  }
+
+
+  $("popupName").textContent=
+    profile.nickname;
+
+
+  $("popupRating").textContent=
+    `★ რეიტინგი: ${profile.rating}`;
+
+
+  $("popupWins").textContent=
+    `მოგება: ${profile.wins}`;
+
+
+  $("popupLosses").textContent=
+    `წაგება: ${profile.losses}`;
+
+
+  playerPopup.classList.add(
+    "show"
+  );
+
+
+  playerPopup.dataset.player=
+    String(player);
+
+
+  playerPopup.style.left=
+    "0px";
+
+  playerPopup.style.top=
+    "0px";
+
+
+  const gameRect=
+    $("game")
+      .getBoundingClientRect();
+
+
+  const avatarRect=
+    avatarElement
+      .getBoundingClientRect();
+
+
+  const popupRect=
+    playerPopup
+      .getBoundingClientRect();
+
+
+  let left=
+    avatarRect.left-
+    gameRect.left+
+    avatarRect.width/2-
+    popupRect.width/2;
+
+
+  let top=
+    avatarRect.top-
+    gameRect.top-
+    popupRect.height-
+    10;
+
+
+  /*
+    მარჯვენა მოთამაშე
+  */
+
+  if(player===1){
+
+    left=
+      avatarRect.left-
+      gameRect.left-
+      popupRect.width-
+      10;
+
+
+    top=
+      avatarRect.top-
+      gameRect.top+
+      avatarRect.height/2-
+      popupRect.height/2;
+
+  }
+
+
+  /*
+    ზედა მოთამაშე
+  */
+
+  if(player===2){
+
+    top=
+      avatarRect.bottom-
+      gameRect.top+
+      10;
+
+  }
+
+
+  /*
+    მარცხენა მოთამაშე
+  */
+
+  if(player===3){
+
+    left=
+      avatarRect.right-
+      gameRect.left+
+      10;
+
+
+    top=
+      avatarRect.top-
+      gameRect.top+
+      avatarRect.height/2-
+      popupRect.height/2;
+
+  }
+
+
+  /*
+    ეკრანიდან არ გავიდეს
+  */
+
+  left=
+    Math.max(
+      8,
+      Math.min(
+        left,
+        gameRect.width-
+        popupRect.width-
+        8
+      )
+    );
+
+
+  top=
+    Math.max(
+      8,
+      Math.min(
+        top,
+        gameRect.height-
+        popupRect.height-
+        8
+      )
+    );
+
+
+  playerPopup.style.left=
+    `${left}px`;
+
+
+  playerPopup.style.top=
+    `${top}px`;
+
+}
+
+
+/* =========================================================
+   AVATAR CLICK
+========================================================= */
+
+document
+  .querySelectorAll(
+    ".player"
+  )
+  .forEach(
+    element=>{
+
+      element.addEventListener(
+        "click",
+        event=>{
+
+          event.stopPropagation();
+
+
+          const player=
+            Number(
+              element.dataset.player
+            );
+
+
+          openPlayerPopup(
+            player,
+            element
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+document.addEventListener(
+  "click",
+  event=>{
+
+    if(
+      !event.target.closest(
+        ".player"
+      ) &&
+      !event.target.closest(
+        "#playerPopup"
+      )
+    ){
+
+      closePlayerPopup();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   EMOJI CHAT
+========================================================= */
+
+const emojiPanel=
+  $("emojiPanel");
+
+
+$("chatBtn")
+  .addEventListener(
+    "click",
+    event=>{
+
+      event.stopPropagation();
+
+
+      emojiPanel.classList.toggle(
+        "show"
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   FLOATING EMOJI
+========================================================= */
+
+function showFloatingEmoji(
+  emoji
+){
+
+  const bubble=
+    document.createElement(
+      "div"
+    );
+
+
+  bubble.textContent=
+    emoji;
+
+
+  bubble.style.cssText=`
+
+    position:absolute;
+
+    left:50%;
+    top:47%;
+
+    z-index:1000;
+
+    transform:
+      translate(-50%,-50%)
+      scale(.65);
+
+    opacity:0;
+
+    font-size:64px;
+
+    pointer-events:none;
+
+    filter:
+      drop-shadow(
+        0 5px 5px #000
+      );
+
+    transition:
+      all 1.5s ease;
+
+  `;
+
+
+  $("game").appendChild(
+    bubble
+  );
+
+
+  requestAnimationFrame(
+    ()=>{
+
+      requestAnimationFrame(
+        ()=>{
+
+          bubble.style.opacity=
+            "1";
+
+
+          bubble.style.top=
+            "38%";
+
+
+          bubble.style.transform=
+            `
+              translate(
+                -50%,
+                -50%
+              )
+              scale(1.15)
+            `;
+
+        }
+      );
+
+    }
+  );
+
+
+  setTimeout(
+    ()=>{
+
+      bubble.style.opacity=
+        "0";
+
+
+      bubble.style.top=
+        "28%";
+
+    },
+    900
+  );
+
+
+  setTimeout(
+    ()=>{
+
+      bubble.remove();
+
+    },
+    1600
+  );
+
+}
+
+
+/* =========================================================
+   EMOJI BUTTONS
+========================================================= */
+
+document
+  .querySelectorAll(
+    ".emoji-choice"
+  )
+  .forEach(
+    button=>{
+
+      button.addEventListener(
+        "click",
+        event=>{
+
+          event.stopPropagation();
+
+
+          const emoji=
+            button.textContent.trim();
+
+
+          emojiPanel.classList.remove(
+            "show"
+          );
+
+
+          showFloatingEmoji(
+            emoji
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+document.addEventListener(
+  "click",
+  event=>{
+
+    if(
+      !event.target.closest(
+        "#emojiPanel"
+      ) &&
+      !event.target.closest(
+        "#chatBtn"
+      )
+    ){
+
+      emojiPanel.classList.remove(
+        "show"
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   REFRESH BOARD
+========================================================= */
+
+function refreshGameView(){
+
+  requestAnimationFrame(
+    ()=>{
+
+      renderAll();
+
+
+      requestAnimationFrame(
+        ()=>{
+
+          fitBoard();
+
+        }
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   ORIENTATION / VISIBILITY
+========================================================= */
+
+window.addEventListener(
+  "orientationchange",
+  ()=>{
+
+    setTimeout(
+      refreshGameView,
+      300
+    );
+
+  }
+);
+
+
+document.addEventListener(
+  "visibilitychange",
+  ()=>{
+
+    if(
+      document.visibilityState===
+      "visible"
+    ){
+
+      setTimeout(
+        refreshGameView,
+        150
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   PREVENT DOUBLE TAP ZOOM
+========================================================= */
+
+let lastTouchEnd=0;
+
+
+document.addEventListener(
+  "touchend",
+  event=>{
+
+    const now=
+      Date.now();
+
+
+    if(
+      now-lastTouchEnd<=300
+    ){
+
+      event.preventDefault();
+
+    }
+
+
+    lastTouchEnd=
+      now;
+
+  },
+  {
+    passive:false
+  }
+);
+
+
+/* =========================================================
+   PWA / SERVICE WORKER
+========================================================= */
+
+function registerServiceWorker(){
+
+  if(
+    !(
+      "serviceWorker"
+      in navigator
+    )
+  ){
+
+    return;
+  }
+
+
+  window.addEventListener(
+    "load",
+    ()=>{
+
+      navigator
+        .serviceWorker
+        .register(
+          "./service-worker.js"
+        )
+        .then(
+          registration=>{
+
+            registration.update();
+
+          }
+        )
+        .catch(
+          error=>{
+
+            console.log(
+              "Service Worker:",
+              error
+            );
+
+          }
+        );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   START APP
+========================================================= */
+
+function bootDominoGeorgia(){
+
+  loadNickname();
+
+
+  buildAbacus();
+
+
+  updateTeamScores();
+
+
+  registerServiceWorker();
+
+
+  setTimeout(
+    ()=>{
+
+      startRound();
+
+
+      setTimeout(
+        ()=>{
+
+          refreshGameView();
+
+        },
+        850
+      );
+
+    },
+    150
+  );
+
+}
+
+
+/* =========================================================
+   DOM READY
+========================================================= */
+
+if(
+  document.readyState===
+  "loading"
+){
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    bootDominoGeorgia
+  );
+
+}else{
+
+  bootDominoGeorgia();
+
+}
+
+
+/* =========================================================
+   ERROR LOG
+========================================================= */
+
+window.addEventListener(
+  "error",
+  event=>{
+
+    console.error(
+      "DOMINO GEORGIA ERROR:",
+      event.message,
+      event.filename,
+      event.lineno
+    );
+
+  }
+);
+
+
+/* =========================================================
+   PART 3/3 END
+========================================================= */
+
+</script>
+
+</div>
+
+
+<div class="rotate">
+
+  <div>
+    📱↻
+  </div>
+
+  <h2>
+    ტელეფონი ჰორიზონტალურად მოაბრუნე
+  </h2>
+
+</div>
+
+
+</body>
+</html>
