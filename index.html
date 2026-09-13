@@ -2306,3 +2306,1643 @@ button:active{
 
 
 <!-- ===== PART 2/4 END ===== -->
+<!-- ===== PART 3/4 START ===== -->
+
+<script>
+
+/* =========================================
+   DOMINO GEORGIA
+   PART 3/4 — GAME ENGINE
+========================================= */
+
+const $ = id => document.getElementById(id);
+
+const gameState = {
+
+  hands:[[],[],[],[]],
+  board:[],
+
+  leftEnd:null,
+  rightEnd:null,
+
+  currentPlayer:0,
+
+  teamScores:[0,0],
+
+  carryPoints:0,
+
+  passCount:0,
+
+  roundNumber:1,
+
+  firstRound:true,
+
+  nextStarter:null,
+
+  finished:false,
+
+  selectedIndex:null,
+
+  lastPlayerToPlay:null,
+
+  ribaCloser:null
+
+};
+
+
+/* =========================================
+   DOMINO SET — 28 TILES
+========================================= */
+
+function createDominoSet(){
+
+  const tiles=[];
+
+  for(let a=0;a<=6;a++){
+
+    for(let b=a;b<=6;b++){
+
+      tiles.push({
+        a,
+        b,
+        id:`${a}-${b}`
+      });
+
+    }
+
+  }
+
+  return tiles;
+}
+
+
+/* =========================================
+   SHUFFLE
+========================================= */
+
+function shuffle(array){
+
+  const arr=[...array];
+
+  for(let i=arr.length-1;i>0;i--){
+
+    const j=
+      Math.floor(
+        Math.random()*(i+1)
+      );
+
+    [arr[i],arr[j]]=
+      [arr[j],arr[i]];
+
+  }
+
+  return arr;
+}
+
+
+/* =========================================
+   DEAL 7 TO EACH PLAYER
+========================================= */
+
+function deal(){
+
+  const deck=
+    shuffle(
+      createDominoSet()
+    );
+
+  gameState.hands=
+    [[],[],[],[]];
+
+  for(let i=0;i<28;i++){
+
+    gameState
+      .hands[i%4]
+      .push(deck[i]);
+
+  }
+
+}
+
+
+/* =========================================
+   TEAMS
+   0 + 2 = TEAM A
+   1 + 3 = TEAM B
+========================================= */
+
+function getTeam(player){
+
+  return(
+    player===0 ||
+    player===2
+  ) ? 0 : 1;
+
+}
+
+
+/* =========================================
+   ROUND TO NEXT 5
+========================================= */
+
+function round5(points){
+
+  if(points<=0){
+    return 0;
+  }
+
+  return(
+    Math.ceil(points/5)*5
+  );
+
+}
+
+
+/* =========================================
+   PIP TOTAL
+========================================= */
+
+function handPoints(hand){
+
+  return hand.reduce(
+    (sum,tile)=>
+      sum+tile.a+tile.b,
+    0
+  );
+
+}
+
+
+function teamRemaining(team){
+
+  if(team===0){
+
+    return(
+      handPoints(
+        gameState.hands[0]
+      )+
+      handPoints(
+        gameState.hands[2]
+      )
+    );
+
+  }
+
+  return(
+    handPoints(
+      gameState.hands[1]
+    )+
+    handPoints(
+      gameState.hands[3]
+    )
+  );
+
+}
+
+
+/* =========================================
+   PIPS VISUAL
+========================================= */
+
+function pipClasses(number){
+
+  const map={
+
+    0:[],
+
+    1:["p1"],
+
+    2:["p2","p3"],
+
+    3:["p2","p1","p3"],
+
+    4:[
+      "p2","p4",
+      "p5","p3"
+    ],
+
+    5:[
+      "p2","p4",
+      "p1",
+      "p5","p3"
+    ],
+
+    6:[
+      "p2","p4",
+      "p6","p7",
+      "p5","p3"
+    ]
+
+  };
+
+  return map[number] || [];
+
+}
+
+
+/* =========================================
+   DOMINO HALF
+========================================= */
+
+function makeHalf(number){
+
+  const half=
+    document.createElement("div");
+
+  half.className=
+    "domino-half";
+
+  pipClasses(number)
+    .forEach(cls=>{
+
+      const pip=
+        document.createElement("i");
+
+      pip.className=
+        "pip "+cls;
+
+      half.appendChild(pip);
+
+    });
+
+  return half;
+}
+
+
+/* =========================================
+   DOMINO ELEMENT
+========================================= */
+
+function makeDomino(tile,double=false){
+
+  const el=
+    document.createElement("div");
+
+  el.className=
+    "domino";
+
+  if(double){
+    el.classList.add("double");
+  }
+
+  el.appendChild(
+    makeHalf(tile.a)
+  );
+
+  el.appendChild(
+    makeHalf(tile.b)
+  );
+
+  return el;
+}
+
+
+/* =========================================
+   CAN PLAY TILE
+========================================= */
+
+function canPlay(tile){
+
+  if(
+    gameState.board.length===0
+  ){
+    return true;
+  }
+
+  return(
+    tile.a===gameState.leftEnd ||
+    tile.b===gameState.leftEnd ||
+    tile.a===gameState.rightEnd ||
+    tile.b===gameState.rightEnd
+  );
+
+}
+
+
+/* =========================================
+   PLAYER HAS MOVE
+========================================= */
+
+function hasMove(player){
+
+  return gameState
+    .hands[player]
+    .some(canPlay);
+
+}
+
+
+/* =========================================
+   FIT LEFT
+========================================= */
+
+function fitsLeft(tile){
+
+  if(
+    gameState.board.length===0
+  ){
+    return true;
+  }
+
+  return(
+    tile.a===gameState.leftEnd ||
+    tile.b===gameState.leftEnd
+  );
+
+}
+
+
+/* =========================================
+   FIT RIGHT
+========================================= */
+
+function fitsRight(tile){
+
+  if(
+    gameState.board.length===0
+  ){
+    return true;
+  }
+
+  return(
+    tile.a===gameState.rightEnd ||
+    tile.b===gameState.rightEnd
+  );
+
+}
+
+
+/* =========================================
+   ORIENT LEFT
+========================================= */
+
+function orientLeft(tile){
+
+  if(tile.b===gameState.leftEnd){
+
+    return{
+      a:tile.a,
+      b:tile.b
+    };
+
+  }
+
+  return{
+    a:tile.b,
+    b:tile.a
+  };
+
+}
+
+
+/* =========================================
+   ORIENT RIGHT
+========================================= */
+
+function orientRight(tile){
+
+  if(tile.a===gameState.rightEnd){
+
+    return{
+      a:tile.a,
+      b:tile.b
+    };
+
+  }
+
+  return{
+    a:tile.b,
+    b:tile.a
+  };
+
+}
+
+
+/* =========================================
+   TURN MESSAGE
+========================================= */
+
+let turnTimer=null;
+
+function showMessage(text){
+
+  const box=$("turnMessage");
+
+  if(!box) return;
+
+  box.textContent=text;
+
+  box.classList.add("show");
+
+  clearTimeout(turnTimer);
+
+  turnTimer=setTimeout(()=>{
+
+    box.classList.remove("show");
+
+  },1800);
+
+}
+
+
+/* =========================================
+   RENDER HAND
+========================================= */
+
+function renderHand(){
+
+  const handEl=
+    $("playerHand");
+
+  if(!handEl) return;
+
+  handEl.innerHTML="";
+
+
+  gameState.hands[0]
+    .forEach((tile,index)=>{
+
+      const el=
+        makeDomino(tile);
+
+      if(
+        gameState.currentPlayer===0 &&
+        canPlay(tile) &&
+        !gameState.finished
+      ){
+
+        el.classList.add(
+          "playable"
+        );
+
+      }else if(
+        !canPlay(tile)
+      ){
+
+        el.style.opacity=".55";
+
+      }
+
+
+      if(
+        gameState.selectedIndex===index
+      ){
+
+        el.classList.add(
+          "selected"
+        );
+
+      }
+
+
+      el.onclick=()=>{
+
+        if(gameState.finished){
+          return;
+        }
+
+        if(
+          gameState.currentPlayer!==0
+        ){
+
+          showMessage(
+            "ახლა შენი სვლა არ არის"
+          );
+
+          return;
+        }
+
+
+        if(!canPlay(tile)){
+
+          showMessage(
+            "ეს ქვა ვერ დაიდება"
+          );
+
+          return;
+        }
+
+
+        gameState.selectedIndex=
+          index;
+
+        renderHand();
+
+        chooseSide(
+          0,
+          index
+        );
+
+      };
+
+
+      handEl.appendChild(el);
+
+    });
+
+
+  updatePassButton();
+
+}
+
+
+/* =========================================
+   CHOOSE SIDE
+========================================= */
+
+function chooseSide(
+  player,
+  index
+){
+
+  const tile=
+    gameState.hands[player][index];
+
+  if(!tile) return;
+
+
+  if(
+    gameState.board.length===0
+  ){
+
+    playTile(
+      player,
+      index,
+      "right"
+    );
+
+    return;
+  }
+
+
+  const left=
+    fitsLeft(tile);
+
+  const right=
+    fitsRight(tile);
+
+
+  if(left && !right){
+
+    playTile(
+      player,
+      index,
+      "left"
+    );
+
+    return;
+  }
+
+
+  if(right && !left){
+
+    playTile(
+      player,
+      index,
+      "right"
+    );
+
+    return;
+  }
+
+
+  /*
+    თუ ორივე მხარეს მიდის,
+    დროებით მარჯვენა მხარეს ვდებთ.
+  */
+
+  if(left && right){
+
+    playTile(
+      player,
+      index,
+      "right"
+    );
+
+  }
+
+}
+
+
+/* =========================================
+   PLAY TILE
+========================================= */
+
+function playTile(
+  player,
+  index,
+  side
+){
+
+  if(gameState.finished){
+    return;
+  }
+
+
+  const tile=
+    gameState.hands[player][index];
+
+  if(!tile){
+    return;
+  }
+
+
+  let played;
+
+
+  if(
+    gameState.board.length===0
+  ){
+
+    played={
+      a:tile.a,
+      b:tile.b,
+      player
+    };
+
+    gameState.board.push(
+      played
+    );
+
+    gameState.leftEnd=
+      played.a;
+
+    gameState.rightEnd=
+      played.b;
+
+  }
+
+
+  else if(side==="left"){
+
+    const oriented=
+      orientLeft(tile);
+
+    played={
+      ...oriented,
+      player
+    };
+
+    gameState.board.unshift(
+      played
+    );
+
+    gameState.leftEnd=
+      played.a;
+
+  }
+
+
+  else{
+
+    const oriented=
+      orientRight(tile);
+
+    played={
+      ...oriented,
+      player
+    };
+
+    gameState.board.push(
+      played
+    );
+
+    gameState.rightEnd=
+      played.b;
+
+  }
+
+
+  gameState.hands[player]
+    .splice(index,1);
+
+
+  gameState.lastPlayerToPlay=
+    player;
+
+  gameState.ribaCloser=
+    player;
+
+  gameState.passCount=0;
+
+  gameState.selectedIndex=null;
+
+
+  renderBoard();
+  renderHand();
+  renderHiddenHands();
+
+
+  /* PLAYER FINISHED */
+
+  if(
+    gameState.hands[player]
+      .length===0
+  ){
+
+    finishNormalHand(player);
+
+    return;
+  }
+
+
+  nextTurn();
+
+}
+
+
+/* =========================================
+   RENDER BOARD
+========================================= */
+
+function renderBoard(){
+
+  const board=
+    $("dominoBoard");
+
+  if(!board) return;
+
+  board.innerHTML="";
+
+
+  gameState.board
+    .forEach(tile=>{
+
+      const isDouble=
+        tile.a===tile.b;
+
+      board.appendChild(
+        makeDomino(
+          tile,
+          isDouble
+        )
+      );
+
+    });
+
+}
+
+
+/* =========================================
+   HIDDEN DOMINO
+========================================= */
+
+function makeHiddenTile(){
+
+  const tile=
+    document.createElement("div");
+
+  tile.style.cssText=`
+    width:16px;
+    height:31px;
+
+    border-radius:3px;
+
+    border:1px solid #c6b57d;
+
+    background:
+      linear-gradient(
+        135deg,
+        #f4e7bd,
+        #bba871
+      );
+
+    box-shadow:
+      0 2px 4px #000;
+  `;
+
+  return tile;
+}
+
+
+/* =========================================
+   HIDDEN HANDS
+========================================= */
+
+function fillHidden(
+  id,
+  count
+){
+
+  const el=$(id);
+
+  if(!el) return;
+
+  el.innerHTML="";
+
+  for(let i=0;i<count;i++){
+
+    el.appendChild(
+      makeHiddenTile()
+    );
+
+  }
+
+}
+
+
+function renderHiddenHands(){
+
+  fillHidden(
+    "topHiddenHand",
+    gameState.hands[2].length
+  );
+
+  fillHidden(
+    "leftHiddenHand",
+    gameState.hands[3].length
+  );
+
+  fillHidden(
+    "rightHiddenHand",
+    gameState.hands[1].length
+  );
+
+  fillHidden(
+    "bottomHiddenHand",
+    gameState.hands[0].length
+  );
+
+}
+
+
+/* =========================================
+   NEXT TURN
+========================================= */
+
+function nextTurn(){
+
+  if(gameState.finished){
+    return;
+  }
+
+  gameState.currentPlayer=
+    (gameState.currentPlayer+1)%4;
+
+
+  updateTurn();
+
+
+  if(
+    gameState.currentPlayer!==0
+  ){
+
+    setTimeout(
+      computerTurn,
+      650
+    );
+
+  }else{
+
+    renderHand();
+
+  }
+
+}
+
+
+/* =========================================
+   UPDATE TURN
+========================================= */
+
+function updateTurn(){
+
+  const p=
+    gameState.currentPlayer;
+
+
+  if(p===0){
+
+    showMessage(
+      "შენი სვლაა"
+    );
+
+  }else{
+
+    showMessage(
+      `მოთამაშე ${p+1}-ის სვლაა`
+    );
+
+  }
+
+
+  renderHand();
+
+}
+
+
+/* =========================================
+   TEMP COMPUTER PLAYERS
+========================================= */
+
+function computerTurn(){
+
+  if(gameState.finished){
+    return;
+  }
+
+
+  const player=
+    gameState.currentPlayer;
+
+  const hand=
+    gameState.hands[player];
+
+
+  const index=
+    hand.findIndex(canPlay);
+
+
+  /* PASS */
+
+  if(index===-1){
+
+    gameState.passCount++;
+
+    showMessage(
+      `მოთამაშე ${player+1}: გავიარე`
+    );
+
+
+    if(gameState.passCount>=4){
+
+      finishRiba();
+
+      return;
+    }
+
+
+    setTimeout(
+      nextTurn,
+      500
+    );
+
+    return;
+  }
+
+
+  const tile=
+    hand[index];
+
+  let side="right";
+
+
+  if(
+    fitsLeft(tile) &&
+    !fitsRight(tile)
+  ){
+
+    side="left";
+
+  }
+
+
+  playTile(
+    player,
+    index,
+    side
+  );
+
+}
+
+
+/* =========================================
+   PASS BUTTON
+========================================= */
+
+function updatePassButton(){
+
+  const btn=
+    $("passBtn");
+
+  if(!btn) return;
+
+
+  const disabled=
+    gameState.finished ||
+    gameState.currentPlayer!==0 ||
+    hasMove(0);
+
+
+  btn.disabled=
+    disabled;
+
+  btn.classList.toggle(
+    "disabled",
+    disabled
+  );
+
+}
+
+
+$("passBtn").onclick=()=>{
+
+  if(gameState.finished){
+    return;
+  }
+
+
+  if(
+    gameState.currentPlayer!==0
+  ){
+
+    showMessage(
+      "ახლა შენი სვლა არ არის"
+    );
+
+    return;
+  }
+
+
+  if(hasMove(0)){
+
+    showMessage(
+      "სვლა გაქვს — ქვა უნდა დადო"
+    );
+
+    return;
+  }
+
+
+  gameState.passCount++;
+
+
+  showMessage(
+    "გავიარე"
+  );
+
+
+  if(
+    gameState.passCount>=4
+  ){
+
+    finishRiba();
+
+    return;
+  }
+
+
+  nextTurn();
+
+};
+
+
+/* =========================================
+   NORMAL HAND FINISH
+========================================= */
+
+function finishNormalHand(
+  winnerPlayer
+){
+
+  gameState.finished=true;
+
+
+  const winnerTeam=
+    getTeam(winnerPlayer);
+
+  const loserTeam=
+    winnerTeam===0 ? 1 : 0;
+
+
+  const remaining=
+    teamRemaining(loserTeam);
+
+
+  let earned=
+    round5(remaining);
+
+
+  /*
+    წინა თანაბარი რიბის
+    დაგროვილი ქულები ემატება.
+  */
+
+  earned+=
+    gameState.carryPoints;
+
+
+  gameState.carryPoints=0;
+
+
+  gameState.teamScores[winnerTeam]+=
+    earned;
+
+
+  gameState.nextStarter=
+    winnerPlayer;
+
+
+  updateTeamScores();
+
+
+  showMessage(
+    `🏆 გუნდი ${winnerTeam===0?"A":"B"} +${earned}`
+  );
+
+
+  /*
+    355-ს გადაცილების შემდეგაც
+    მიმდინარე ხელი ბოლომდე დასრულდა.
+
+    რადგან ეს არ არის რიბა,
+    ახლა შეიძლება მატჩის
+    საბოლოო შედეგის შემოწმება.
+  */
+
+  if(
+    gameState.teamScores[0]>=355 ||
+    gameState.teamScores[1]>=355
+  ){
+
+    setTimeout(
+      checkMatchWinner,
+      1400
+    );
+
+    return;
+  }
+
+
+  setTimeout(
+    startNextRound,
+    1800
+  );
+
+}
+
+
+/* =========================================
+   RIBA
+========================================= */
+
+function finishRiba(){
+
+  gameState.finished=true;
+
+
+  const teamA=
+    teamRemaining(0);
+
+  const teamB=
+    teamRemaining(1);
+
+
+  /* EQUAL RIBA */
+
+  if(teamA===teamB){
+
+    /*
+      თანაბარი რიბის ქულა
+      ინახება შემდეგი ხელისთვის.
+    */
+
+    const carry=
+      round5(teamA);
+
+
+    gameState.carryPoints+=
+      carry;
+
+
+    showMessage(
+      `🔒 რიბა — თანაბარი ${teamA}:${teamB}`
+    );
+
+
+    /*
+      რიბის დამხურავი იწყებს
+      შემდეგ ხელს.
+    */
+
+    gameState.nextStarter=
+      gameState.ribaCloser;
+
+
+    setTimeout(
+      startNextRound,
+      1800
+    );
+
+    return;
+  }
+
+
+  const winnerTeam=
+    teamA<teamB ? 0 : 1;
+
+
+  const loserPoints=
+    winnerTeam===0
+      ? teamB
+      : teamA;
+
+
+  let earned=
+    round5(loserPoints);
+
+
+  /*
+    თუ მანამდე დაგროვილი
+    თანაბარი რიბაა,
+    გამარჯვებულს ემატება.
+  */
+
+  earned+=
+    gameState.carryPoints;
+
+
+  gameState.carryPoints=0;
+
+
+  gameState.teamScores[winnerTeam]+=
+    earned;
+
+
+  updateTeamScores();
+
+
+  showMessage(
+    `🔒 რიბა — გუნდი ${winnerTeam===0?"A":"B"} +${earned}`
+  );
+
+
+  /*
+    რიბის დამხურავი იწყებს
+    შემდეგ ხელს.
+  */
+
+  gameState.nextStarter=
+    gameState.ribaCloser;
+
+
+  /*
+    მნიშვნელოვანი:
+    თუ 355 მიღწეულია,
+    რიბაზე მატჩი არ სრულდება.
+    იწყება კიდევ ერთი ხელი.
+  */
+
+  setTimeout(
+    startNextRound,
+    1900
+  );
+
+}
+
+
+/* =========================================
+   MATCH WINNER
+========================================= */
+
+function checkMatchWinner(){
+
+  const a=
+    gameState.teamScores[0];
+
+  const b=
+    gameState.teamScores[1];
+
+
+  if(a===b){
+
+    showMessage(
+      "ქულები თანაბარია — თამაში გრძელდება"
+    );
+
+    setTimeout(
+      startNextRound,
+      1800
+    );
+
+    return;
+  }
+
+
+  const winner=
+    a>b ? "A" : "B";
+
+
+  showMessage(
+    `🏆 მატჩი მოიგო გუნდმა ${winner}`
+  );
+
+}
+
+
+/* =========================================
+   SCORE DISPLAY
+========================================= */
+
+function updateTeamScores(){
+
+  const a=
+    $("teamAScore");
+
+  const b=
+    $("teamBScore");
+
+
+  if(a){
+
+    a.textContent=
+      `${gameState.teamScores[0]} / 355`;
+
+  }
+
+
+  if(b){
+
+    b.textContent=
+      `${gameState.teamScores[1]} / 355`;
+
+  }
+
+}
+
+
+/* =========================================
+   FIND 6-6 HOLDER
+========================================= */
+
+function findSixSix(){
+
+  for(
+    let player=0;
+    player<4;
+    player++
+  ){
+
+    const index=
+      gameState.hands[player]
+        .findIndex(
+          tile=>
+            tile.a===6 &&
+            tile.b===6
+        );
+
+
+    if(index!==-1){
+
+      return{
+        player,
+        index
+      };
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* =========================================
+   START ROUND
+========================================= */
+
+function startRound(){
+
+  gameState.board=[];
+
+  gameState.leftEnd=null;
+  gameState.rightEnd=null;
+
+  gameState.passCount=0;
+
+  gameState.finished=false;
+
+  gameState.selectedIndex=null;
+
+  gameState.lastPlayerToPlay=null;
+
+  gameState.ribaCloser=null;
+
+
+  deal();
+
+
+  /*
+    პირველი ხელი იწყება 6-6-ით.
+  */
+
+  if(gameState.firstRound){
+
+    const starter=
+      findSixSix();
+
+
+    if(starter){
+
+      gameState.currentPlayer=
+        starter.player;
+
+
+      renderBoard();
+      renderHand();
+      renderHiddenHands();
+
+
+      showMessage(
+        `6-6 იწყებს — მოთამაშე ${starter.player+1}`
+      );
+
+
+      setTimeout(()=>{
+
+        playTile(
+          starter.player,
+          starter.index,
+          "right"
+        );
+
+      },700);
+
+    }
+
+
+    gameState.firstRound=false;
+
+    return;
+  }
+
+
+  /*
+    შემდეგ ხელს იწყებს
+    წინა ხელის გამარჯვებული
+    ან რიბის დამხურავი.
+  */
+
+  gameState.currentPlayer=
+    gameState.nextStarter ?? 0;
+
+
+  renderBoard();
+  renderHand();
+  renderHiddenHands();
+
+
+  updateTurn();
+
+
+  if(
+    gameState.currentPlayer!==0
+  ){
+
+    setTimeout(
+      computerTurn,
+      700
+    );
+
+  }
+
+}
+
+
+/* =========================================
+   NEXT ROUND
+========================================= */
+
+function startNextRound(){
+
+  gameState.roundNumber++;
+
+  startRound();
+
+}
+
+
+/* =========================================
+   EMOJI CHAT
+========================================= */
+
+const emojiPanel=
+  $("emojiPanel");
+
+
+function toggleEmojiPanel(){
+
+  emojiPanel.classList.toggle(
+    "show"
+  );
+
+}
+
+
+$("chatBtn").onclick=
+  toggleEmojiPanel;
+
+
+$("topChatBtn").onclick=
+  toggleEmojiPanel;
+
+
+document
+  .querySelectorAll(
+    ".emoji-choice"
+  )
+  .forEach(btn=>{
+
+    btn.onclick=()=>{
+
+      const emoji=
+        btn.textContent;
+
+      emojiPanel.classList.remove(
+        "show"
+      );
+
+
+      const bubble=
+        document.createElement(
+          "div"
+        );
+
+      bubble.className=
+        "floating-emoji";
+
+      bubble.textContent=
+        emoji;
+
+
+      $("game").appendChild(
+        bubble
+      );
+
+
+      setTimeout(
+        ()=>bubble.remove(),
+        1900
+      );
+
+    };
+
+  });
+
+
+/* =========================================
+   RIBA BUTTON
+========================================= */
+
+$("ribaBtn").onclick=()=>{
+
+  if(!gameState.finished){
+
+    showMessage(
+      "რიბა ავტომატურად დაფიქსირდება"
+    );
+
+  }
+
+};
+
+
+/* =========================================
+   SURRENDER
+========================================= */
+
+$("surrenderBtn").onclick=()=>{
+
+  showMessage(
+    "დანებება ჯერ გამორთულია"
+  );
+
+};
+
+
+/* =========================================
+   SOUND / SETTINGS
+========================================= */
+
+$("soundBtn").onclick=()=>{
+
+  showMessage(
+    "🔊 ხმა"
+  );
+
+};
+
+
+$("settingsBtn").onclick=()=>{
+
+  showMessage(
+    "⚙️ პარამეტრები"
+  );
+
+};
+
+
+/* =========================================
+   START GAME
+========================================= */
+
+updateTeamScores();
+
+startRound();
+
+
+/* ===== PART 3/4 END ===== */
+
+</script>
