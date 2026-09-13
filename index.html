@@ -3944,5 +3944,1346 @@ startRound();
 
 
 /* ===== PART 3/4 END ===== */
+   
 
 </script>
+<!-- ===== PART 4/4 START ===== -->
+
+<style>
+
+/* =========================================
+   LOGIN / NICKNAME
+========================================= */
+
+#loginOverlay{
+  position:fixed;
+  inset:0;
+  z-index:5000;
+
+  display:none;
+  align-items:center;
+  justify-content:center;
+
+  background:
+    radial-gradient(circle at center,
+      rgba(18,75,51,.96),
+      rgba(3,15,10,.99) 72%);
+
+  backdrop-filter:blur(8px);
+}
+
+#loginOverlay.show{
+  display:flex;
+}
+
+.login-card{
+  width:min(430px,88vw);
+
+  padding:28px;
+
+  text-align:center;
+
+  border:3px solid #8a5029;
+  border-radius:22px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #552712,
+      #1d0d07
+    );
+
+  box-shadow:
+    inset 0 0 0 2px rgba(255,205,132,.18),
+    0 20px 60px #000;
+}
+
+.login-title{
+  color:#ffe2a5;
+
+  font-family:Georgia,serif;
+  font-size:32px;
+  font-weight:900;
+}
+
+.login-subtitle{
+  margin:7px 0 22px;
+
+  color:#d5c2a4;
+
+  font-size:14px;
+}
+
+#nicknameInput{
+  width:100%;
+  height:52px;
+
+  padding:0 15px;
+
+  outline:none;
+
+  border:2px solid #70421f;
+  border-radius:12px;
+
+  color:white;
+  background:#100d0a;
+
+  font-size:17px;
+}
+
+#nicknameInput:focus{
+  border-color:#d59a49;
+
+  box-shadow:
+    0 0 10px rgba(255,191,75,.25);
+}
+
+#loginBtn{
+  width:100%;
+  height:54px;
+
+  margin-top:12px;
+
+  border:0;
+  border-radius:12px;
+
+  color:#1d1207;
+
+  background:
+    linear-gradient(
+      #ffe6a1,
+      #d69a3c
+    );
+
+  font-size:17px;
+  font-weight:900;
+
+  cursor:pointer;
+}
+
+.login-note{
+  margin-top:13px;
+
+  color:#9e9385;
+
+  font-size:11px;
+}
+
+
+/* =========================================
+   SMALL PROFILE BUTTON
+========================================= */
+
+#profileButton{
+  position:absolute;
+
+  left:1.5%;
+  top:49%;
+
+  z-index:90;
+
+  width:11%;
+
+  min-width:105px;
+
+  padding:9px;
+
+  border:2px solid #634024;
+  border-radius:12px;
+
+  color:#f5e7cd;
+
+  background:
+    linear-gradient(
+      #282019,
+      #100d0a
+    );
+
+  box-shadow:
+    0 5px 10px #000;
+
+  cursor:pointer;
+}
+
+#profileButton strong{
+  display:block;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+#profileButton small{
+  color:#d8b365;
+}
+
+
+/* =========================================
+   MODAL
+========================================= */
+
+.modal-bg{
+  position:fixed;
+  inset:0;
+
+  z-index:4000;
+
+  display:none;
+  align-items:center;
+  justify-content:center;
+
+  background:rgba(0,0,0,.78);
+}
+
+.modal-bg.show{
+  display:flex;
+}
+
+.modal{
+  width:min(480px,88vw);
+  max-height:80vh;
+
+  overflow:auto;
+
+  padding:20px;
+
+  border:3px solid #744424;
+  border-radius:18px;
+
+  background:
+    linear-gradient(
+      #241710,
+      #0d0b09
+    );
+
+  box-shadow:
+    0 20px 50px #000;
+}
+
+.modal h2{
+  color:#ffe2a5;
+
+  margin-bottom:15px;
+}
+
+.close-modal{
+  width:100%;
+  height:44px;
+
+  margin-top:15px;
+
+  border:1px solid #795130;
+  border-radius:10px;
+
+  color:white;
+  background:#29201a;
+
+  font-weight:bold;
+}
+
+
+/* =========================================
+   PROFILE
+========================================= */
+
+.profile-stat{
+  display:flex;
+  justify-content:space-between;
+
+  padding:10px 4px;
+
+  border-bottom:
+    1px solid rgba(255,255,255,.09);
+
+  color:#ddd1c1;
+}
+
+.profile-stat strong{
+  color:#ffe1a0;
+}
+
+
+/* =========================================
+   LEADERBOARD
+========================================= */
+
+.leader-row{
+  display:grid;
+
+  grid-template-columns:
+    42px 1fr 80px;
+
+  align-items:center;
+
+  padding:10px 5px;
+
+  border-bottom:
+    1px solid rgba(255,255,255,.08);
+}
+
+.leader-rank{
+  color:#ffd56c;
+
+  font-weight:900;
+}
+
+.leader-name{
+  color:white;
+
+  font-weight:bold;
+}
+
+.leader-rating{
+  color:#ffd56c;
+
+  text-align:right;
+}
+
+
+/* =========================================
+   EXTRA LEFT MENU
+========================================= */
+
+#sideMenu{
+  position:absolute;
+
+  left:1.5%;
+  top:61%;
+
+  z-index:90;
+
+  width:11%;
+
+  min-width:105px;
+
+  display:grid;
+  gap:6px;
+}
+
+.side-menu-btn{
+  min-height:37px;
+
+  padding:5px 7px;
+
+  border:1px solid #4f3a2a;
+  border-radius:8px;
+
+  color:#e8ddcc;
+  background:#181411;
+
+  font-size:11px;
+
+  cursor:pointer;
+}
+
+
+/* =========================================
+   INVITE
+========================================= */
+
+#inviteBtn{
+  color:#ffe0a0;
+
+  border-color:#765125;
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media(max-height:600px){
+
+  .login-card{
+    padding:18px;
+  }
+
+  .login-title{
+    font-size:24px;
+  }
+
+  #profileButton{
+    top:50%;
+    padding:5px;
+  }
+
+  #sideMenu{
+    top:63%;
+  }
+
+  .side-menu-btn{
+    min-height:28px;
+    font-size:9px;
+  }
+
+}
+
+</style>
+
+
+<!-- =====================================
+     PROFILE QUICK BUTTON
+====================================== -->
+
+<button id="profileButton">
+
+  <strong id="profileNickname">
+    მოთამაშე
+  </strong>
+
+  <small id="profileRating">
+    ★ 1000
+  </small>
+
+</button>
+
+
+<!-- =====================================
+     SIDE MENU
+====================================== -->
+
+<div id="sideMenu">
+
+  <button
+    class="side-menu-btn"
+    id="inviteBtn">
+    🔗 მოწვევა
+  </button>
+
+  <button
+    class="side-menu-btn"
+    id="leadersBtn">
+    🏆 ლიდერები
+  </button>
+
+  <button
+    class="side-menu-btn"
+    id="hintBtn">
+    💡 მინიშნება
+  </button>
+
+  <button
+    class="side-menu-btn"
+    id="helpBtn">
+    ❔ დახმარება
+  </button>
+
+</div>
+
+
+<!-- =====================================
+     LOGIN
+====================================== -->
+
+<div id="loginOverlay">
+
+  <div class="login-card">
+
+    <div class="login-title">
+      DOMINO GEORGIA
+    </div>
+
+    <div class="login-subtitle">
+      🇬🇪 ქართული დომინო
+    </div>
+
+    <input
+      id="nicknameInput"
+      maxlength="18"
+      autocomplete="off"
+      placeholder="შეიყვანე ნიკნეიმი">
+
+    <button id="loginBtn">
+      თამაშში შესვლა
+    </button>
+
+    <div class="login-note">
+      თამაშში საჯაროდ გამოჩნდება მხოლოდ შენი ნიკნეიმი
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================
+     PROFILE MODAL
+====================================== -->
+
+<div
+  class="modal-bg"
+  id="profileModal">
+
+  <div class="modal">
+
+    <h2>
+      👤 პროფილი
+    </h2>
+
+    <div class="profile-stat">
+
+      <span>ნიკნეიმი</span>
+
+      <strong id="modalNickname">
+        მოთამაშე
+      </strong>
+
+    </div>
+
+    <div class="profile-stat">
+
+      <span>რეიტინგი</span>
+
+      <strong id="modalRating">
+        1000
+      </strong>
+
+    </div>
+
+    <div class="profile-stat">
+
+      <span>თამაშები</span>
+
+      <strong id="modalGames">
+        0
+      </strong>
+
+    </div>
+
+    <div class="profile-stat">
+
+      <span>მოგება</span>
+
+      <strong id="modalWins">
+        0
+      </strong>
+
+    </div>
+
+    <div class="profile-stat">
+
+      <span>წაგება</span>
+
+      <strong id="modalLosses">
+        0
+      </strong>
+
+    </div>
+
+    <button
+      class="close-modal"
+      data-close="profileModal">
+      დახურვა
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================
+     LEADERS MODAL
+====================================== -->
+
+<div
+  class="modal-bg"
+  id="leadersModal">
+
+  <div class="modal">
+
+    <h2>
+      🏆 ლიდერები
+    </h2>
+
+    <div id="leadersList"></div>
+
+    <button
+      class="close-modal"
+      data-close="leadersModal">
+      დახურვა
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =========================================
+   PART 4/4
+   PROFILE / ROOM / PWA
+========================================= */
+
+
+/* =========================================
+   LOCAL PROFILE
+========================================= */
+
+const PROFILE_KEY =
+  "domino_georgia_profile";
+
+
+let profile = {
+
+  nickname:"",
+
+  rating:1000,
+
+  games:0,
+
+  wins:0,
+
+  losses:0
+
+};
+
+
+/* =========================================
+   LOAD PROFILE
+========================================= */
+
+function loadProfile(){
+
+  try{
+
+    const saved =
+      JSON.parse(
+        localStorage.getItem(
+          PROFILE_KEY
+        )
+      );
+
+
+    if(saved){
+
+      profile = {
+        ...profile,
+        ...saved
+      };
+
+    }
+
+  }catch(error){
+
+    console.log(
+      "Profile load:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================
+   SAVE PROFILE
+========================================= */
+
+function saveProfile(){
+
+  localStorage.setItem(
+    PROFILE_KEY,
+    JSON.stringify(profile)
+  );
+
+}
+
+
+/* =========================================
+   SAFE NICKNAME
+========================================= */
+
+function cleanNickname(text){
+
+  return String(text || "")
+    .replace(/[<>]/g,"")
+    .trim()
+    .slice(0,18);
+
+}
+
+
+/* =========================================
+   UPDATE PROFILE UI
+========================================= */
+
+function updateProfileUI(){
+
+  const nickname =
+    profile.nickname ||
+    "მოთამაშე";
+
+
+  const ids = [
+    "profileNickname",
+    "modalNickname",
+    "myNickname"
+  ];
+
+
+  ids.forEach(id=>{
+
+    const el =
+      document.getElementById(id);
+
+    if(el){
+
+      el.textContent =
+        nickname;
+
+    }
+
+  });
+
+
+  const profileRating =
+    document.getElementById(
+      "profileRating"
+    );
+
+
+  if(profileRating){
+
+    profileRating.textContent =
+      `★ ${profile.rating}`;
+
+  }
+
+
+  const modalRating =
+    document.getElementById(
+      "modalRating"
+    );
+
+
+  if(modalRating){
+
+    modalRating.textContent =
+      profile.rating;
+
+  }
+
+
+  const games =
+    document.getElementById(
+      "modalGames"
+    );
+
+
+  if(games){
+
+    games.textContent =
+      profile.games;
+
+  }
+
+
+  const wins =
+    document.getElementById(
+      "modalWins"
+    );
+
+
+  if(wins){
+
+    wins.textContent =
+      profile.wins;
+
+  }
+
+
+  const losses =
+    document.getElementById(
+      "modalLosses"
+    );
+
+
+  if(losses){
+
+    losses.textContent =
+      profile.losses;
+
+  }
+
+}
+
+
+/* =========================================
+   LOGIN
+========================================= */
+
+const loginOverlay =
+  document.getElementById(
+    "loginOverlay"
+  );
+
+
+function showLoginIfNeeded(){
+
+  if(!profile.nickname){
+
+    loginOverlay.classList.add(
+      "show"
+    );
+
+  }
+
+}
+
+
+document
+  .getElementById("loginBtn")
+  .onclick = ()=>{
+
+    const input =
+      document.getElementById(
+        "nicknameInput"
+      );
+
+
+    const nickname =
+      cleanNickname(
+        input.value
+      );
+
+
+    if(nickname.length < 2){
+
+      input.focus();
+
+      return;
+
+    }
+
+
+    profile.nickname =
+      nickname;
+
+
+    saveProfile();
+
+    updateProfileUI();
+
+
+    loginOverlay
+      .classList.remove(
+        "show"
+      );
+
+
+    showMessage(
+      `კეთილი იყოს შენი მობრძანება, ${nickname}`
+    );
+
+  };
+
+
+/* =========================================
+   PROFILE MODAL
+========================================= */
+
+document
+  .getElementById(
+    "profileButton"
+  )
+  .onclick = ()=>{
+
+    updateProfileUI();
+
+    document
+      .getElementById(
+        "profileModal"
+      )
+      .classList.add(
+        "show"
+      );
+
+  };
+
+
+/* =========================================
+   CLOSE MODALS
+========================================= */
+
+document
+  .querySelectorAll(
+    "[data-close]"
+  )
+  .forEach(button=>{
+
+    button.onclick = ()=>{
+
+      document
+        .getElementById(
+          button.dataset.close
+        )
+        .classList.remove(
+          "show"
+        );
+
+    };
+
+  });
+
+
+/* =========================================
+   LEADERBOARD
+   TEMPORARY LOCAL DATA
+========================================= */
+
+function renderLeaders(){
+
+  const leaders = [
+
+    {
+      nickname:"DominoKing",
+      rating:1485
+    },
+
+    {
+      nickname:"Tbilisi7",
+      rating:1390
+    },
+
+    {
+      nickname:"Batumi6",
+      rating:1325
+    },
+
+    {
+      nickname:
+        profile.nickname ||
+        "მოთამაშე",
+
+      rating:
+        profile.rating
+    },
+
+    {
+      nickname:"Player77",
+      rating:995
+    }
+
+  ];
+
+
+  leaders.sort(
+    (a,b)=>
+      b.rating-a.rating
+  );
+
+
+  const list =
+    document.getElementById(
+      "leadersList"
+    );
+
+
+  list.innerHTML="";
+
+
+  leaders.forEach(
+    (player,index)=>{
+
+      const row =
+        document.createElement(
+          "div"
+        );
+
+
+      row.className =
+        "leader-row";
+
+
+      const rank =
+        document.createElement(
+          "div"
+        );
+
+      rank.className =
+        "leader-rank";
+
+      rank.textContent =
+        `#${index+1}`;
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+      name.className =
+        "leader-name";
+
+      name.textContent =
+        player.nickname;
+
+
+      const rating =
+        document.createElement(
+          "div"
+        );
+
+      rating.className =
+        "leader-rating";
+
+      rating.textContent =
+        `★ ${player.rating}`;
+
+
+      row.append(
+        rank,
+        name,
+        rating
+      );
+
+
+      list.appendChild(row);
+
+    });
+
+}
+
+
+/* =========================================
+   LEADERS BUTTON
+========================================= */
+
+document
+  .getElementById(
+    "leadersBtn"
+  )
+  .onclick = ()=>{
+
+    renderLeaders();
+
+    document
+      .getElementById(
+        "leadersModal"
+      )
+      .classList.add(
+        "show"
+      );
+
+  };
+
+
+/* =========================================
+   HINT
+========================================= */
+
+document
+  .getElementById(
+    "hintBtn"
+  )
+  .onclick = ()=>{
+
+    if(
+      gameState.currentPlayer!==0
+    ){
+
+      showMessage(
+        "ჯერ შენი სვლა არ არის"
+      );
+
+      return;
+
+    }
+
+
+    const index =
+      gameState.hands[0]
+        .findIndex(canPlay);
+
+
+    if(index===-1){
+
+      showMessage(
+        "სვლა არ გაქვს — გავიარე"
+      );
+
+      return;
+
+    }
+
+
+    gameState.selectedIndex =
+      index;
+
+
+    renderHand();
+
+
+    showMessage(
+      "💡 მონიშნული ქვა შეგიძლია დადო"
+    );
+
+  };
+
+
+/* =========================================
+   HELP
+========================================= */
+
+document
+  .getElementById(
+    "helpBtn"
+  )
+  .onclick = ()=>{
+
+    showMessage(
+      "🇬🇪 ქართული დომინო • 355 ქულამდე"
+    );
+
+  };
+
+
+/* =========================================
+   ROOM CODE
+========================================= */
+
+const ROOM_KEY =
+  "domino_georgia_room";
+
+
+function randomRoom(){
+
+  const chars =
+    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+
+  let result="";
+
+
+  for(let i=0;i<6;i++){
+
+    result +=
+      chars[
+        Math.floor(
+          Math.random() *
+          chars.length
+        )
+      ];
+
+  }
+
+
+  return result;
+
+}
+
+
+let roomCode =
+  localStorage.getItem(
+    ROOM_KEY
+  );
+
+
+const params =
+  new URLSearchParams(
+    location.search
+  );
+
+
+const incomingRoom =
+  params.get("room");
+
+
+if(incomingRoom){
+
+  roomCode =
+    incomingRoom
+      .replace(
+        /[^A-Za-z0-9]/g,
+        ""
+      )
+      .slice(0,12);
+
+}
+
+
+if(!roomCode){
+
+  roomCode =
+    randomRoom();
+
+}
+
+
+localStorage.setItem(
+  ROOM_KEY,
+  roomCode
+);
+
+
+const roomCodeElement =
+  document.getElementById(
+    "roomCode"
+  );
+
+
+if(roomCodeElement){
+
+  roomCodeElement.textContent =
+    `მაგიდა #${roomCode}`;
+
+}
+
+
+/* =========================================
+   INVITE
+========================================= */
+
+document
+  .getElementById(
+    "inviteBtn"
+  )
+  .onclick = async ()=>{
+
+    const inviteURL =
+      `${location.origin}${location.pathname}?room=${encodeURIComponent(roomCode)}`;
+
+
+    try{
+
+      if(navigator.share){
+
+        await navigator.share({
+
+          title:
+            "DOMINO GEORGIA",
+
+          text:
+            "შემოდი ჩემს დომინოს მაგიდაზე",
+
+          url:
+            inviteURL
+
+        });
+
+
+        return;
+
+      }
+
+
+      await navigator.clipboard
+        .writeText(
+          inviteURL
+        );
+
+
+      showMessage(
+        "🔗 მოწვევის ბმული დაკოპირდა"
+      );
+
+    }catch(error){
+
+      showMessage(
+        "მოწვევა გაუქმდა"
+      );
+
+    }
+
+  };
+
+
+/* =========================================
+   SERVICE WORKER / PWA
+========================================= */
+
+if(
+  "serviceWorker" in navigator
+){
+
+  window.addEventListener(
+    "load",
+    ()=>{
+
+      navigator
+        .serviceWorker
+        .register(
+          "./service-worker.js"
+        )
+        .then(registration=>{
+
+          /*
+            განახლების შემოწმება,
+            რომ GitHub-ზე ახალი
+            დიზაინი სწრაფად გამოჩნდეს.
+          */
+
+          registration.update();
+
+        })
+        .catch(error=>{
+
+          console.log(
+            "Service Worker:",
+            error
+          );
+
+        });
+
+    }
+  );
+
+}
+
+
+/* =========================================
+   INITIAL PROFILE
+========================================= */
+
+loadProfile();
+
+updateProfileUI();
+
+showLoginIfNeeded();
+
+
+/* =========================================
+   FINAL RENDER
+========================================= */
+
+renderBoard();
+
+renderHand();
+
+renderHiddenHands();
+
+updateTeamScores();
+
+
+console.log(
+  "DOMINO GEORGIA READY"
+);
+
+</script>
+
+
+<!-- =====================================
+     PORTRAIT WARNING
+====================================== -->
+
+<div class="rotate">
+
+  <div>
+    📱↻
+  </div>
+
+  <h2>
+    ტელეფონი ჰორიზონტალურად მოაბრუნე
+  </h2>
+
+</div>
+
+
+<!-- ===== PART 4/4 END ===== -->
+
+</div>
+
+</body>
+</html>
