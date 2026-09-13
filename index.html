@@ -1,0 +1,2621 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#123d2b">
+
+<title>Domino Georgia</title>
+
+<style>
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  font-family:Arial,sans-serif;
+  background:#07150f;
+  color:white;
+}
+
+button{
+  font-family:inherit;
+  cursor:pointer;
+}
+
+/* APP */
+
+#app{
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  background:#0a2418;
+}
+
+/* TOP BAR */
+
+#topBar{
+  height:62px;
+  flex-shrink:0;
+  background:linear-gradient(180deg,#163f2e,#0d2d20);
+  border-bottom:2px solid #c69b42;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:7px 10px;
+  box-shadow:0 3px 12px rgba(0,0,0,.4);
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:900;
+  font-size:18px;
+}
+
+.logoMark{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#f2d36c;
+  color:#143b2b;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:23px;
+  box-shadow:0 0 0 2px #8e6c28;
+}
+
+#playerName{
+  font-size:13px;
+  color:#ffe59b;
+}
+
+.loginBtn{
+  border:1px solid #e0bb62;
+  background:#fff;
+  color:#222;
+
+  padding:8px 12px;
+  border-radius:10px;
+
+  font-weight:bold;
+}
+
+/* GAME */
+
+#game{
+  position:relative;
+  flex:1;
+  overflow:hidden;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #258557 0%,
+      #176b45 42%,
+      #0b4b31 100%
+    );
+
+  border:
+    8px solid #5c351d;
+
+  box-shadow:
+    inset 0 0 0 3px #b57a3c,
+    inset 0 0 35px rgba(0,0,0,.55);
+}
+
+/* TABLE TEXTURE */
+
+#game::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,.015) 0px,
+      rgba(255,255,255,.015) 2px,
+      transparent 2px,
+      transparent 7px
+    );
+}
+
+/* OPPONENT */
+
+.playerTop{
+  position:absolute;
+  top:12px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:10;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.avatar{
+  width:46px;
+  height:46px;
+
+  border-radius:50%;
+  border:3px solid #f0c95c;
+
+  background:#173d2e;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:24px;
+
+  box-shadow:0 3px 10px #0008;
+}
+
+.playerLabel{
+  margin-top:3px;
+
+  background:#09291cdd;
+  border:1px solid #d5b052;
+
+  border-radius:12px;
+  padding:3px 9px;
+
+  font-size:12px;
+}
+
+/* SCORE */
+
+#scoreBoard{
+  position:absolute;
+  top:12px;
+  left:10px;
+  z-index:20;
+
+  background:#092b1ddd;
+
+  border:1px solid #d5b052;
+  border-radius:12px;
+
+  padding:7px 10px;
+
+  font-size:12px;
+  line-height:1.6;
+
+  box-shadow:0 3px 10px #0006;
+}
+
+.scoreNum{
+  color:#ffd95d;
+  font-weight:900;
+}
+
+/* CHAT */
+
+#emojiChat{
+  position:absolute;
+  right:10px;
+  top:12px;
+  z-index:30;
+}
+
+.chatBtn{
+  width:43px;
+  height:43px;
+
+  border-radius:50%;
+  border:2px solid #e3bd58;
+
+  background:#123e2b;
+  color:white;
+
+  font-size:21px;
+}
+
+#emojiPanel{
+  display:none;
+
+  position:absolute;
+  right:0;
+  top:50px;
+
+  width:165px;
+
+  background:#082a1ddd;
+
+  border:1px solid #d6b054;
+  border-radius:15px;
+
+  padding:8px;
+
+  box-shadow:0 5px 18px #0008;
+}
+
+.emojiGrid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:5px;
+}
+
+.emojiBtn{
+  border:0;
+  background:#ffffff14;
+
+  height:34px;
+  border-radius:8px;
+
+  font-size:21px;
+}
+
+/* CENTER DOMINO AREA */
+
+#board{
+  position:absolute;
+
+  left:5%;
+  right:5%;
+
+  top:90px;
+  bottom:150px;
+
+  z-index:5;
+}
+
+/* DOMINO */
+
+.domino{
+  position:absolute;
+
+  width:36px;
+  height:72px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fff,
+      #e7e4dc
+    );
+
+  border:2px solid #262626;
+  border-radius:7px;
+
+  box-shadow:
+    2px 4px 7px rgba(0,0,0,.5),
+    inset 1px 1px 2px #fff;
+
+  display:flex;
+  flex-direction:column;
+
+  overflow:hidden;
+}
+
+.domino.horizontal{
+  width:72px;
+  height:36px;
+  flex-direction:row;
+}
+
+.dominoHalf{
+  flex:1;
+  position:relative;
+  display:grid;
+
+  grid-template-columns:
+    repeat(3,1fr);
+
+  grid-template-rows:
+    repeat(3,1fr);
+
+  padding:4px;
+}
+
+.domino:not(.horizontal)
+.dominoHalf:first-child{
+  border-bottom:2px solid #333;
+}
+
+.domino.horizontal
+.dominoHalf:first-child{
+  border-right:2px solid #333;
+}
+
+.dot{
+  width:6px;
+  height:6px;
+
+  background:#111;
+  border-radius:50%;
+
+  align-self:center;
+  justify-self:center;
+
+  box-shadow:
+    inset 0 1px 1px #555;
+}
+
+/* PLAYER HAND */
+
+#handArea{
+  position:absolute;
+
+  bottom:10px;
+  left:50%;
+
+  transform:translateX(-50%);
+
+  width:96%;
+  min-height:115px;
+
+  z-index:40;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+#hand{
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+
+  gap:3px;
+
+  width:100%;
+  min-height:80px;
+}
+
+.handDomino{
+  position:relative;
+
+  width:39px;
+  height:78px;
+
+  flex-shrink:0;
+
+  transition:
+    transform .15s,
+    filter .15s;
+}
+
+.handDomino:active{
+  transform:translateY(-10px);
+}
+
+/* ACTION BUTTON */
+
+#actionBar{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  gap:8px;
+
+  margin-top:5px;
+}
+
+.actionBtn{
+  border:2px solid #ffe08a;
+
+  color:#fff;
+
+  background:
+    linear-gradient(
+      #d49b27,
+      #9e6713
+    );
+
+  border-radius:12px;
+
+  padding:9px 18px;
+
+  font-size:14px;
+  font-weight:900;
+
+  box-shadow:0 3px 7px #0007;
+}
+
+#passBtn{
+  background:
+    linear-gradient(
+      #375f4c,
+      #173c2b
+    );
+}
+
+/* MESSAGE */
+
+#gameMessage{
+  position:absolute;
+
+  left:50%;
+  top:50%;
+
+  transform:
+    translate(-50%,-50%);
+
+  z-index:100;
+
+  display:none;
+
+  background:#061d15e8;
+
+  border:2px solid #e2bd59;
+
+  border-radius:16px;
+
+  padding:14px 22px;
+
+  text-align:center;
+
+  font-size:17px;
+  font-weight:bold;
+
+  box-shadow:0 5px 20px #0009;
+}
+
+/* LOBBY */
+
+#lobby{
+  position:absolute;
+  inset:0;
+
+  z-index:200;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  padding:20px;
+
+  background:
+    radial-gradient(
+      circle,
+      #1b6d48,
+      #08271a
+    );
+}
+
+.lobbyCard{
+  width:min(390px,95%);
+
+  background:#092b1f;
+
+  border:2px solid #cba74d;
+
+  border-radius:22px;
+
+  padding:22px;
+
+  text-align:center;
+
+  box-shadow:0 10px 35px #0009;
+}
+
+.bigLogo{
+  font-size:55px;
+}
+
+.lobbyCard h1{
+  color:#f5d66c;
+  margin:7px 0;
+}
+
+.lobbyCard p{
+  color:#cbd8d1;
+  margin-bottom:18px;
+}
+
+.nicknameInput{
+  width:100%;
+
+  border:1px solid #c6a34d;
+
+  border-radius:12px;
+
+  padding:12px;
+
+  background:#061d15;
+
+  color:white;
+
+  outline:none;
+
+  margin-bottom:9px;
+
+  font-size:16px;
+}
+
+.mainBtn{
+  width:100%;
+
+  border:0;
+
+  border-radius:13px;
+
+  padding:13px;
+
+  margin-top:8px;
+
+  background:
+    linear-gradient(
+      #f1ce61,
+      #bb8424
+    );
+
+  color:#173323;
+
+  font-size:16px;
+  font-weight:900;
+}
+
+/* MOBILE */
+
+@media(max-width:420px){
+
+  #game{
+    border-width:5px;
+  }
+
+  .domino{
+    width:32px;
+    height:64px;
+  }
+
+  .domino.horizontal{
+    width:64px;
+    height:32px;
+  }
+
+  .dot{
+    width:5px;
+    height:5px;
+  }
+
+  #board{
+    left:2%;
+    right:2%;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+  <header id="topBar">
+
+    <div class="logo">
+      <div class="logoMark">⚄</div>
+
+      <div>
+        DOMINO GEORGIA
+        <div id="playerName">
+          სტუმარი
+        </div>
+      </div>
+    </div>
+
+    <button
+      class="loginBtn"
+      id="googleLoginBtn">
+      Google Login
+    </button>
+
+  </header>
+
+  <main id="game">
+
+    <div id="scoreBoard">
+      თქვენ:
+      <span
+        class="scoreNum"
+        id="myScore">
+        0
+      </span>
+      <br>
+
+      მეტოქე:
+      <span
+        class="scoreNum"
+        id="enemyScore">
+        0
+      </span>
+    </div>
+
+    <div class="playerTop">
+
+      <div class="avatar">
+        👤
+      </div>
+
+      <div
+        class="playerLabel"
+        id="enemyName">
+        მეტოქე
+      </div>
+
+    </div>
+
+    <div id="emojiChat">
+
+      <button
+        class="chatBtn"
+        id="chatBtn">
+        😊
+      </button>
+
+      <div id="emojiPanel">
+
+        <div class="emojiGrid">
+
+          <button class="emojiBtn">👍</button>
+          <button class="emojiBtn">👏</button>
+          <button class="emojiBtn">😄</button>
+          <button class="emojiBtn">😎</button>
+
+          <button class="emojiBtn">🔥</button>
+          <button class="emojiBtn">🤝</button>
+          <button class="emojiBtn">😮</button>
+          <button class="emojiBtn">😂</button>
+
+          <button class="emojiBtn">💪</button>
+          <button class="emojiBtn">🎯</button>
+          <button class="emojiBtn">❤️</button>
+          <button class="emojiBtn">🏆</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div id="board"></div>
+
+    <div id="gameMessage"></div>
+
+    <div id="handArea">
+
+      <div id="hand"></div>
+
+      <div id="actionBar">
+
+        <button
+          class="actionBtn"
+          id="passBtn">
+          გავიარე
+        </button>
+
+      </div>
+
+    </div>
+
+    <div id="lobby">
+
+      <div class="lobbyCard">
+
+        <div class="bigLogo">
+          ⚄
+        </div>
+
+        <h1>
+          DOMINO GEORGIA
+        </h1>
+
+        <p>
+          ითამაშე ქართული დომინო ონლაინ
+        </p>
+
+        <input
+          id="nickname"
+          class="nicknameInput"
+          maxlength="16"
+          placeholder="შეიყვანე Nickname">
+
+        <button
+          class="mainBtn"
+          id="quickGameBtn">
+          🎮 თამაშის დაწყება
+        </button>
+
+        <button
+          class="mainBtn"
+          id="leaderboardBtn">
+          🏆 ლიდერბორდი
+        </button>
+
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+<script>
+
+/* =========================
+   DOMINO GEORGIA — PART 2/4
+   GAME ENGINE
+========================= */
+
+const $ = id => document.getElementById(id);
+
+let dominoSet = [];
+let myHand = [];
+let enemyHand = [];
+let boardChain = [];
+
+let leftValue = null;
+let rightValue = null;
+
+let myTurn = true;
+let gameRunning = false;
+
+let myScore = 0;
+let enemyScore = 0;
+
+let selectedTile = null;
+
+let passesInRow = 0;
+
+
+/* CREATE 28 DOMINOES */
+
+function createDominoSet(){
+
+  const set = [];
+
+  for(let a = 0; a <= 6; a++){
+
+    for(let b = a; b <= 6; b++){
+
+      set.push({
+        a:a,
+        b:b,
+        id:a + "-" + b
+      });
+
+    }
+
+  }
+
+  return set;
+}
+
+
+/* SHUFFLE */
+
+function shuffle(array){
+
+  for(let i = array.length - 1; i > 0; i--){
+
+    const j =
+      Math.floor(
+        Math.random() * (i + 1)
+      );
+
+    [array[i],array[j]] =
+      [array[j],array[i]];
+
+  }
+
+  return array;
+}
+
+
+/* DOT POSITIONS */
+
+const dotPositions = {
+
+  0:[],
+
+  1:[5],
+
+  2:[1,9],
+
+  3:[1,5,9],
+
+  4:[1,3,7,9],
+
+  5:[1,3,5,7,9],
+
+  6:[1,3,4,6,7,9]
+
+};
+
+
+/* CREATE HALF */
+
+function makeHalf(number){
+
+  const half =
+    document.createElement("div");
+
+  half.className = "dominoHalf";
+
+  const positions =
+    dotPositions[number];
+
+  for(let i = 1; i <= 9; i++){
+
+    const cell =
+      document.createElement("div");
+
+    cell.style.gridColumn =
+      ((i - 1) % 3) + 1;
+
+    cell.style.gridRow =
+      Math.floor((i - 1) / 3) + 1;
+
+    cell.style.display = "flex";
+    cell.style.alignItems = "center";
+    cell.style.justifyContent = "center";
+
+    if(positions.includes(i)){
+
+      const dot =
+        document.createElement("span");
+
+      dot.className = "dot";
+
+      cell.appendChild(dot);
+
+    }
+
+    half.appendChild(cell);
+
+  }
+
+  return half;
+}
+
+
+/* CREATE VISUAL DOMINO */
+
+function makeDominoElement(
+  tile,
+  horizontal = false
+){
+
+  const el =
+    document.createElement("div");
+
+  el.className =
+    "domino" +
+    (horizontal ? " horizontal" : "");
+
+  el.appendChild(
+    makeHalf(tile.a)
+  );
+
+  el.appendChild(
+    makeHalf(tile.b)
+  );
+
+  return el;
+}
+
+
+/* START GAME */
+
+function startGame(){
+
+  dominoSet =
+    shuffle(createDominoSet());
+
+  myHand =
+    dominoSet.splice(0,7);
+
+  enemyHand =
+    dominoSet.splice(0,7);
+
+  boardChain = [];
+
+  leftValue = null;
+  rightValue = null;
+
+  selectedTile = null;
+
+  passesInRow = 0;
+
+  gameRunning = true;
+
+  $("lobby").style.display =
+    "none";
+
+  $("gameMessage").style.display =
+    "none";
+
+  chooseFirstPlayer();
+
+  renderAll();
+
+}
+
+
+/* FIRST PLAYER */
+
+function chooseFirstPlayer(){
+
+  let myDouble = -1;
+  let enemyDouble = -1;
+
+  myHand.forEach(tile=>{
+
+    if(
+      tile.a === tile.b &&
+      tile.a > myDouble
+    ){
+      myDouble = tile.a;
+    }
+
+  });
+
+  enemyHand.forEach(tile=>{
+
+    if(
+      tile.a === tile.b &&
+      tile.a > enemyDouble
+    ){
+      enemyDouble = tile.a;
+    }
+
+  });
+
+  if(myDouble >= enemyDouble){
+
+    myTurn = true;
+
+    showMessage(
+      "შენი სვლაა"
+    );
+
+  }else{
+
+    myTurn = false;
+
+    showMessage(
+      "მეტოქე იწყებს"
+    );
+
+    setTimeout(
+      enemyMove,
+      900
+    );
+
+  }
+
+}
+
+
+/* RENDER EVERYTHING */
+
+function renderAll(){
+
+  renderHand();
+  renderBoard();
+
+  $("myScore").textContent =
+    myScore;
+
+  $("enemyScore").textContent =
+    enemyScore;
+
+}
+
+
+/* PLAYER HAND */
+
+function renderHand(){
+
+  const hand =
+    $("hand");
+
+  hand.innerHTML = "";
+
+  myHand.forEach(
+    (tile,index)=>{
+
+      const el =
+        makeDominoElement(
+          tile,
+          false
+        );
+
+      el.classList.add(
+        "handDomino"
+      );
+
+      if(
+        canPlay(tile) &&
+        myTurn &&
+        gameRunning
+      ){
+
+        el.style.cursor =
+          "pointer";
+
+        el.style.filter =
+          "drop-shadow(0 0 5px #ffe266)";
+
+      }else{
+
+        el.style.opacity =
+          ".78";
+
+      }
+
+      if(
+        selectedTile === index
+      ){
+
+        el.style.transform =
+          "translateY(-14px)";
+
+      }
+
+      el.onclick = ()=>{
+
+        if(
+          !myTurn ||
+          !gameRunning
+        ){
+          return;
+        }
+
+        if(
+          !canPlay(tile)
+        ){
+
+          showMessage(
+            "ეს ქვა არ მიდის"
+          );
+
+          return;
+        }
+
+        selectedTile = index;
+
+        playMyTile(index);
+
+      };
+
+      hand.appendChild(el);
+
+    }
+  );
+
+}
+
+
+/* CAN TILE PLAY */
+
+function canPlay(tile){
+
+  if(boardChain.length === 0){
+    return true;
+  }
+
+  return(
+    tile.a === leftValue ||
+    tile.b === leftValue ||
+    tile.a === rightValue ||
+    tile.b === rightValue
+  );
+
+}
+
+
+/* PLAYER HAS MOVE */
+
+function playerHasMove(hand){
+
+  return hand.some(
+    tile => canPlay(tile)
+  );
+
+}
+
+
+/* PLAY MY TILE */
+
+function playMyTile(index){
+
+  if(!myTurn){
+    return;
+  }
+
+  const tile =
+    myHand[index];
+
+  if(!canPlay(tile)){
+    return;
+  }
+
+  placeTile(tile);
+
+  myHand.splice(
+    index,
+    1
+  );
+
+  selectedTile = null;
+
+  passesInRow = 0;
+
+  renderAll();
+
+  if(checkRoundEnd()){
+    return;
+  }
+
+  myTurn = false;
+
+  renderHand();
+
+  showMessage(
+    "მეტოქის სვლაა"
+  );
+
+  setTimeout(
+    enemyMove,
+    700
+  );
+
+}
+
+
+/* PLACE TILE */
+
+function placeTile(tile){
+
+  if(boardChain.length === 0){
+
+    boardChain.push({
+      a:tile.a,
+      b:tile.b
+    });
+
+    leftValue =
+      tile.a;
+
+    rightValue =
+      tile.b;
+
+    return;
+
+  }
+
+
+  /* LEFT SIDE */
+
+  if(tile.b === leftValue){
+
+    boardChain.unshift({
+      a:tile.a,
+      b:tile.b
+    });
+
+    leftValue =
+      tile.a;
+
+    return;
+
+  }
+
+  if(tile.a === leftValue){
+
+    boardChain.unshift({
+      a:tile.b,
+      b:tile.a
+    });
+
+    leftValue =
+      tile.b;
+
+    return;
+
+  }
+
+
+  /* RIGHT SIDE */
+
+  if(tile.a === rightValue){
+
+    boardChain.push({
+      a:tile.a,
+      b:tile.b
+    });
+
+    rightValue =
+      tile.b;
+
+    return;
+
+  }
+
+  if(tile.b === rightValue){
+
+    boardChain.push({
+      a:tile.b,
+      b:tile.a
+    });
+
+    rightValue =
+      tile.a;
+
+  }
+
+}
+
+
+/* BOARD */
+
+function renderBoard(){
+
+  const board =
+    $("board");
+
+  board.innerHTML = "";
+
+  if(
+    boardChain.length === 0
+  ){
+    return;
+  }
+
+  const tileW = 58;
+  const gap = 3;
+
+  const totalWidth =
+    boardChain.length *
+    (tileW + gap);
+
+  let x =
+    Math.max(
+      4,
+      (board.clientWidth -
+       totalWidth) / 2
+    );
+
+  let y =
+    Math.max(
+      25,
+      board.clientHeight / 2 - 18
+    );
+
+
+  boardChain.forEach(
+    (tile,index)=>{
+
+      const isDouble =
+        tile.a === tile.b;
+
+      const el =
+        makeDominoElement(
+          tile,
+          !isDouble
+        );
+
+      el.style.left =
+        x + "px";
+
+      if(isDouble){
+
+        el.style.top =
+          (y - 18) + "px";
+
+        x += 39;
+
+      }else{
+
+        el.style.top =
+          y + "px";
+
+        x += 67;
+
+      }
+
+      board.appendChild(el);
+
+    }
+  );
+
+}
+
+
+/* ENEMY AI — TEMPORARY
+   ONLINE PLAYER WILL REPLACE THIS
+*/
+
+function enemyMove(){
+
+  if(
+    !gameRunning ||
+    myTurn
+  ){
+    return;
+  }
+
+  const playable =
+    enemyHand
+      .map((tile,index)=>({
+        tile,
+        index
+      }))
+      .filter(
+        item =>
+          canPlay(item.tile)
+      );
+
+
+  if(playable.length === 0){
+
+    passesInRow++;
+
+    showMessage(
+      "მეტოქემ გაიარა"
+    );
+
+    if(
+      passesInRow >= 2
+    ){
+
+      finishRiba();
+      return;
+
+    }
+
+    myTurn = true;
+
+    renderHand();
+
+    setTimeout(()=>{
+
+      showMessage(
+        "შენი სვლაა"
+      );
+
+    },500);
+
+    return;
+
+  }
+
+
+  const choice =
+    playable[
+      Math.floor(
+        Math.random() *
+        playable.length
+      )
+    ];
+
+  placeTile(
+    choice.tile
+  );
+
+  enemyHand.splice(
+    choice.index,
+    1
+  );
+
+  passesInRow = 0;
+
+  renderAll();
+
+  if(checkRoundEnd()){
+    return;
+  }
+
+  myTurn = true;
+
+  renderHand();
+
+  showMessage(
+    "შენი სვლაა"
+  );
+
+}
+
+
+/* PASS = "გავიარე" */
+
+$("passBtn").onclick = ()=>{
+
+  if(
+    !gameRunning ||
+    !myTurn
+  ){
+    return;
+  }
+
+  if(
+    playerHasMove(myHand)
+  ){
+
+    showMessage(
+      "დასადები ქვა გაქვს"
+    );
+
+    return;
+
+  }
+
+  passesInRow++;
+
+  showMessage(
+    "გავიარე"
+  );
+
+  myTurn = false;
+
+  if(
+    passesInRow >= 2
+  ){
+
+    finishRiba();
+    return;
+
+  }
+
+  setTimeout(
+    enemyMove,
+    650
+  );
+
+};
+
+
+/* COUNT HAND POINTS */
+
+function handPoints(hand){
+
+  return hand.reduce(
+    (sum,tile)=>
+      sum +
+      tile.a +
+      tile.b,
+    0
+  );
+
+}
+
+
+/* CHECK NORMAL ROUND END */
+
+function checkRoundEnd(){
+
+  if(myHand.length === 0){
+
+    const gained =
+      handPoints(enemyHand);
+
+    myScore += gained;
+
+    finishRound(
+      "შენ მოიგე! 🏆",
+      gained
+    );
+
+    return true;
+  }
+
+
+  if(enemyHand.length === 0){
+
+    const gained =
+      handPoints(myHand);
+
+    enemyScore += gained;
+
+    finishRound(
+      "მეტოქემ მოიგო",
+      gained
+    );
+
+    return true;
+  }
+
+  return false;
+
+}
+
+
+/* RIBA */
+
+function finishRiba(){
+
+  if(!gameRunning){
+    return;
+  }
+
+  const mine =
+    handPoints(myHand);
+
+  const enemy =
+    handPoints(enemyHand);
+
+  if(mine < enemy){
+
+    myScore += enemy;
+
+    finishRound(
+      "🐟 რიბა! შენ მოიგე",
+      enemy
+    );
+
+  }else if(enemy < mine){
+
+    enemyScore += mine;
+
+    finishRound(
+      "🐟 რიბა! მეტოქემ მოიგო",
+      mine
+    );
+
+  }else{
+
+    finishRound(
+      "🐟 რიბა! თანაბარი ქულებია",
+      0
+    );
+
+  }
+
+}
+
+
+/* FINISH ROUND */
+
+function finishRound(
+  text,
+  points
+){
+
+  gameRunning = false;
+
+  renderAll();
+
+  let message = text;
+
+  if(points > 0){
+
+    message +=
+      "<br>+" +
+      points +
+      " ქულა";
+
+  }
+
+  message +=
+    "<br><br>" +
+    "<button " +
+    "class='actionBtn' " +
+    "onclick='startGame()'>" +
+    "შემდეგი ხელი" +
+    "</button>";
+
+  showMessage(
+    message,
+    true
+  );
+
+}
+
+
+/* MESSAGE */
+
+let messageTimer = null;
+
+function showMessage(
+  text,
+  keep = false
+){
+
+  const box =
+    $("gameMessage");
+
+  clearTimeout(
+    messageTimer
+  );
+
+  box.innerHTML =
+    text;
+
+  box.style.display =
+    "block";
+
+  if(!keep){
+
+    messageTimer =
+      setTimeout(()=>{
+
+        box.style.display =
+          "none";
+
+      },900);
+
+  }
+
+}
+
+
+/* START BUTTON */
+
+$("quickGameBtn").onclick = ()=>{
+
+  const nick =
+    $("nickname")
+      .value
+      .trim();
+
+  if(nick){
+
+    $("playerName")
+      .textContent = nick;
+
+    localStorage.setItem(
+      "dominoNickname",
+      nick
+    );
+
+  }
+
+  startGame();
+
+};
+
+
+/* LOAD SAVED NICKNAME */
+
+const savedNickname =
+  localStorage.getItem(
+    "dominoNickname"
+  );
+
+if(savedNickname){
+
+  $("nickname").value =
+    savedNickname;
+
+  $("playerName").textContent =
+    savedNickname;
+
+}
+
+
+/* EMOJI-ONLY CHAT */
+
+$("chatBtn").onclick = ()=>{
+
+  const panel =
+    $("emojiPanel");
+
+  panel.style.display =
+    panel.style.display === "block"
+      ? "none"
+      : "block";
+
+};
+
+
+document
+.querySelectorAll(".emojiBtn")
+.forEach(btn=>{
+
+  btn.onclick = ()=>{
+
+    showMessage(
+      btn.textContent
+    );
+
+    $("emojiPanel")
+      .style.display =
+      "none";
+
+  };
+
+});
+  /* =========================
+   DOMINO GEORGIA — PART 3/4
+   PROFILE + LEADERBOARD
+========================= */
+
+
+/* PLAYER PROFILE DATA */
+
+let playerProfile = {
+  nickname:
+    localStorage.getItem("dominoNickname") || "სტუმარი",
+
+  wins:
+    Number(localStorage.getItem("dominoWins")) || 0,
+
+  losses:
+    Number(localStorage.getItem("dominoLosses")) || 0,
+
+  games:
+    Number(localStorage.getItem("dominoGames")) || 0,
+
+  rating:
+    Number(localStorage.getItem("dominoRating")) || 1000
+};
+
+
+/* SAVE PROFILE */
+
+function saveProfile(){
+
+  localStorage.setItem(
+    "dominoNickname",
+    playerProfile.nickname
+  );
+
+  localStorage.setItem(
+    "dominoWins",
+    playerProfile.wins
+  );
+
+  localStorage.setItem(
+    "dominoLosses",
+    playerProfile.losses
+  );
+
+  localStorage.setItem(
+    "dominoGames",
+    playerProfile.games
+  );
+
+  localStorage.setItem(
+    "dominoRating",
+    playerProfile.rating
+  );
+
+}
+
+
+/* PROFILE WINDOW */
+
+const profileWindow =
+  document.createElement("div");
+
+profileWindow.id = "profileWindow";
+
+profileWindow.style.cssText = `
+  display:none;
+  position:absolute;
+  inset:0;
+  z-index:500;
+  background:rgba(3,15,10,.94);
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+`;
+
+profileWindow.innerHTML = `
+
+<div style="
+  width:min(390px,96%);
+  background:#0b3022;
+  border:2px solid #d2ac4d;
+  border-radius:22px;
+  padding:20px;
+  box-shadow:0 10px 35px #000;
+">
+
+  <div style="
+    text-align:center;
+    font-size:42px;
+  ">
+    👤
+  </div>
+
+  <h2 style="
+    text-align:center;
+    color:#f4d36b;
+    margin:6px 0 18px;
+  ">
+    მოთამაშის პროფილი
+  </h2>
+
+  <div id="profileNickname"
+       style="
+       text-align:center;
+       font-size:20px;
+       font-weight:bold;
+       margin-bottom:18px;
+       ">
+    სტუმარი
+  </div>
+
+  <div style="
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  ">
+
+    <div class="profileStat">
+      🎮 თამაშები
+      <b id="profileGames">0</b>
+    </div>
+
+    <div class="profileStat">
+      🏆 მოგება
+      <b id="profileWins">0</b>
+    </div>
+
+    <div class="profileStat">
+      ❌ წაგება
+      <b id="profileLosses">0</b>
+    </div>
+
+    <div class="profileStat">
+      ⭐ რეიტინგი
+      <b id="profileRating">1000</b>
+    </div>
+
+  </div>
+
+  <button
+    id="closeProfileBtn"
+    class="mainBtn">
+    დახურვა
+  </button>
+
+</div>
+`;
+
+$("game").appendChild(
+  profileWindow
+);
+
+
+/* PROFILE STAT STYLE */
+
+const extraStyle =
+  document.createElement("style");
+
+extraStyle.textContent = `
+
+.profileStat{
+  background:#061e15;
+  border:1px solid #725d2c;
+  border-radius:12px;
+  padding:12px 6px;
+  text-align:center;
+  color:#dce9e2;
+  font-size:13px;
+}
+
+.profileStat b{
+  display:block;
+  margin-top:5px;
+  color:#ffd966;
+  font-size:20px;
+}
+
+`;
+
+document.head.appendChild(
+  extraStyle
+);
+
+
+/* SHOW PROFILE */
+
+function showProfile(){
+
+  $("profileNickname").textContent =
+    playerProfile.nickname;
+
+  $("profileGames").textContent =
+    playerProfile.games;
+
+  $("profileWins").textContent =
+    playerProfile.wins;
+
+  $("profileLosses").textContent =
+    playerProfile.losses;
+
+  $("profileRating").textContent =
+    playerProfile.rating;
+
+  profileWindow.style.display =
+    "flex";
+
+}
+
+
+$("closeProfileBtn").onclick = ()=>{
+
+  profileWindow.style.display =
+    "none";
+
+};
+
+
+/* CLICK PLAYER NAME = PROFILE */
+
+$("playerName").style.cursor =
+  "pointer";
+
+$("playerName").onclick = ()=>{
+
+  showProfile();
+
+};
+
+
+/* =========================
+   LEADERBOARD
+========================= */
+
+const leaderboardWindow =
+  document.createElement("div");
+
+leaderboardWindow.id =
+  "leaderboardWindow";
+
+leaderboardWindow.style.cssText = `
+  display:none;
+  position:absolute;
+  inset:0;
+  z-index:510;
+  background:rgba(3,15,10,.96);
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+`;
+
+leaderboardWindow.innerHTML = `
+
+<div style="
+  width:min(420px,96%);
+  max-height:85vh;
+  overflow:auto;
+  background:#0b3022;
+  border:2px solid #d2ac4d;
+  border-radius:22px;
+  padding:18px;
+">
+
+  <h2 style="
+    text-align:center;
+    color:#f4d36b;
+    margin-bottom:15px;
+  ">
+    🏆 ლიდერბორდი
+  </h2>
+
+  <div id="leaderboardList"></div>
+
+  <button
+    id="closeLeaderboardBtn"
+    class="mainBtn">
+    დახურვა
+  </button>
+
+</div>
+`;
+
+$("game").appendChild(
+  leaderboardWindow
+);
+
+
+/* TEMPORARY LOCAL LEADERBOARD */
+
+function drawLeaderboard(){
+
+  const list =
+    $("leaderboardList");
+
+  const players = [
+
+    {
+      name:playerProfile.nickname,
+      rating:playerProfile.rating
+    },
+
+    {
+      name:"Nika",
+      rating:1240
+    },
+
+    {
+      name:"Gio",
+      rating:1185
+    },
+
+    {
+      name:"Saba",
+      rating:1110
+    },
+
+    {
+      name:"Dato",
+      rating:1050
+    }
+
+  ];
+
+  players.sort(
+    (a,b)=>
+      b.rating-a.rating
+  );
+
+  list.innerHTML = "";
+
+  players.forEach(
+    (player,index)=>{
+
+      const row =
+        document.createElement("div");
+
+      row.style.cssText = `
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        background:#061e15;
+        border:1px solid #5d512d;
+        border-radius:11px;
+        padding:11px;
+        margin-bottom:7px;
+      `;
+
+      let medal =
+        "#" + (index + 1);
+
+      if(index === 0) medal = "🥇";
+      if(index === 1) medal = "🥈";
+      if(index === 2) medal = "🥉";
+
+      row.innerHTML = `
+        <span>
+          ${medal}
+          <b>${escapeHTML(player.name)}</b>
+        </span>
+
+        <strong style="color:#ffd966">
+          ⭐ ${player.rating}
+        </strong>
+      `;
+
+      list.appendChild(row);
+
+    }
+  );
+
+}
+
+
+/* SAFE NICKNAME OUTPUT */
+
+function escapeHTML(text){
+
+  const div =
+    document.createElement("div");
+
+  div.textContent =
+    String(text);
+
+  return div.innerHTML;
+
+}
+
+
+$("leaderboardBtn").onclick = ()=>{
+
+  drawLeaderboard();
+
+  leaderboardWindow.style.display =
+    "flex";
+
+};
+
+
+$("closeLeaderboardBtn").onclick = ()=>{
+
+  leaderboardWindow.style.display =
+    "none";
+
+};
+
+
+/* =========================
+   GOOGLE LOGIN PLACEHOLDER
+========================= */
+
+$("googleLoginBtn").onclick = ()=>{
+
+  showMessage(
+    "Google Login-ს ონლაინ Firebase-ის დაკავშირებისას ჩავრთავთ",
+    true
+  );
+
+  setTimeout(()=>{
+
+    $("gameMessage").style.display =
+      "none";
+
+  },1800);
+
+};
+
+
+/* UPDATE NICKNAME */
+
+$("nickname").addEventListener(
+  "change",
+  ()=>{
+
+    const nick =
+      $("nickname")
+        .value
+        .trim()
+        .slice(0,16);
+
+    if(!nick){
+      return;
+    }
+
+    playerProfile.nickname =
+      nick;
+
+    $("playerName").textContent =
+      nick;
+
+    saveProfile();
+
+  }
+);
+  /* =========================
+   DOMINO GEORGIA — PART 4/4
+   ROOMS + INVITE + FINAL
+========================= */
+
+let currentRoomCode = null;
+
+
+/* CREATE ROOM WINDOW */
+
+const roomWindow =
+  document.createElement("div");
+
+roomWindow.id = "roomWindow";
+
+roomWindow.style.cssText = `
+  display:none;
+  position:absolute;
+  inset:0;
+  z-index:520;
+  background:rgba(3,15,10,.96);
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+`;
+
+roomWindow.innerHTML = `
+
+<div style="
+  width:min(400px,96%);
+  background:#0b3022;
+  border:2px solid #d2ac4d;
+  border-radius:22px;
+  padding:20px;
+  text-align:center;
+">
+
+  <div style="font-size:42px">
+    🁫
+  </div>
+
+  <h2 style="
+    color:#f4d36b;
+    margin:7px 0 18px;
+  ">
+    ონლაინ თამაში
+  </h2>
+
+  <button
+    id="createRoomBtn"
+    class="mainBtn">
+    ➕ ოთახის შექმნა
+  </button>
+
+  <div style="
+    margin:15px 0;
+    color:#b9cbc1;
+  ">
+    ან
+  </div>
+
+  <input
+    id="roomCodeInput"
+    class="nicknameInput"
+    maxlength="6"
+    placeholder="ოთახის კოდი"
+    style="
+      text-align:center;
+      text-transform:uppercase;
+      letter-spacing:4px;
+      font-weight:bold;
+    "
+  >
+
+  <button
+    id="joinRoomBtn"
+    class="mainBtn">
+    🚪 ოთახში შესვლა
+  </button>
+
+  <button
+    id="closeRoomBtn"
+    class="mainBtn"
+    style="
+      background:#294c3b;
+      color:white;
+    ">
+    დახურვა
+  </button>
+
+</div>
+`;
+
+$("game").appendChild(roomWindow);
+
+
+/* ADD ONLINE BUTTON TO LOBBY */
+
+const onlineBtn =
+  document.createElement("button");
+
+onlineBtn.id = "onlineBtn";
+onlineBtn.className = "mainBtn";
+
+onlineBtn.textContent =
+  "🌐 ონლაინ თამაში";
+
+$("quickGameBtn")
+  .insertAdjacentElement(
+    "afterend",
+    onlineBtn
+  );
+
+
+onlineBtn.onclick = ()=>{
+
+  roomWindow.style.display =
+    "flex";
+
+};
+
+
+$("closeRoomBtn").onclick = ()=>{
+
+  roomWindow.style.display =
+    "none";
+
+};
+
+
+/* RANDOM ROOM CODE */
+
+function generateRoomCode(){
+
+  const chars =
+    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  let code = "";
+
+  for(let i=0;i<6;i++){
+
+    code +=
+      chars[
+        Math.floor(
+          Math.random() *
+          chars.length
+        )
+      ];
+
+  }
+
+  return code;
+
+}
+
+
+/* CREATE ROOM */
+
+$("createRoomBtn").onclick = ()=>{
+
+  currentRoomCode =
+    generateRoomCode();
+
+  showRoomCreated(
+    currentRoomCode
+  );
+
+};
+
+
+/* ROOM CREATED SCREEN */
+
+function showRoomCreated(code){
+
+  const baseURL =
+    location.href.split("?")[0];
+
+  const inviteLink =
+    baseURL +
+    "?room=" +
+    encodeURIComponent(code);
+
+  roomWindow.innerHTML = `
+
+  <div style="
+    width:min(400px,96%);
+    background:#0b3022;
+    border:2px solid #d2ac4d;
+    border-radius:22px;
+    padding:22px;
+    text-align:center;
+  ">
+
+    <div style="
+      font-size:40px;
+    ">
+      🎮
+    </div>
+
+    <h2 style="
+      color:#f4d36b;
+      margin:8px 0;
+    ">
+      ოთახი შეიქმნა
+    </h2>
+
+    <p style="
+      color:#bcd0c5;
+      margin-bottom:8px;
+    ">
+      ოთახის კოდი
+    </p>
+
+    <div style="
+      font-size:30px;
+      font-weight:900;
+      letter-spacing:5px;
+      color:#ffe071;
+      margin:10px 0 18px;
+    ">
+      ${code}
+    </div>
+
+    <button
+      id="copyInviteBtn"
+      class="mainBtn">
+      🔗 მოწვევის ლინკის კოპირება
+    </button>
+
+    <button
+      id="shareInviteBtn"
+      class="mainBtn">
+      📤 მეგობართან გაზიარება
+    </button>
+
+    <div
+      id="waitingText"
+      style="
+        margin-top:17px;
+        color:#d7e4dc;
+      ">
+      ⏳ ველოდებით მეორე მოთამაშეს...
+    </div>
+
+    <button
+      id="cancelRoomBtn"
+      class="mainBtn"
+      style="
+        margin-top:18px;
+        background:#294c3b;
+        color:white;
+      ">
+      გაუქმება
+    </button>
+
+  </div>
+  `;
+
+
+  $("copyInviteBtn").onclick =
+    async ()=>{
+
+      try{
+
+        await navigator.clipboard
+          .writeText(inviteLink);
+
+        $("waitingText")
+          .textContent =
+          "✅ ლინკი დაკოპირდა";
+
+      }catch(e){
+
+        $("waitingText")
+          .textContent =
+          inviteLink;
+
+      }
+
+    };
+
+
+  $("shareInviteBtn").onclick =
+    async ()=>{
+
+      if(navigator.share){
+
+        try{
+
+          await navigator.share({
+            title:"DOMINO GEORGIA",
+            text:
+              "შემოდი DOMINO GEORGIA-ს ოთახში: " +
+              code,
+            url:inviteLink
+          });
+
+        }catch(e){}
+
+      }else{
+
+        try{
+
+          await navigator.clipboard
+            .writeText(inviteLink);
+
+          $("waitingText")
+            .textContent =
+            "✅ მოწვევის ლინკი დაკოპირდა";
+
+        }catch(e){}
+
+      }
+
+    };
+
+
+  $("cancelRoomBtn").onclick =
+    ()=>{
+
+      location.reload();
+
+    };
+
+}
+
+
+/* JOIN ROOM */
+
+$("joinRoomBtn").onclick = ()=>{
+
+  const code =
+    $("roomCodeInput")
+      .value
+      .trim()
+      .toUpperCase();
+
+  if(code.length !== 6){
+
+    showMessage(
+      "შეიყვანე 6-ნიშნა ოთახის კოდი"
+    );
+
+    return;
+
+  }
+
+  currentRoomCode = code;
+
+  roomWindow.style.display =
+    "none";
+
+  showMessage(
+    "ოთახი: " +
+    escapeHTML(code) +
+    "<br>ონლაინ სინქრონიზაცია შემდეგ ეტაპზე ჩაირთვება",
+    true
+  );
+
+};
+
+
+/* OPEN INVITE LINK */
+
+const urlParams =
+  new URLSearchParams(
+    window.location.search
+  );
+
+const invitedRoom =
+  urlParams.get("room");
+
+if(invitedRoom){
+
+  const cleanCode =
+    invitedRoom
+      .toUpperCase()
+      .replace(
+        /[^A-Z0-9]/g,
+        ""
+      )
+      .slice(0,6);
+
+  if(cleanCode.length === 6){
+
+    $("roomCodeInput").value =
+      cleanCode;
+
+    setTimeout(()=>{
+
+      roomWindow.style.display =
+        "flex";
+
+    },300);
+
+  }
+
+}
+
+
+/* EMOJI CHAT REMAINS TEXT-FREE */
+
+document
+.querySelectorAll(".emojiBtn")
+.forEach(btn=>{
+
+  btn.setAttribute(
+    "aria-label",
+    "Emoji"
+  );
+
+});
+
+
+/* INITIAL PROFILE */
+
+$("playerName").textContent =
+  playerProfile.nickname;
+
+
+/* READY */
+
+console.log(
+  "DOMINO GEORGIA READY"
+);
+
+</script>
+
+</body>
+</html>
