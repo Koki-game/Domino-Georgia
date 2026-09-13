@@ -1742,3 +1742,534 @@ window.addEventListener("resize",()=>{
    SCRIPT ჯერ არ დახურო.
    PART 3/3 პირდაპირ აქედან გაგრძელდება.
 ========================================================= */
+/* =========================================================
+   DOMINO GEORGIA — PART 3/3
+   PROFILE + CHAT + PWA + START
+========================================================= */
+
+
+/* =========================================================
+   PLAYER PROFILES
+   საჯაროდ მხოლოდ nickname და თამაშის სტატისტიკა
+========================================================= */
+
+const profiles = [
+  {
+    name:"Kusto",
+    rating:1100,
+    wins:0,
+    losses:0
+  },
+  {
+    name:"მოთამაშე 2",
+    rating:1020,
+    wins:34,
+    losses:27
+  },
+  {
+    name:"მოთამაშე 3",
+    rating:1250,
+    wins:51,
+    losses:29
+  },
+  {
+    name:"მოთამაშე 4",
+    rating:980,
+    wins:31,
+    losses:35
+  }
+];
+
+
+/* =========================================================
+   LOAD SAVED NICKNAME
+========================================================= */
+
+function loadNickname(){
+  const saved=
+    localStorage.getItem(
+      "dominoGeorgiaNickname"
+    );
+
+  if(saved && saved.trim()){
+    profiles[0].name=saved.trim();
+  }
+}
+
+
+/* =========================================================
+   PLAYER POPUP
+========================================================= */
+
+const popup=$("playerPopup");
+
+function closePopup(){
+  if(!popup) return;
+
+  popup.classList.remove("show");
+  popup.dataset.player="";
+}
+
+
+function showPlayerPopup(player,avatar){
+  if(!popup) return;
+
+  /*
+    იგივე ავატარზე მეორედ დაჭერა = დახურვა
+  */
+
+  if(
+    popup.classList.contains("show") &&
+    popup.dataset.player===String(player)
+  ){
+    closePopup();
+    return;
+  }
+
+  const p=profiles[player];
+
+  $("popName").textContent=p.name;
+  $("popRating").textContent=`★ რეიტინგი: ${p.rating}`;
+  $("popWins").textContent=`მოგება: ${p.wins}`;
+  $("popLoss").textContent=`წაგება: ${p.losses}`;
+
+  popup.classList.add("show");
+  popup.dataset.player=String(player);
+
+  /*
+    ჯერ ვაჩვენებთ, რომ popup-ის ზომა გავიგოთ.
+  */
+
+  popup.style.left="0px";
+  popup.style.top="0px";
+
+  const gameRect=$("game").getBoundingClientRect();
+  const avatarRect=avatar.getBoundingClientRect();
+  const popRect=popup.getBoundingClientRect();
+
+  let left=
+    avatarRect.left-gameRect.left+
+    avatarRect.width/2-
+    popRect.width/2;
+
+  let top=
+    avatarRect.top-gameRect.top-
+    popRect.height-8;
+
+
+  /*
+    მარჯვენა მოთამაშე
+  */
+
+  if(player===1){
+    left=
+      avatarRect.left-
+      gameRect.left-
+      popRect.width-
+      10;
+
+    top=
+      avatarRect.top-
+      gameRect.top+
+      avatarRect.height/2-
+      popRect.height/2;
+  }
+
+
+  /*
+    ზედა მოთამაშე
+  */
+
+  if(player===2){
+    top=
+      avatarRect.bottom-
+      gameRect.top+
+      10;
+  }
+
+
+  /*
+    მარცხენა მოთამაშე
+  */
+
+  if(player===3){
+    left=
+      avatarRect.right-
+      gameRect.left+
+      10;
+
+    top=
+      avatarRect.top-
+      gameRect.top+
+      avatarRect.height/2-
+      popRect.height/2;
+  }
+
+
+  left=Math.max(
+    8,
+    Math.min(
+      left,
+      gameRect.width-popRect.width-8
+    )
+  );
+
+  top=Math.max(
+    8,
+    Math.min(
+      top,
+      gameRect.height-popRect.height-8
+    )
+  );
+
+  popup.style.left=`${left}px`;
+  popup.style.top=`${top}px`;
+}
+
+
+/* =========================================================
+   AVATAR CLICK
+========================================================= */
+
+document
+.querySelectorAll(".player")
+.forEach(avatar=>{
+
+  avatar.addEventListener(
+    "click",
+    event=>{
+
+      event.stopPropagation();
+
+      const player=
+        Number(avatar.dataset.player);
+
+      showPlayerPopup(
+        player,
+        avatar
+      );
+    }
+  );
+
+});
+
+
+document.addEventListener(
+  "click",
+  event=>{
+
+    if(
+      !event.target.closest(".player") &&
+      !event.target.closest("#playerPopup")
+    ){
+      closePopup();
+    }
+
+  }
+);
+
+
+/* =========================================================
+   EMOJI CHAT
+========================================================= */
+
+const chatButton=$("chatBtn");
+const emojiPanel=$("emojiPanel");
+
+chatButton.addEventListener(
+  "click",
+  event=>{
+
+    event.stopPropagation();
+
+    emojiPanel.classList.toggle(
+      "show"
+    );
+
+  }
+);
+
+
+/* =========================================================
+   FLOATING EMOJI
+========================================================= */
+
+function floatingEmoji(emoji){
+
+  const el=
+    document.createElement("div");
+
+  el.textContent=emoji;
+
+  Object.assign(
+    el.style,
+    {
+      position:"absolute",
+      left:"50%",
+      top:"44%",
+      transform:"translate(-50%,-50%)",
+      zIndex:"500",
+      fontSize:"58px",
+      pointerEvents:"none",
+      filter:"drop-shadow(0 5px 5px #000)",
+      transition:"all 1.4s ease",
+      opacity:"1"
+    }
+  );
+
+  $("game").appendChild(el);
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+
+      el.style.top="31%";
+      el.style.opacity="0";
+
+    });
+  });
+
+  setTimeout(()=>{
+    el.remove();
+  },1500);
+}
+
+
+/* =========================================================
+   EMOJI BUTTONS
+========================================================= */
+
+document
+.querySelectorAll(".emoji")
+.forEach(button=>{
+
+  button.addEventListener(
+    "click",
+    event=>{
+
+      event.stopPropagation();
+
+      const emoji=
+        button.textContent.trim();
+
+      emojiPanel.classList.remove(
+        "show"
+      );
+
+      floatingEmoji(emoji);
+    }
+  );
+
+});
+
+
+document.addEventListener(
+  "click",
+  event=>{
+
+    if(
+      !event.target.closest("#emojiPanel") &&
+      !event.target.closest("#chatBtn")
+    ){
+      emojiPanel.classList.remove(
+        "show"
+      );
+    }
+
+  }
+);
+
+
+/* =========================================================
+   VISUAL DOMINO SAFETY
+
+   ეკრანის დაბრუნების/გადატრიალების შემდეგ
+   დომინოს ჯაჭვი ისევ მაგიდაში ეტევა.
+========================================================= */
+
+function refreshBoard(){
+  requestAnimationFrame(()=>{
+    renderAll();
+
+    requestAnimationFrame(()=>{
+      fitBoard();
+    });
+  });
+}
+
+
+window.addEventListener(
+  "orientationchange",
+  ()=>{
+    setTimeout(
+      refreshBoard,
+      300
+    );
+  }
+);
+
+
+document.addEventListener(
+  "visibilitychange",
+  ()=>{
+
+    if(
+      document.visibilityState==="visible"
+    ){
+      setTimeout(
+        refreshBoard,
+        150
+      );
+    }
+
+  }
+);
+
+
+/* =========================================================
+   PREVENT DOUBLE-TAP ZOOM
+========================================================= */
+
+let lastTouchEnd=0;
+
+document.addEventListener(
+  "touchend",
+  event=>{
+
+    const now=Date.now();
+
+    if(now-lastTouchEnd<=300){
+      event.preventDefault();
+    }
+
+    lastTouchEnd=now;
+
+  },
+  {
+    passive:false
+  }
+);
+
+
+/* =========================================================
+   SERVICE WORKER
+========================================================= */
+
+function registerPWA(){
+
+  if(!("serviceWorker" in navigator)){
+    return;
+  }
+
+  window.addEventListener(
+    "load",
+    ()=>{
+
+      navigator
+      .serviceWorker
+      .register("./service-worker.js")
+      .catch(error=>{
+        console.log(
+          "Service Worker:",
+          error
+        );
+      });
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   APP START
+
+   აქედან რეალურად იწყება თამაში.
+========================================================= */
+
+function bootDominoGeorgia(){
+
+  loadNickname();
+
+  createAbacus();
+
+  updateScores();
+
+  registerPWA();
+
+  /*
+    პატარა დაყოვნება:
+    ჯერ მაგიდის რეალური ზომები იტვირთება.
+  */
+
+  setTimeout(()=>{
+
+    startGame();
+
+    /*
+      დამატებითი გადახატვა:
+      საკუთარი 7 ქვა აუცილებლად გამოჩნდეს,
+      ხოლო პირველი 6-6 ცენტრში მოთავსდეს.
+    */
+
+    setTimeout(()=>{
+      refreshBoard();
+    },850);
+
+  },150);
+
+}
+
+
+/* =========================================================
+   DOM READY
+========================================================= */
+
+if(document.readyState==="loading"){
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    bootDominoGeorgia
+  );
+
+}else{
+
+  bootDominoGeorgia();
+
+}
+
+
+/* =========================================================
+   ERROR LOG
+========================================================= */
+
+window.addEventListener(
+  "error",
+  event=>{
+
+    console.error(
+      "DOMINO GEORGIA:",
+      event.message,
+      event.filename,
+      event.lineno
+    );
+
+  }
+);
+
+
+/* =========================================================
+   PART 3/3 END
+========================================================= */
+
+</script>
+
+</div>
+
+<div class="rotate">
+  <span>📱↻</span>
+  <h2>გადაატრიალე ტელეფონი</h2>
+  <div>DOMINO GEORGIA</div>
+</div>
+
+</body>
+</html>
