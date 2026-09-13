@@ -3529,3 +3529,1098 @@ updatePassButton();
 </script>
 
 <!-- PART 3/4 END -->
+<!-- =========================================
+     DOMINO GEORGIA — PART 4/4
+     PROFILE + LEADERS + EMOJI + PWA
+========================================= -->
+
+<script>
+
+/* =========================================
+   PROFILE
+========================================= */
+
+let profile = {
+  nickname:
+    localStorage.getItem("dominoNickname") || "",
+
+  rating:
+    Number(localStorage.getItem("dominoRating")) || 1000,
+
+  wins:
+    Number(localStorage.getItem("dominoWins")) || 0,
+
+  losses:
+    Number(localStorage.getItem("dominoLosses")) || 0,
+
+  games:
+    Number(localStorage.getItem("dominoGames")) || 0
+};
+
+
+function safeText(text){
+
+  return String(text)
+    .replace(/[<>&"'`]/g,"")
+    .trim()
+    .slice(0,16);
+
+}
+
+
+function saveProfile(){
+
+  localStorage.setItem(
+    "dominoNickname",
+    profile.nickname
+  );
+
+  localStorage.setItem(
+    "dominoRating",
+    profile.rating
+  );
+
+  localStorage.setItem(
+    "dominoWins",
+    profile.wins
+  );
+
+  localStorage.setItem(
+    "dominoLosses",
+    profile.losses
+  );
+
+  localStorage.setItem(
+    "dominoGames",
+    profile.games
+  );
+
+}
+
+
+function updateProfileUI(){
+
+  $("myPlayerName").textContent =
+    profile.nickname || "შენ";
+
+  $("myRating").textContent =
+    profile.rating;
+
+}
+
+
+/* =========================================
+   FIRST REGISTRATION
+========================================= */
+
+function openRegistration(){
+
+  $("loginOverlay").style.display =
+    "flex";
+
+}
+
+
+function closeRegistration(){
+
+  $("loginOverlay").style.display =
+    "none";
+
+}
+
+
+$("googleLoginBtn").onclick = ()=>{
+
+  const nickname =
+    safeText(
+      $("nicknameInput").value
+    );
+
+
+  if(nickname.length < 2){
+
+    showStatus(
+      "ნიკნეიმი მინიმუმ 2 სიმბოლო უნდა იყოს"
+    );
+
+    return;
+
+  }
+
+
+  profile.nickname =
+    nickname;
+
+
+  saveProfile();
+  updateProfileUI();
+  closeRegistration();
+
+
+  showStatus(
+    "კეთილი იყოს შენი მობრძანება, " +
+    nickname
+  );
+
+};
+
+
+if(!profile.nickname){
+
+  setTimeout(
+    openRegistration,
+    350
+  );
+
+}else{
+
+  updateProfileUI();
+
+}
+
+
+/* =========================================
+   PROFILE WINDOW
+========================================= */
+
+const profileModal =
+  document.createElement("div");
+
+
+profileModal.className =
+  "modal-overlay";
+
+
+profileModal.innerHTML = `
+
+<div class="modal-card">
+
+  <div class="big-avatar">
+    👤
+  </div>
+
+  <h2 id="profileName">
+    Player
+  </h2>
+
+  <div
+    id="profileRating"
+    class="modal-rating">
+    ⭐ 1000
+  </div>
+
+  <div class="profile-grid">
+
+    <div class="profile-box">
+      <small>თამაშები</small>
+      <b id="profileGames">0</b>
+    </div>
+
+    <div class="profile-box">
+      <small>მოგება</small>
+      <b id="profileWins">0</b>
+    </div>
+
+    <div class="profile-box">
+      <small>წაგება</small>
+      <b id="profileLosses">0</b>
+    </div>
+
+  </div>
+
+  <button
+    class="close-modal"
+    id="closeProfile">
+    დახურვა
+  </button>
+
+</div>
+
+`;
+
+
+document
+.querySelector(".game-shell")
+.appendChild(profileModal);
+
+
+function openProfile(){
+
+  $("profileName").textContent =
+    profile.nickname || "Player";
+
+  $("profileRating").textContent =
+    "⭐ " + profile.rating;
+
+  $("profileGames").textContent =
+    profile.games;
+
+  $("profileWins").textContent =
+    profile.wins;
+
+  $("profileLosses").textContent =
+    profile.losses;
+
+  profileModal.style.display =
+    "flex";
+
+}
+
+
+$("myPlayerName").onclick =
+  openProfile;
+
+
+document
+.querySelector(".menu-btn")
+.onclick =
+  openProfile;
+
+
+$("closeProfile").onclick = ()=>{
+
+  profileModal.style.display =
+    "none";
+
+};
+
+
+/* =========================================
+   LEADERBOARD
+========================================= */
+
+const leaderModal =
+  document.createElement("div");
+
+
+leaderModal.className =
+  "modal-overlay";
+
+
+leaderModal.innerHTML = `
+
+<div class="modal-card leader-card">
+
+  <h2>
+    🏆 ლიდერები
+  </h2>
+
+  <div id="leaderList"></div>
+
+  <button
+    class="close-modal"
+    id="closeLeaders">
+    დახურვა
+  </button>
+
+</div>
+
+`;
+
+
+document
+.querySelector(".game-shell")
+.appendChild(leaderModal);
+
+
+function drawLeaderboard(){
+
+  /*
+    Temporary local players.
+    Later Firebase will replace
+    these with real online users.
+  */
+
+  const players = [
+
+    {
+      name:
+        profile.nickname || "Player",
+      rating:
+        profile.rating
+    },
+
+    {
+      name:"DominoKing",
+      rating:1350
+    },
+
+    {
+      name:"Tbilisi7",
+      rating:1280
+    },
+
+    {
+      name:"Batumi6",
+      rating:1215
+    },
+
+    {
+      name:"Player77",
+      rating:1140
+    }
+
+  ];
+
+
+  players.sort(
+    (a,b)=>
+      b.rating - a.rating
+  );
+
+
+  const list =
+    $("leaderList");
+
+  list.innerHTML = "";
+
+
+  players.forEach(
+    (player,index)=>{
+
+      const row =
+        document.createElement("div");
+
+      row.className =
+        "leader-row";
+
+
+      let place =
+        "#" + (index + 1);
+
+      if(index === 0){
+        place = "🥇";
+      }
+
+      if(index === 1){
+        place = "🥈";
+      }
+
+      if(index === 2){
+        place = "🥉";
+      }
+
+
+      const name =
+        document.createElement("span");
+
+      name.textContent =
+        `${place}  ${player.name}`;
+
+
+      const rating =
+        document.createElement("strong");
+
+      rating.textContent =
+        `⭐ ${player.rating}`;
+
+
+      row.appendChild(name);
+      row.appendChild(rating);
+
+      list.appendChild(row);
+
+    });
+
+}
+
+
+$("leaderBtn").onclick = ()=>{
+
+  drawLeaderboard();
+
+  leaderModal.style.display =
+    "flex";
+
+};
+
+
+$("closeLeaders").onclick = ()=>{
+
+  leaderModal.style.display =
+    "none";
+
+};
+
+
+/* =========================================
+   EMOJI-ONLY CHAT
+========================================= */
+
+const emojiPanel =
+  $("emojiPanel");
+
+
+function toggleEmoji(){
+
+  emojiPanel
+    .classList
+    .toggle("open");
+
+}
+
+
+$("emojiBtn").onclick =
+  toggleEmoji;
+
+
+$("topEmojiBtn").onclick =
+  toggleEmoji;
+
+
+document
+.querySelectorAll(".emoji-choice")
+.forEach(button=>{
+
+  button.onclick = ()=>{
+
+    const emoji =
+      button.textContent;
+
+    emojiPanel
+      .classList
+      .remove("open");
+
+    showEmojiBubble(
+      emoji
+    );
+
+  };
+
+});
+
+
+function showEmojiBubble(emoji){
+
+  const bubble =
+    document.createElement("div");
+
+
+  bubble.className =
+    "emoji-bubble";
+
+  bubble.textContent =
+    emoji;
+
+
+  document
+    .querySelector(".game-shell")
+    .appendChild(bubble);
+
+
+  setTimeout(
+    ()=>{
+      bubble.remove();
+    },
+    1700
+  );
+
+}
+
+
+/* =========================================
+   HINT
+========================================= */
+
+$("hintBtn").onclick = ()=>{
+
+  if(
+    game.matchFinished ||
+    game.roundFinished
+  ){
+
+    showStatus(
+      "პარტია დასრულებულია"
+    );
+
+    return;
+
+  }
+
+
+  if(game.currentPlayer !== 0){
+
+    showStatus(
+      "ახლა შენი სვლა არ არის"
+    );
+
+    return;
+
+  }
+
+
+  const index =
+    game.hands[0]
+      .findIndex(
+        tile => canPlay(tile)
+      );
+
+
+  if(index === -1){
+
+    showStatus(
+      "დასადები ქვა არ გაქვს — გავიარე"
+    );
+
+    return;
+
+  }
+
+
+  game.selectedIndex =
+    index;
+
+  renderPlayerHand();
+
+
+  showStatus(
+    "💡 შესაძლებელი ქვა მონიშნულია"
+  );
+
+};
+
+
+/* =========================================
+   EXTRA BUTTON
+========================================= */
+
+$("reportBtn").onclick = ()=>{
+
+  showStatus(
+    "DOMINO GEORGIA • ქართული წესები"
+  );
+
+};
+
+
+/* =========================================
+   SETTINGS
+========================================= */
+
+document
+.querySelector(".settings-btn")
+.onclick = ()=>{
+
+  showStatus(
+    "⚙ პარამეტრები"
+  );
+
+};
+
+
+/* =========================================
+   ROOM CODE COPY
+========================================= */
+
+$("roomCode").style.cursor =
+  "pointer";
+
+
+$("roomCode").onclick =
+async ()=>{
+
+  const code =
+    $("roomCode").textContent;
+
+
+  try{
+
+    await navigator.clipboard
+      .writeText(code);
+
+    showStatus(
+      "ოთახის კოდი დაკოპირდა"
+    );
+
+  }catch(error){
+
+    showStatus(
+      `ოთახი: ${code}`
+    );
+
+  }
+
+};
+
+
+/* =========================================
+   INVITE
+========================================= */
+
+$("inviteBtn").onclick =
+async ()=>{
+
+  const code =
+    $("roomCode").textContent;
+
+
+  const url =
+    location.origin +
+    location.pathname +
+    "?room=" +
+    encodeURIComponent(code);
+
+
+  if(navigator.share){
+
+    try{
+
+      await navigator.share({
+        title:"DOMINO GEORGIA",
+        text:"შემოდი ჩემს დომინოს ოთახში",
+        url:url
+      });
+
+      return;
+
+    }catch(error){}
+
+  }
+
+
+  try{
+
+    await navigator.clipboard
+      .writeText(url);
+
+    showStatus(
+      "მოწვევის ბმული დაკოპირდა"
+    );
+
+  }catch(error){
+
+    showStatus(
+      "ოთახი: " + code
+    );
+
+  }
+
+};
+
+
+/* =========================================
+   READ ROOM FROM URL
+========================================= */
+
+const urlParams =
+  new URLSearchParams(
+    location.search
+  );
+
+
+const incomingRoom =
+  safeText(
+    urlParams.get("room") || ""
+  );
+
+
+if(incomingRoom){
+
+  $("roomCode").textContent =
+    incomingRoom.toUpperCase();
+
+}
+
+
+/* =========================================
+   CREATE RANDOM ROOM CODE
+========================================= */
+
+function createRoomCode(){
+
+  if(incomingRoom){
+    return;
+  }
+
+
+  const saved =
+    localStorage.getItem(
+      "dominoRoomCode"
+    );
+
+
+  if(saved){
+
+    $("roomCode").textContent =
+      saved;
+
+    return;
+
+  }
+
+
+  const chars =
+    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+
+  let code = "";
+
+
+  for(let i = 0; i < 6; i++){
+
+    code +=
+      chars[
+        Math.floor(
+          Math.random() *
+          chars.length
+        )
+      ];
+
+  }
+
+
+  localStorage.setItem(
+    "dominoRoomCode",
+    code
+  );
+
+
+  $("roomCode").textContent =
+    code;
+
+}
+
+
+createRoomCode();
+
+
+/* =========================================
+   INITIAL TEAM SCORE
+========================================= */
+
+updateProfileUI();
+updateTeamScores();
+updatePassButton();
+
+
+/* =========================================
+   SERVICE WORKER / PWA
+========================================= */
+
+if("serviceWorker" in navigator){
+
+  window.addEventListener(
+    "load",
+    ()=>{
+
+      navigator.serviceWorker
+        .register(
+          "./service-worker.js"
+        )
+        .catch(error=>{
+
+          console.log(
+            "Service Worker:",
+            error
+          );
+
+        });
+
+    }
+  );
+
+}
+
+</script>
+
+
+<style>
+
+/* =========================================
+   PART 4 MODALS
+========================================= */
+
+.modal-overlay{
+
+  position:absolute;
+  inset:0;
+
+  z-index:200;
+
+  display:none;
+
+  align-items:center;
+  justify-content:center;
+
+  background:
+    rgba(0,0,0,.82);
+
+  backdrop-filter:
+    blur(5px);
+
+}
+
+
+.modal-card{
+
+  width:min(390px,90%);
+
+  padding:22px;
+
+  border:3px solid #74421f;
+  border-radius:22px;
+
+  text-align:center;
+
+  background:
+    linear-gradient(
+      145deg,
+      #3c1b0b,
+      #12100d
+    );
+
+  box-shadow:
+    0 15px 45px #000;
+
+}
+
+
+.modal-card h2{
+
+  color:#f4d48c;
+
+  margin-bottom:10px;
+
+}
+
+
+.big-avatar{
+
+  width:70px;
+  height:70px;
+
+  margin:
+    0 auto 10px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  border-radius:50%;
+
+  border:
+    3px solid #dfb75c;
+
+  background:#18352a;
+
+  font-size:36px;
+
+}
+
+
+.modal-rating{
+
+  margin-bottom:15px;
+
+  color:#ffd45d;
+
+  font-size:19px;
+
+}
+
+
+.profile-grid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(3,1fr);
+
+  gap:7px;
+
+}
+
+
+.profile-box{
+
+  padding:10px 4px;
+
+  border:
+    1px solid #624929;
+
+  border-radius:11px;
+
+  background:#091c15;
+
+}
+
+
+.profile-box small{
+
+  display:block;
+
+  margin-bottom:4px;
+
+  color:#c9c9c9;
+
+}
+
+
+.profile-box b{
+
+  color:#ffdc72;
+
+  font-size:20px;
+
+}
+
+
+.close-modal{
+
+  width:100%;
+
+  margin-top:15px;
+
+  padding:11px;
+
+  border:
+    1px solid #8c673a;
+
+  border-radius:11px;
+
+  background:#26382e;
+
+  color:#fff;
+
+  font-size:15px;
+  font-weight:bold;
+
+}
+
+
+.leader-card{
+
+  max-height:82%;
+
+  overflow:auto;
+
+}
+
+
+.leader-row{
+
+  display:flex;
+
+  align-items:center;
+  justify-content:space-between;
+
+  padding:10px;
+
+  margin-bottom:6px;
+
+  border:
+    1px solid #5f4c30;
+
+  border-radius:11px;
+
+  background:#0a1c15;
+
+  text-align:left;
+
+}
+
+
+.leader-row strong{
+
+  color:#ffd665;
+
+}
+
+
+.emoji-bubble{
+
+  position:absolute;
+
+  z-index:250;
+
+  left:110px;
+  bottom:110px;
+
+  padding:7px 12px;
+
+  border-radius:16px;
+
+  background:
+    rgba(0,0,0,.78);
+
+  box-shadow:
+    0 5px 15px #000;
+
+  font-size:40px;
+
+  animation:
+    emojiPop .25s ease-out;
+
+}
+
+
+@keyframes emojiPop{
+
+  from{
+    opacity:0;
+    transform:
+      translateY(15px)
+      scale(.7);
+  }
+
+  to{
+    opacity:1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+
+}
+
+
+/* =========================================
+   DISABLED PASS
+========================================= */
+
+#passBtn:disabled{
+
+  filter:grayscale(.55);
+
+  box-shadow:
+    inset 0 0 8px rgba(255,255,255,.15),
+    0 5px 10px rgba(0,0,0,.45);
+
+}
+
+
+/* =========================================
+   FINAL MOBILE TUNING
+========================================= */
+
+@media(max-height:450px){
+
+  .scoreboard{
+    transform:scale(.88);
+  }
+
+  .score-team-a{
+    transform-origin:left top;
+  }
+
+  .score-team-b{
+    transform-origin:right top;
+  }
+
+  #gameStatus{
+    top:88px;
+  }
+
+  .room-panel{
+    top:92px;
+  }
+
+}
+
+</style>
+
+<!-- =========================================
+     DOMINO GEORGIA — ALL 4 PARTS COMPLETE
+========================================= -->
+
+</body>
+</html>
