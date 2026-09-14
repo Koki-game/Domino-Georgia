@@ -9387,139 +9387,154 @@ renderBoard=function(){
 };
 
 </script>
-  <!-- ======================================================
-     DOMINO GEORGIA — NO OVERLAP GEOMETRY
+<!-- ======================================================
+     DOMINO GEORGIA — CLEAN GEOMETRY V2
+     NO OVERLAP + CORRECT CORNERS
 ====================================================== -->
 
 <script>
 
 /* ======================================================
-   EXACT TILE CENTER
-
-   აღარ ვიყენებთ ხელოვნურ JOIN_TIGHTNESS-ს.
-   ქვები ზუსტად კიდით ეხება ერთმანეთს.
+   CANDIDATE ANGLE
 ====================================================== */
 
-proposedCenter=function(
-  port,
-  tile,
-  dirName
-){
+function dgAngleForDirection(tile, direction){
 
-  const vector=
-    DIR[dirName];
+  if(isDouble(tile)){
 
-
-  const distance=
-    isDouble(tile)
-      ? SHORT_HALF
-      : LONG_HALF;
-
-
-  return{
-
-    x:
-      port.x+
-      vector.x*distance,
-
-    y:
-      port.y+
-      vector.y*distance
-
-  };
-
-};
-
-
-/* ======================================================
-   EXACT OUTER PORT
-====================================================== */
-
-createOuterPort=function(
-  placement
-){
-
-  const vector=
-    DIR[
-      placement.direction
-    ];
-
-
-  const distance=
-    placement.isDouble
-      ? SHORT_HALF
-      : LONG_HALF;
-
-
-  createPort({
-
-    sourceTileId:
-      placement.id,
-
-    value:
-      placement.outer,
-
-    x:
-      placement.x+
-      vector.x*distance,
-
-    y:
-      placement.y+
-      vector.y*distance,
-
-    dir:
-      placement.direction,
-
-    kind:"normal",
-
-    contribution:
-      placement.isDouble
-        ? placement.outer*2
-        : placement.outer
-
-  });
-
-};
-
-
-/* ======================================================
-   TILE ANGLE FOR CANDIDATE
-====================================================== */
-
-function dgCandidateAngle(
-  tile,
-  direction
-){
-
-  if(
-    isDouble(tile)
-  ){
-
+    /* დუპლი ყოველთვის ჯაჭვზე განივად */
     return(
       direction==="E" ||
       direction==="W"
     )
       ? 90
       : 0;
-
   }
 
-
+  /* ჩვეულებრივი ქვა ჯაჭვის მიმართულებით */
   return(
-    direction==="N" ||
-    direction==="S"
+    direction==="E" ||
+    direction==="W"
   )
-    ? 90
-    : 0;
-
+    ? 0
+    : 90;
 }
 
 
 /* ======================================================
-   RECTANGLE OF TILE
+   HALF EXTENT IN A DIRECTION
 ====================================================== */
 
-function dgBox(
+function dgHalfExtent(angle, direction){
+
+  const vertical=
+    Math.abs(angle)%180===90;
+
+  const width=
+    vertical
+      ? TILE_H
+      : TILE_W;
+
+  const height=
+    vertical
+      ? TILE_W
+      : TILE_H;
+
+  return(
+    direction==="E" ||
+    direction==="W"
+  )
+    ? width/2
+    : height/2;
+}
+
+
+/* ======================================================
+   CORRECT TILE POSITION
+====================================================== */
+
+proposedCenter=function(
+  port,
+  tile,
+  direction
+){
+
+  const newVector=
+    DIR[direction];
+
+  const angle=
+    dgAngleForDirection(
+      tile,
+      direction
+    );
+
+
+  /* პირდაპირი გაგრძელება */
+  if(direction===port.dir){
+
+    const distance=
+      dgHalfExtent(
+        angle,
+        direction
+      );
+
+    return{
+      x:
+        port.x+
+        newVector.x*distance,
+
+      y:
+        port.y+
+        newVector.y*distance
+    };
+  }
+
+
+  /*
+    90° მოხვევა:
+    ჯერ ძველი მიმართულებით გავდივართ,
+    შემდეგ ვუხვევთ.
+  */
+
+  const oldVector=
+    DIR[port.dir];
+
+
+  const outwardDistance=
+    dgHalfExtent(
+      angle,
+      port.dir
+    );
+
+
+  const forwardDistance=
+    dgHalfExtent(
+      angle,
+      direction
+    );
+
+
+  return{
+
+    x:
+      port.x+
+      oldVector.x*outwardDistance+
+      newVector.x*forwardDistance,
+
+    y:
+      port.y+
+      oldVector.y*outwardDistance+
+      newVector.y*forwardDistance
+
+  };
+};
+
+
+/* ======================================================
+   TILE RECTANGLE
+====================================================== */
+
+function dgTileRect(
   x,
   y,
   angle
@@ -9556,20 +9571,16 @@ function dgBox(
       y+height/2
 
   };
-
 }
 
 
 /* ======================================================
-   OVERLAP CHECK
+   OVERLAP AREA
 ====================================================== */
 
-function dgOverlapAmount(
-  a,
-  b
-){
+function dgOverlapArea(a,b){
 
-  const overlapX=
+  const w=
     Math.min(
       a.right,
       b.right
@@ -9581,7 +9592,7 @@ function dgOverlapAmount(
     );
 
 
-  const overlapY=
+  const h=
     Math.min(
       a.bottom,
       b.bottom
@@ -9595,29 +9606,22 @@ function dgOverlapAmount(
 
   /*
     კიდით შეხება ნორმალურია.
-    რეალური გადაფარვა მხოლოდ >2px-ზე.
   */
 
   if(
-    overlapX<=2 ||
-    overlapY<=2
+    w<=1 ||
+    h<=1
   ){
-
     return 0;
-
   }
 
 
-  return(
-    overlapX*
-    overlapY
-  );
-
+  return w*h;
 }
 
 
 /* ======================================================
-   SMART DIRECTION — NO OVERLAP
+   CHOOSE DIRECTION WITHOUT OVERLAP
 ====================================================== */
 
 chooseDirection=function(
@@ -9640,16 +9644,12 @@ chooseDirection=function(
   ];
 
 
-  /*
-    ჯაჭვი ამ არეში ვამყოფოთ.
-  */
-
-  const X_LIMIT=300;
-  const Y_LIMIT=130;
+  const X_LIMIT=285;
+  const Y_LIMIT=105;
 
 
   let bestDirection=
-    candidates[0];
+    port.dir;
 
 
   let bestScore=
@@ -9668,14 +9668,14 @@ chooseDirection=function(
 
 
       const angle=
-        dgCandidateAngle(
+        dgAngleForDirection(
           tile,
           direction
         );
 
 
-      const candidateBox=
-        dgBox(
+      const candidateRect=
+        dgTileRect(
           position.x,
           position.y,
           angle
@@ -9685,31 +9685,14 @@ chooseDirection=function(
       let score=0;
 
 
-      /* ===============================================
-         სხვა ქვებთან გადაფარვა
-      =============================================== */
+      /* სხვა ქვებზე გადაფარვა */
 
       gameState.placements
         .forEach(
           existing=>{
 
-            /*
-              ქვა, რომელსაც პირდაპირ ვუერთდებით,
-              არ ითვლება collision-ად.
-            */
-
-            if(
-              existing.id===
-              port.sourceTileId
-            ){
-
-              return;
-
-            }
-
-
-            const existingBox=
-              dgBox(
+            const rect=
+              dgTileRect(
                 existing.x,
                 existing.y,
                 existing.angle
@@ -9717,22 +9700,17 @@ chooseDirection=function(
 
 
             const overlap=
-              dgOverlapAmount(
-                candidateBox,
-                existingBox
+              dgOverlapArea(
+                candidateRect,
+                rect
               );
 
 
             if(overlap>0){
 
-              /*
-                რეალური გადაფარვა ძალიან
-                დიდი ჯარიმაა.
-              */
-
               score-=
-                5000+
-                overlap*10;
+                10000+
+                overlap*20;
 
             }
 
@@ -9740,23 +9718,14 @@ chooseDirection=function(
         );
 
 
-      /* ===============================================
-         პირდაპირ გაგრძელება გვირჩევნია
-      =============================================== */
+      /* პირდაპირ გაგრძელებას უპირატესობა */
 
-      if(
-        direction===
-        port.dir
-      ){
-
-        score+=60;
-
+      if(direction===port.dir){
+        score+=100;
       }
 
 
-      /* ===============================================
-         მწვანე მაგიდის ლოგიკური საზღვრები
-      =============================================== */
+      /* მაგიდის საზღვრები */
 
       const overflowX=
         Math.max(
@@ -9775,56 +9744,32 @@ chooseDirection=function(
 
 
       score-=
-        overflowX*40;
+        overflowX*80;
 
 
       score-=
-        overflowY*55;
+        overflowY*100;
 
 
-      /*
-        კიდესთან მისვლისას
-        ცენტრისკენ შემობრუნებას უპირატესობა.
-      */
+      /* ცენტრისკენ დაბრუნება */
 
       const vector=
         DIR[direction];
 
 
-      const towardCenter=
+      const towardsCenter=
         (
-          position.x*
-          vector.x
-          +
-          position.y*
-          vector.y
+          position.x*vector.x+
+          position.y*vector.y
         )<0;
 
 
-      if(towardCenter){
-
-        score+=25;
-
+      if(towardsCenter){
+        score+=30;
       }
 
 
-      /*
-        ზედმეტად შორს გასვლას
-        მცირე დამატებითი ჯარიმა.
-      */
-
-      score-=
-        Math.abs(position.x)*.04;
-
-
-      score-=
-        Math.abs(position.y)*.07;
-
-
-      if(
-        score>
-        bestScore
-      ){
+      if(score>bestScore){
 
         bestScore=
           score;
@@ -9839,12 +9784,11 @@ chooseDirection=function(
 
 
   return bestDirection;
-
 };
 
 
 /* ======================================================
-   REFRESH BOARD
+   REFRESH
 ====================================================== */
 
 setTimeout(
@@ -9854,9 +9798,7 @@ setTimeout(
       typeof renderAll===
       "function"
     ){
-
       renderAll();
-
     }
 
   },
