@@ -1699,6 +1699,7 @@ button:active{
 ========================================= */
 
 </style>
+  <!-- build: 2026-09-14 smaller-hands-third-after-stake-v6 -->
 </head>
 
 <body>
@@ -4017,6 +4018,98 @@ button:active{
     height:39px!important;
   }
 }
+
+/* =========================================================
+   FINAL SIZE / BOTTOM BAR OVERRIDES V6
+   Only sizes/spacing are changed here — colors stay untouched.
+========================================================= */
+
+/* Smaller opponent domino backs; keep the existing ivory styling. */
+.tile-back{
+  width:28px!important;
+  height:38px!important;
+}
+.hidden-left .tile-back,
+.hidden-right .tile-back{
+  width:27px!important;
+  height:36px!important;
+}
+.hidden-top,
+.hidden-left,
+.hidden-right{
+  gap:5px!important;
+}
+
+/* Smaller own hand. */
+#playerHand{
+  bottom:12.4%!important;
+  height:8.8%!important;
+  gap:4px!important;
+  padding:2px 8px 1px!important;
+}
+#playerHand .domino{
+  width:30px!important;
+  height:54px!important;
+}
+#playerHand .domino.selected{
+  transform:translateY(-5px) scale(1.03)!important;
+}
+
+/* Give the bottom information bar enough real height for both text lines. */
+.bottom-info{
+  left:.8%!important;
+  right:.8%!important;
+  bottom:.45%!important;
+  height:11.3%!important;
+  z-index:135!important;
+  overflow:hidden!important;
+}
+.info-box{
+  padding:3px 6px!important;
+  gap:5px!important;
+  font-size:clamp(8px,.72vw,11px)!important;
+  line-height:1.16!important;
+}
+.info-box strong{
+  font-size:clamp(9px,.78vw,12px)!important;
+  line-height:1.08!important;
+  margin-bottom:1px!important;
+}
+.info-icon{
+  font-size:clamp(16px,1.55vw,23px)!important;
+}
+
+@media(max-height:560px){
+  #playerHand{
+    bottom:12.7%!important;
+    height:8.4%!important;
+  }
+  #playerHand .domino{
+    width:28px!important;
+    height:50px!important;
+  }
+  .tile-back{
+    width:26px!important;
+    height:35px!important;
+  }
+  .hidden-left .tile-back,
+  .hidden-right .tile-back{
+    width:25px!important;
+    height:33px!important;
+  }
+  .bottom-info{
+    height:11.7%!important;
+    bottom:.35%!important;
+  }
+  .info-box{
+    font-size:8px!important;
+    line-height:1.12!important;
+    padding:2px 5px!important;
+  }
+  .info-box strong{font-size:9px!important;}
+  .info-icon{font-size:16px!important;}
+}
+
 </style>
 
 <script id="dg-clean-target-engine">
@@ -4366,6 +4459,63 @@ startRound=function(){
   scheduleTurn();
 };
 
+
+
+/* =========================================================
+   FINAL ROUTING OVERRIDE V6
+   After the stake tile, the first TWO placed tiles stay straight.
+   The THIRD tile after the stake may start the turn.
+========================================================= */
+function placedAfterStakeCount(){
+  if(!G.stakeId) return 999;
+  const i=G.placements.findIndex(p=>p.id===G.stakeId);
+  if(i<0) return 999;
+  return Math.max(0,G.placements.length-i-1);
+}
+
+choosePlacement=function(port,tile){
+  const afterStake=placedAfterStakeCount();
+  const thirdAfterStakeCanTurn=afterStake>=2;
+
+  const dirs=isDouble(tile)
+    ? [port.dir]
+    : (thirdAfterStakeCanTurn
+        ? [port.dir,RIGHT[port.dir],LEFT[port.dir]]
+        : [port.dir]);
+
+  const lim=boardLimits();
+  let best=null,bestScore=-Infinity;
+
+  for(const dir of dirs){
+    const c=candidate(port,tile,dir);
+    const rr=rectAt(c.x,c.y,c.ori);
+    let score=dir===port.dir?95:0;
+    let bad=0;
+
+    for(const ex of G.placements){
+      const er=rectAt(ex.x,ex.y,ex.ori);
+      const ov=overlap(rr,er);
+      if(ov) bad+=ov;
+    }
+
+    score-=bad*60;
+
+    const ox=Math.max(0,Math.max(Math.abs(rr.l),Math.abs(rr.r))-lim.x);
+    const oy=Math.max(0,Math.max(Math.abs(rr.t),Math.abs(rr.b))-lim.y);
+    score-=ox*135+oy*165;
+
+    const [dx,dy]=DIR[dir];
+    if(c.x*dx+c.y*dy<0) score+=22;
+    score-=Math.abs(c.x)*.025+Math.abs(c.y)*.04;
+
+    if(score>bestScore){
+      bestScore=score;
+      best=c;
+    }
+  }
+
+  return best;
+};
 
 function boot(){
   const table=document.querySelector('.table-area'),board=$('dominoBoard');if(table&&board)table.appendChild(board);
