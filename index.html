@@ -8910,5 +8910,482 @@ window.addEventListener(
 }
 
 </style>
+  <!-- ======================================================
+     DOMINO GEORGIA — CLEAN STAKE V4
+====================================================== -->
+
+<style>
+
+/* ძველი ავატარები მაგიდიდან */
+.player{
+  display:none !important;
+}
+
+/* მოწინააღმდეგეების შავი დომინოები */
+.hidden-hand,
+#topHiddenHand,
+#leftHiddenHand,
+#rightHiddenHand{
+  display:none !important;
+}
+
+/* სტავკის დუპლი ოდნავ გამოკვეთილი */
+.domino.stake-domino{
+  box-shadow:
+    inset 2px 2px 3px rgba(255,255,255,.98),
+    inset -3px -3px 5px rgba(87,68,38,.30),
+    0 4px 0 #9c8866,
+    0 0 12px rgba(255,202,70,.85),
+    0 8px 10px rgba(0,0,0,.55);
+}
+
+</style>
+
+
+<script>
+
+/* ======================================================
+   STAKE SIDE UNLOCK
+====================================================== */
+
+function dgUnlockStakeSides(tile){
+
+  if(
+    !tile ||
+    !tile.isDouble ||
+    tile.stakeUnlocked
+  ){
+    return;
+  }
+
+
+  tile.isStake=true;
+  tile.stakeUnlocked=true;
+
+  gameState.stakeTileId=
+    tile.id;
+
+
+  const vertical=
+    Math.abs(tile.angle)%180===90;
+
+
+  /*
+    ვერტიკალური დუპლი:
+    ძირითადი მხარეებია მარცხენა/მარჯვენა.
+    ახლა იხსნება ზემოთ/ქვემოთ.
+  */
+
+  if(vertical){
+
+    createPort({
+      sourceTileId:tile.id,
+      value:tile.a,
+
+      x:tile.x,
+      y:tile.y-LONG_HALF,
+
+      dir:"N",
+      kind:"stake",
+
+      contribution:tile.a
+    });
+
+
+    createPort({
+      sourceTileId:tile.id,
+      value:tile.a,
+
+      x:tile.x,
+      y:tile.y+LONG_HALF,
+
+      dir:"S",
+      kind:"stake",
+
+      contribution:tile.a
+    });
+
+  }
+
+  /*
+    ჰორიზონტალური დუპლი:
+    ძირითადი მხარეებია ზემოთ/ქვემოთ.
+    ახლა იხსნება მარცხენა/მარჯვენა.
+  */
+
+  else{
+
+    createPort({
+      sourceTileId:tile.id,
+      value:tile.a,
+
+      x:tile.x-LONG_HALF,
+      y:tile.y,
+
+      dir:"W",
+      kind:"stake",
+
+      contribution:tile.a
+    });
+
+
+    createPort({
+      sourceTileId:tile.id,
+      value:tile.a,
+
+      x:tile.x+LONG_HALF,
+      y:tile.y,
+
+      dir:"E",
+      kind:"stake",
+
+      contribution:tile.a
+    });
+
+  }
+
+
+  showMessage(
+    `${tile.a}-${tile.b} — სტავკა გაიხსნა`,
+    1800
+  );
+
+}
+
+
+/* ======================================================
+   STAKE PROMOTION
+====================================================== */
+
+maybePromoteStake=function(tile){
+
+  if(
+    !tile ||
+    !tile.isDouble
+  ){
+    return;
+  }
+
+
+  /*
+    თუ სხვა სტავკა უკვე არსებობს,
+    ეს დუპლი ვეღარ გახდება სტავკა.
+  */
+
+  if(
+    gameState.stakeTileId &&
+    gameState.stakeTileId!==tile.id
+  ){
+    return;
+  }
+
+
+  /*
+    ჯერ ორივე ძირითადი მხარე
+    უნდა იყოს დაკავებული.
+  */
+
+  if(
+    (tile.normalConnections || 0)<2
+  ){
+    return;
+  }
+
+
+  /*
+    თუ ხელი non-double-ით დაიწყო,
+    აქ ხდება პირველი დახურული დუპლი სტავკა.
+  */
+
+  if(
+    !gameState.stakeTileId
+  ){
+
+    gameState.stakeTileId=
+      tile.id;
+
+    tile.isStake=true;
+
+  }
+
+
+  dgUnlockStakeSides(
+    tile
+  );
+
+};
+
+
+/* ======================================================
+   OPENING TILE — FINAL RULE
+
+   ნებისმიერი opening double:
+   თავიდანვე STAKE,
+   მაგრამ მხოლოდ 2 ძირითადი მხარე.
+====================================================== */
+
+placeOpeningTile=function(
+  player,
+  handIndex
+){
+
+  const tile=
+    gameState.hands[player][handIndex];
+
+
+  if(!tile){
+    return false;
+  }
+
+
+  gameState.hands[player]
+    .splice(
+      handIndex,
+      1
+    );
+
+
+  const double=
+    isDouble(tile);
+
+
+  const placement={
+
+    id:tile.id,
+
+    a:tile.a,
+    b:tile.b,
+
+    renderA:tile.a,
+    renderB:tile.b,
+
+    x:0,
+    y:0,
+
+    angle:
+      double
+        ? 90
+        : 0,
+
+    isDouble:double,
+
+    opening:true,
+
+    isStake:double,
+
+    stakeUnlocked:false,
+
+    normalConnections:0
+
+  };
+
+
+  gameState.placements.push(
+    placement
+  );
+
+
+  /* =====================================================
+     OPENING DOUBLE
+
+     თავიდან მხოლოდ ორი მხარე.
+  ===================================================== */
+
+  if(double){
+
+    gameState.stakeTileId=
+      tile.id;
+
+
+    /*
+      მარცხენა
+    */
+
+    createPort({
+
+      sourceTileId:tile.id,
+
+      value:tile.a,
+
+      x:-SHORT_HALF,
+      y:0,
+
+      dir:"W",
+
+      kind:"normal",
+
+      /*
+        ღია დუპლი ითვლება ორივე ნახევრით.
+        მაგალითად 6-6 = 12.
+      */
+
+      contribution:
+        tile.a*2
+
+    });
+
+
+    /*
+      მარჯვენა
+    */
+
+    createPort({
+
+      sourceTileId:tile.id,
+
+      value:tile.a,
+
+      x:SHORT_HALF,
+      y:0,
+
+      dir:"E",
+
+      kind:"normal",
+
+      contribution:
+        tile.a*2
+
+    });
+
+  }
+
+
+  /* =====================================================
+     OPENING NON-DOUBLE
+  ===================================================== */
+
+  else{
+
+    gameState.stakeTileId=
+      null;
+
+
+    createPort({
+
+      sourceTileId:tile.id,
+
+      value:tile.a,
+
+      x:-LONG_HALF,
+      y:0,
+
+      dir:"W",
+
+      kind:"normal",
+
+      contribution:tile.a
+
+    });
+
+
+    createPort({
+
+      sourceTileId:tile.id,
+
+      value:tile.b,
+
+      x:LONG_HALF,
+      y:0,
+
+      dir:"E",
+
+      kind:"normal",
+
+      contribution:tile.b
+
+    });
+
+  }
+
+
+  gameState.lastPlayerToPlay=
+    player;
+
+
+  gameState.passCount=0;
+
+
+  /*
+    სპეციალური გახსნის ქულა:
+    მხოლოდ 5-5 = +10
+  */
+
+  if(
+    tile.a===5 &&
+    tile.b===5
+  ){
+
+    addScore(
+      playerTeam(player),
+      10
+    );
+
+
+    showMessage(
+      "5-5 გახსნა — +10"
+    );
+
+  }
+
+
+  renderAll();
+
+  return true;
+
+};
+
+
+/* ======================================================
+   STAKE VISUAL
+====================================================== */
+
+const dgStakeRenderBoard=
+  renderBoard;
+
+
+renderBoard=function(){
+
+  dgStakeRenderBoard();
+
+
+  if(
+    !gameState.stakeTileId
+  ){
+    return;
+  }
+
+
+  const index=
+    gameState.placements
+      .findIndex(
+        tile=>
+          tile.id===
+          gameState.stakeTileId
+      );
+
+
+  if(index<0){
+    return;
+  }
+
+
+  const tiles=
+    document
+      .getElementById("dominoBoard")
+      .querySelectorAll(".domino");
+
+
+  if(tiles[index]){
+
+    tiles[index]
+      .classList.add(
+        "stake-domino"
+      );
+
+  }
+
+};
+
+</script>
 </body>
 </html>
