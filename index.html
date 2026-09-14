@@ -1792,6 +1792,7 @@ button:active{
 </style>
 
 <!-- build: 2026-09-14 v11-wide-felt-no-overlap -->
+<!-- build: 2026-09-15 v12-stake-routing-fixed -->
 </head>
 
 <body>
@@ -4282,9 +4283,9 @@ function directCenter(port,tile,dir){
 function turnCenter(port,tile,dir){
   if(isDouble(tile)) return directCenter(port,tile,port.dir);
   const [ox,oy]=DIR[port.dir], [nx,ny]=DIR[dir];
-  // Clean 90° elbow: move a half tile-width away from the source edge,
-  // then a full half-length into the new direction. This prevents overlap.
-  const seamGap=1.5;
+  // Exact 90° elbow: the rectangles meet at the corner without a visible gap
+  // and without pushing one tile on top of another.
+  const seamGap=0;
   return {
     x:port.x+ox*(HH+seamGap)+nx*(HW+seamGap),
     y:port.y+oy*(HH+seamGap)+ny*(HW+seamGap),
@@ -4357,8 +4358,9 @@ function handleParentPortBeforeClose(port){
   parent.normalConnections=(parent.normalConnections||0)+1;
   // Opening double is the stake immediately, but its side arms unlock only after 2 main connections.
   if(parent.opening&&parent.isStake){
-    const sibling=activePorts().find(p=>p.id!==port.id&&p.sourceTileId===parent.id&&p.kind==='normal');
-    if(parent.normalConnections===1&&sibling)sibling.contribution=parent.a*2;
+    // Each exposed side of the opening stake counts only while that side is open.
+    // When one side is closed, it disappears from openTotal(); the other side
+    // remains a single exposed value (it must NOT be doubled).
     if(parent.normalConnections>=2)unlockStake(parent);
     return;
   }
@@ -4710,6 +4712,96 @@ choosePlacement=function(port,tile){
 
   // Extremely defensive fallback; normal play should never reach this path.
   return candidate(port,tile,port.dir);
+};
+
+
+/* =========================================================
+   ROUTING + STAKE COUNT FIX V12
+   - Stake end contribution exists only while that exact end is exposed.
+   - Main stake branches: 5 straight placements, then first clean turn.
+   - Extra stake branches: 2 straight placements, then first clean turn.
+   - Forced turns prefer the outside of the table, keeping branches apart.
+   - No fallback is allowed to overlap an existing domino.
+========================================================= */
+function radialScore(c){
+  return Math.abs(c.x)+Math.abs(c.y)*1.05;
+}
+
+function edgeMargin(c,lim){
+  const r=rectAt(c.x,c.y,c.ori);
+  return Math.min(r.l+lim.x,lim.x-r.r,r.t+lim.y,lim.y-r.b);
+}
+
+function cleanElbowCandidates(port,tile,dirs,lim){
+  return dirs
+    .map(dir=>({dir,c:candidate(port,tile,dir)}))
+    .filter(x=>placementIsClean(x.c,lim,port.sourceTileId));
+}
+
+choosePlacement=function(port,tile){
+  const lim=boardLimits();
+  const branchType=port.branchType;
+  const depth=port.branchDepth||0;
+  const alreadyTurned=!!port.branchTurned;
+  const threshold=branchType==='main'?5:(branchType==='extra'?2:null);
+
+  // Doubles stay crosswise on the current route. They never overlap by force.
+  if(isDouble(tile)){
+    const straight=candidate(port,tile,port.dir);
+    if(placementIsClean(straight,lim,port.sourceTileId))return straight;
+  }
+
+  const mustStayStraight=threshold!==null&&!alreadyTurned&&depth<threshold;
+  const mustFirstTurn=threshold!==null&&!alreadyTurned&&depth>=threshold&&!isDouble(tile);
+
+  if(mustStayStraight){
+    const straight=candidate(port,tile,port.dir);
+    if(placementIsClean(straight,lim,port.sourceTileId))return straight;
+  }
+
+  if(mustFirstTurn){
+    const turns=cleanElbowCandidates(port,tile,[RIGHT[port.dir],LEFT[port.dir]],lim);
+    if(turns.length){
+      // Choose the turn farther from the centre. This keeps 3rd/4th stake arms
+      // away from the main line and stops branches crossing each other.
+      turns.sort((a,b)=>{
+        const rd=radialScore(b.c)-radialScore(a.c);
+        if(Math.abs(rd)>.01)return rd;
+        return edgeMargin(b.c,lim)-edgeMargin(a.c,lim);
+      });
+      return turns[0].c;
+    }
+  }
+
+  // After the first turn keep going straight while it is clean.
+  const straight=candidate(port,tile,port.dir);
+  if(placementIsClean(straight,lim,port.sourceTileId))return straight;
+
+  // Near an edge or another branch, take a clean 90° elbow.
+  const turns=cleanElbowCandidates(port,tile,[RIGHT[port.dir],LEFT[port.dir]],lim);
+  if(turns.length){
+    turns.sort((a,b)=>{
+      const margin=edgeMargin(b.c,lim)-edgeMargin(a.c,lim);
+      if(Math.abs(margin)>.01)return margin;
+      return radialScore(b.c)-radialScore(a.c);
+    });
+    return turns[0].c;
+  }
+
+  // Defensive no-overlap fallback: extend the CURRENT route by exact tile steps
+  // until a free rectangle is found. This can move outside the nominal limits;
+  // fitBoard() will scale the whole chain so the complete domino stays visible.
+  const tryDirs=[port.dir,RIGHT[port.dir],LEFT[port.dir]];
+  for(const dir of tryDirs){
+    const base=candidate(port,tile,dir);
+    const [dx,dy]=DIR[dir];
+    const step=(dir==='E'||dir==='W')?W:H;
+    for(let k=0;k<12;k++){
+      const c={...base,x:base.x+dx*step*k,y:base.y+dy*step*k};
+      if(collisionAmount(c,port.sourceTileId)<=0.01)return c;
+    }
+  }
+  return straight;
 };
 
 function boot(){
