@@ -1700,6 +1700,97 @@ button:active{
 
 </style>
   <!-- build: 2026-09-14 smaller-hands-third-after-stake-v6 -->
+
+<style id="dg-compact-controls-v7">
+/* ===== Compact top frame + smaller tiles/pips + functional bottom controls ===== */
+.top-panel{
+  top:.6%!important;
+  left:1.1%!important;
+  right:1.1%!important;
+  height:18.3%!important;
+  gap:7px!important;
+}
+.team-title{height:23%!important;font-size:clamp(11px,1.22vw,19px)!important;}
+.score-body{height:77%!important;}
+.logo-main{font-size:clamp(26px,3.2vw,50px)!important;}
+.logo-sub{font-size:clamp(10px,1.15vw,18px)!important;letter-spacing:.34em!important;}
+
+/* Move the felt upward so the reduced header creates real play space. */
+.table-area{
+  top:20.6%!important;
+  bottom:17%!important;
+}
+.player-top{top:16.9%!important;}
+.hidden-top{top:22.2%!important;}
+
+/* Top controls are now represented in the lower control strip. */
+.top-actions{display:none!important;}
+
+/* Smaller opponent backs — same colors/style. */
+.tile-back{
+  width:24px!important;
+  height:33px!important;
+}
+.hidden-left .tile-back,
+.hidden-right .tile-back{
+  width:23px!important;
+  height:31px!important;
+}
+.hidden-top,.hidden-left,.hidden-right{gap:4px!important;}
+
+/* Smaller own hand — same colors/style. */
+#playerHand{
+  bottom:12.5%!important;
+  height:8.0%!important;
+  gap:3px!important;
+  padding:1px 7px 0!important;
+}
+#playerHand .domino{
+  width:26px!important;
+  height:47px!important;
+  border-radius:6px!important;
+}
+#playerHand .domino.selected{transform:translateY(-4px) scale(1.03)!important;}
+
+/* Slightly smaller pips everywhere; a touch smaller in the local hand. */
+.pip{width:6px!important;height:6px!important;}
+#playerHand .pip{width:5px!important;height:5px!important;}
+
+/* Bottom strip becomes a functional control bar. */
+.bottom-info{
+  height:11.3%!important;
+  bottom:.45%!important;
+  grid-template-columns:repeat(6,1fr)!important;
+}
+.info-box{
+  padding:3px 4px!important;
+  justify-content:center!important;
+  min-width:0!important;
+}
+.info-box .bottom-tool{
+  width:100%;height:100%;
+  border:0;background:transparent;color:#f4e7cf;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  font:800 clamp(8px,.78vw,12px)/1.1 Arial,"Noto Sans Georgian",sans-serif;
+  cursor:pointer;
+}
+.info-box .bottom-tool .tool-icon{font-size:clamp(15px,1.45vw,22px);line-height:1;}
+.info-box .bottom-tool:active{transform:scale(.96);}
+
+@media(max-height:560px){
+  .top-panel{height:18.5%!important;}
+  .table-area{top:20.8%!important;bottom:16.8%!important;}
+  .player-top{top:17.1%!important;}
+  .hidden-top{top:22.5%!important;}
+  #playerHand{bottom:12.7%!important;height:7.7%!important;}
+  #playerHand .domino{width:24px!important;height:43px!important;}
+  .tile-back{width:22px!important;height:30px!important;}
+  .hidden-left .tile-back,.hidden-right .tile-back{width:21px!important;height:28px!important;}
+  .pip{width:5.5px!important;height:5.5px!important;}
+  #playerHand .pip{width:4.6px!important;height:4.6px!important;}
+}
+</style>
+
 </head>
 
 <body>
@@ -4525,5 +4616,42 @@ function boot(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
+
+<script id="dg-bottom-tools-v7">
+(()=>{
+  const boxes=[...document.querySelectorAll('.bottom-info .info-box')];
+  if(boxes.length<6) return;
+  const items=[
+    ['🔊','ხმა','dgBottomSound'],
+    ['💬','ჩატი','dgBottomChat'],
+    ['⛶','ეკრანი','dgBottomFull'],
+    ['📖','წესები','dgBottomRules'],
+    ['↻','თავიდან','dgBottomRestart'],
+    ['⚙️','პარამეტრები','dgBottomSettings']
+  ];
+  boxes.forEach((box,i)=>{
+    const [icon,label,id]=items[i];
+    box.innerHTML=`<button class="bottom-tool" id="${id}"><span class="tool-icon">${icon}</span><span>${label}</span></button>`;
+  });
+  const $=id=>document.getElementById(id);
+  $('dgBottomSound')?.addEventListener('click',()=>{
+    const src=$('soundBtn');
+    if(src){src.click(); const muted=src.textContent.includes('🔇'); $('dgBottomSound').innerHTML=`<span class="tool-icon">${muted?'🔇':'🔊'}</span><span>ხმა</span>`;}
+  });
+  $('dgBottomChat')?.addEventListener('click',()=>{ $('chatBtn')?.click(); });
+  $('dgBottomFull')?.addEventListener('click',async()=>{
+    try{
+      if(!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+      else await document.exitFullscreen?.();
+    }catch(e){}
+  });
+  $('dgBottomRules')?.addEventListener('click',()=>{
+    alert('პირველი ხელი იწყება 6-6-ით. სტავკის შემდეგ მოხვევა შეიძლება მესამე ქვიდან. ქულები ითვლება მოქმედი ღია ბოლოებიდან; 35 — მყისიერი მოგებაა.');
+  });
+  $('dgBottomRestart')?.addEventListener('click',()=>{ if(confirm('თამაში თავიდან დაიწყოს?')) location.reload(); });
+  $('dgBottomSettings')?.addEventListener('click',()=>{ $('settingsBtn')?.click(); });
+})();
+</script>
+
 </body>
 </html>
