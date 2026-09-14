@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#2a1007">
 <title>DOMINO GEORGIA</title>
+<!-- build: 2026-09-14 final-v3 -->
 <link rel="manifest" href="./manifest.json">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -32,24 +33,28 @@ button{font-family:inherit}
 .logo-sub{position:relative;z-index:2;margin-top:9px;display:flex;align-items:center;justify-content:center;gap:13px;color:#ffe3ac;font:400 clamp(12px,1.45vw,22px) Georgia,serif;letter-spacing:8px}.logo-flag{letter-spacing:0}
 
 /* FULL GREEN TABLE */
-.table-area{position:absolute;left:.8%;right:.8%;top:18.9%;bottom:8.5%;z-index:10;overflow:hidden;border:6px solid #2c1107;border-radius:12px;outline:2px solid #98522a;background:radial-gradient(ellipse at 50% 45%,rgba(20,126,81,.45),transparent 68%),repeating-linear-gradient(35deg,rgba(255,255,255,.012) 0 2px,transparent 3px 8px),linear-gradient(145deg,#086342,#064d34 50%,#033422);box-shadow:inset 0 0 70px rgba(0,0,0,.62),inset 0 0 6px rgba(255,255,255,.18),0 5px 14px #000}
+.table-area{position:absolute;left:.55%;right:.55%;top:18.6%;bottom:7.9%;z-index:10;overflow:hidden;border:6px solid #2c1107;border-radius:12px;outline:2px solid #98522a;background:radial-gradient(ellipse at 50% 45%,rgba(20,126,81,.45),transparent 68%),repeating-linear-gradient(35deg,rgba(255,255,255,.012) 0 2px,transparent 3px 8px),linear-gradient(145deg,#086342,#064d34 50%,#033422);box-shadow:inset 0 0 70px rgba(0,0,0,.62),inset 0 0 6px rgba(255,255,255,.18),0 5px 14px #000}
 .watermark{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);text-align:center;color:rgba(219,207,154,.065);pointer-events:none}.watermark-crown{font-size:clamp(48px,5.4vw,84px);line-height:.9}.watermark-text{margin-top:10px;font:400 clamp(12px,1.25vw,20px) Georgia,serif;letter-spacing:8px}
 .room-pill{position:absolute;left:1.4%;top:2%;z-index:90;padding:7px 12px;border:1px solid rgba(227,174,99,.45);border-radius:14px;color:#f0ddbc;background:rgba(22,13,8,.78);box-shadow:0 3px 8px rgba(0,0,0,.4);font-size:clamp(9px,.8vw,13px)}
-#boardViewport{position:absolute;left:2.5%;right:2.5%;top:5%;bottom:21%;overflow:hidden;z-index:45;pointer-events:auto}
+#boardViewport{position:absolute;left:.45%;right:.45%;top:.65%;bottom:14.7%;overflow:hidden;z-index:45;pointer-events:auto}
 #dominoBoard{position:absolute;left:50%;top:50%;width:1px;height:1px;transform-origin:0 0}
 
 /* PREMIUM DOMINO */
-.domino{position:absolute;width:72px;height:40px;display:flex;overflow:hidden;border:1px solid #a49370;border-radius:9px;background:linear-gradient(145deg,#fffef4 0%,#fbf1d8 36%,#e8d7af 74%,#bfa979 100%);box-shadow:inset 2px 2px 3px rgba(255,255,255,.98),inset -3px -3px 5px rgba(82,63,36,.3),0 3px 0 #9b865f,0 7px 10px rgba(0,0,0,.5);transform-origin:center;transition:left .16s ease,top .16s ease,transform .16s ease}
-.domino.stake-domino{box-shadow:inset 2px 2px 3px rgba(255,255,255,.98),inset -3px -3px 5px rgba(82,63,36,.3),0 3px 0 #9b865f,0 0 12px rgba(255,202,70,.85),0 7px 10px rgba(0,0,0,.55)}
-.domino::after{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:2px;transform:translateX(-50%);border-radius:2px;background:linear-gradient(90deg,#776b55,#fff8e5,#78684f);box-shadow:0 0 1px #5a4a32}
-.domino-half{position:relative;width:50%;height:100%}.pip{position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#444 0%,#171716 38%,#000 78%);box-shadow:inset 1px 1px 1px rgba(255,255,255,.23),inset -1px -1px 2px #000,0 1px 1px rgba(255,255,255,.25)}
+.domino{position:absolute;width:68px;height:38px;display:flex;overflow:hidden;border:1px solid #d7cfbc;border-radius:9px;background:linear-gradient(145deg,#fffef8 0%,#fffdf2 34%,#f4ecd9 70%,#d9ccb0 100%);box-shadow:inset 2px 2px 3px rgba(255,255,255,1),inset -2px -2px 4px rgba(88,72,45,.22),0 2px 0 #b8aa8d,0 6px 10px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.55);transform-origin:center;transition:left .14s ease,top .14s ease,transform .14s ease;filter:contrast(1.04) saturate(.98)}
+.domino.vertical{width:38px;height:68px;flex-direction:column}
+.domino.stake-domino{box-shadow:inset 2px 2px 3px rgba(255,255,255,1),inset -2px -2px 4px rgba(82,63,36,.22),0 2px 0 #b8aa8d,0 0 14px rgba(255,204,67,.95),0 7px 12px rgba(0,0,0,.58)}
+.domino::after{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:1.5px;transform:translateX(-50%);border-radius:2px;background:linear-gradient(90deg,#b8b1a1,#f8f5ec,#9e9787);box-shadow:0 0 1px rgba(65,57,44,.7)}
+.domino.vertical::after{left:4px;right:4px;top:50%;bottom:auto;width:auto;height:1.5px;transform:translateY(-50%);background:linear-gradient(#b8b1a1,#f8f5ec,#9e9787)}
+.domino-half{position:relative;width:50%;height:100%}
+.domino.vertical .domino-half{width:100%;height:50%}
+.pip{position:absolute;width:7.5px;height:7.5px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#555 0 9%,#222 17%,#090909 55%,#000 82%);box-shadow:inset 1px 1px 1px rgba(255,255,255,.35),inset -1px -1px 2px #000,0 1px 1px rgba(0,0,0,.45),0 0 0 .35px #000}
 .p1{left:50%;top:50%;transform:translate(-50%,-50%)}.p2{left:23%;top:22%;transform:translate(-50%,-50%)}.p3{right:23%;bottom:22%;transform:translate(50%,50%)}.p4{right:23%;top:22%;transform:translate(50%,-50%)}.p5{left:23%;bottom:22%;transform:translate(-50%,50%)}.p6{left:23%;top:50%;transform:translate(-50%,-50%)}.p7{right:23%;top:50%;transform:translate(50%,-50%)}
 
 /* HAND */
 .hand-rack{position:absolute;left:50%;bottom:7.7%;transform:translateX(-50%);z-index:62;width:min(46%,680px);height:11.5%;border:4px solid #381408;border-radius:13px 13px 3px 3px;background:linear-gradient(180deg,#985027,#672a11 46%,#381307);box-shadow:inset 0 3px 3px rgba(255,194,122,.28),inset 0 -12px 16px rgba(0,0,0,.48),0 -3px 8px rgba(0,0,0,.65)}
 .hand-rack::before{content:"";position:absolute;left:3%;right:3%;top:10%;height:8px;border-radius:7px;background:linear-gradient(#d48646,#692b11);box-shadow:0 3px 4px #210a04}
 #playerHand{position:absolute;left:50%;bottom:8.5%;transform:translateX(-50%);z-index:80;height:14%;display:flex;align-items:flex-end;justify-content:center;gap:5px}
-.hand-domino{position:relative;width:clamp(42px,3.35vw,54px);height:clamp(74px,6.1vw,94px);flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid #aa9976;border-radius:9px;background:linear-gradient(145deg,#fffef2,#f9efd2 37%,#e2d2ad 74%,#bda980);box-shadow:inset 2px 2px 3px #fff,inset -3px -3px 5px rgba(95,73,39,.28),0 4px 0 #927f60,0 8px 10px rgba(0,0,0,.58);cursor:pointer;transition:transform .14s ease,filter .14s ease}
+.hand-domino{position:relative;width:clamp(42px,3.35vw,54px);height:clamp(74px,6.1vw,94px);flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid #d7cfbc;border-radius:9px;background:linear-gradient(145deg,#fffef8 0%,#fffdf2 35%,#f1e7d1 72%,#d6c7a8 100%);box-shadow:inset 2px 2px 3px #fff,inset -2px -2px 4px rgba(90,72,44,.22),0 3px 0 #ac9d82,0 8px 11px rgba(0,0,0,.58),0 0 0 1px rgba(255,255,255,.5);cursor:pointer;transition:transform .14s ease,filter .14s ease;filter:contrast(1.03)}
 .hand-domino::after{content:"";position:absolute;left:5px;right:5px;top:50%;height:2px;transform:translateY(-50%);background:linear-gradient(#82735a,#fff9e6)}
 .hand-domino .domino-half{width:100%;height:50%}.hand-domino.playable{filter:brightness(1.06) drop-shadow(0 0 6px rgba(255,214,102,.55))}.hand-domino.selected{transform:translateY(-11px) scale(1.04);filter:brightness(1.09) drop-shadow(0 0 8px rgba(255,210,76,.8))}
 
@@ -68,7 +73,7 @@ button{font-family:inherit}
 
 .rotate{display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(circle,#4b220f,#150603);color:#ffe1aa;text-align:center}.rotate div{font-size:55px}.rotate h2{margin-top:12px}
 @media(orientation:portrait){.rotate{display:flex}}
-@media(max-height:560px){.top-panel{height:18.8%}.table-area{top:20.1%;bottom:8.3%}.team-avatar{width:43px;height:43px;font-size:22px}.team-total{min-width:96px;min-height:40px;font-size:clamp(18px,1.9vw,28px)}#boardViewport{top:4%;bottom:22%}.hand-rack{bottom:7.2%;height:10.8%}#playerHand{bottom:7.9%;height:13.2%}.hand-domino{width:38px;height:66px}.action-btn{height:44px;min-width:90px;font-size:12px}.bottom-info{height:6.6%}}
+@media(max-height:560px){.top-panel{height:18.8%}.table-area{top:19.9%;bottom:7.8%}.team-avatar{width:43px;height:43px;font-size:22px}.team-total{min-width:96px;min-height:40px;font-size:clamp(18px,1.9vw,28px)}#boardViewport{top:.5%;bottom:15%}.hand-rack{bottom:7.2%;height:10.8%}#playerHand{bottom:7.9%;height:13.2%}.hand-domino{width:38px;height:66px}.action-btn{height:44px;min-width:90px;font-size:12px}.bottom-info{height:6.6%}}
 </style>
 </head>
 <body>
@@ -145,8 +150,8 @@ button{font-family:inherit}
 <script>
 const $=id=>document.getElementById(id);
 const TARGET_SCORE=355;
-const TILE_W=72;
-const TILE_H=40;
+const TILE_W=68;
+const TILE_H=38;
 const LONG_HALF=TILE_W/2;
 const SHORT_HALF=TILE_H/2;
 
@@ -313,8 +318,16 @@ function overlapArea(a,b){
 }
 function boardLimits(){
   const vp=$("boardViewport");
-  if(!vp)return{x:300,y:120};
-  return{x:Math.max(180,vp.clientWidth/2-TILE_W),y:Math.max(80,vp.clientHeight/2-TILE_W)};
+  if(!vp)return{x:360,y:130};
+  /*
+    ჯაჭვი ჯერ შიგნით ტრიალდება და მხოლოდ მერე მცირდება.
+    ეს ზღვარი სპეციალურად ნაკლებია viewport-ის კიდეზე,
+    რათა ქვები ხის კონტურში არ შევიდეს.
+  */
+  return{
+    x:Math.max(250,Math.min(560,vp.clientWidth*.43)),
+    y:Math.max(100,Math.min(190,vp.clientHeight*.39))
+  };
 }
 function chooseDirection(port,tile){
   const choices=[port.dir,TURN_RIGHT[port.dir],TURN_LEFT[port.dir]];
@@ -323,7 +336,11 @@ function chooseDirection(port,tile){
   for(const dir of choices){
     const pos=proposedCenter(port,tile,dir),angle=angleForDirection(tile,dir),box=tileRect(pos.x,pos.y,angle);
     let overlap=0;
-    for(const e of gameState.placements)overlap+=overlapArea(box,tileRect(e.x,e.y,e.angle));
+    for(const e of gameState.placements){
+      /* უშუალო მშობელ ქვას კიდით შეხება ნორმალურია */
+      if(e.id===port.sourceTileId)continue;
+      overlap+=overlapArea(box,tileRect(e.x,e.y,e.angle));
+    }
     const overflowX=Math.max(0,Math.abs(pos.x)-lim.x),overflowY=Math.max(0,Math.abs(pos.y)-lim.y);
     let score=0;
     score-=overlap*40;
@@ -479,21 +496,56 @@ async function computerTurn(){
 function renderBoard(){
   const board=$("dominoBoard");if(!board)return;board.innerHTML="";
   gameState.placements.forEach(p=>{
-    const el=document.createElement("div");el.className="domino"+(p.isStake?" stake-domino":"");el.innerHTML=halfHTML(p.renderA)+halfHTML(p.renderB);
-    el.style.left=`${p.x-TILE_W/2}px`;el.style.top=`${p.y-TILE_H/2}px`;el.style.transform=`rotate(${p.angle}deg)`;board.appendChild(el);
+    const vertical=Math.abs(p.angle)%180===90;
+    const el=document.createElement("div");
+    el.className="domino"+(vertical?" vertical":"")+(p.isStake?" stake-domino":"");
+    el.innerHTML=halfHTML(p.renderA)+halfHTML(p.renderB);
+    const w=vertical?TILE_H:TILE_W;
+    const h=vertical?TILE_W:TILE_H;
+    el.style.left=`${p.x-w/2}px`;
+    el.style.top=`${p.y-h/2}px`;
+    el.style.transform="none";
+    board.appendChild(el);
   });
   requestAnimationFrame(fitBoard);
 }
 function fitBoard(){
-  const board=$("dominoBoard"),vp=$("boardViewport");if(!board||!vp)return;
-  if(!gameState.placements.length){board.style.left="50%";board.style.top="50%";board.style.transform="scale(1)";return}
+  const board=$("dominoBoard"),vp=$("boardViewport");
+  if(!board||!vp)return;
+
+  board.style.transformOrigin="0 0";
+
+  if(!gameState.placements.length){
+    board.style.left=`${vp.clientWidth/2}px`;
+    board.style.top=`${vp.clientHeight/2}px`;
+    board.style.transform="scale(1)";
+    return;
+  }
+
   let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-  gameState.placements.forEach(p=>{const r=tileRect(p.x,p.y,p.angle);minX=Math.min(minX,r.left);maxX=Math.max(maxX,r.right);minY=Math.min(minY,r.top);maxY=Math.max(maxY,r.bottom)});
-  const contentW=Math.max(1,maxX-minX),contentH=Math.max(1,maxY-minY),availW=vp.clientWidth*.96,availH=vp.clientHeight*.94;
-  let scale=Math.min(1,availW/contentW,availH/contentH);scale=Math.max(.80,scale);
+  gameState.placements.forEach(p=>{
+    const r=tileRect(p.x,p.y,p.angle);
+    minX=Math.min(minX,r.left);maxX=Math.max(maxX,r.right);
+    minY=Math.min(minY,r.top);maxY=Math.max(maxY,r.bottom);
+  });
+
+  const contentW=Math.max(1,maxX-minX);
+  const contentH=Math.max(1,maxY-minY);
+  const padX=8,padY=8;
+  const availW=Math.max(1,vp.clientWidth-padX*2);
+  const availH=Math.max(1,vp.clientHeight-padY*2);
+
+  /*
+    არ გვაქვს მინიმალური scale. თუ ჯაჭვი დიდია,
+    იმდენად მცირდება რამდენიც საჭიროა, ამიტომ არცერთი ქვა
+    აღარ დაიმალება მწვანე მაგიდის/ხის კონტურის მიღმა.
+  */
+  const scale=Math.min(1,availW/contentW,availH/contentH);
   const cx=(minX+maxX)/2,cy=(minY+maxY)/2;
-  board.style.left="50%";board.style.top="50%";board.style.transformOrigin="0 0";
-  board.style.transform=`translate(${-cx*scale}px,${-cy*scale}px) scale(${scale})`;
+
+  board.style.left=`${vp.clientWidth/2-cx*scale}px`;
+  board.style.top=`${vp.clientHeight/2-cy*scale}px`;
+  board.style.transform=`scale(${scale})`;
 }
 function renderHand(){
   const hand=$("playerHand");if(!hand)return;hand.innerHTML="";
