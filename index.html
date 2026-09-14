@@ -1699,7 +1699,7 @@ button:active{
 ========================================= */
 
 </style>
-  <!-- build: 2026-09-14 smaller-hands-third-after-stake-v6 -->
+  <!-- build: 2026-09-14 v8-domino-restored -->
 
 <style id="dg-compact-controls-v7">
 /* ===== Compact top frame + smaller tiles/pips + functional bottom controls ===== */
@@ -4449,9 +4449,11 @@ function wireButtons(){
   window.addEventListener('resize',()=>requestAnimationFrame(fitBoard));
 }
 function setTargetTexts(){
-  const info=document.querySelectorAll('.bottom-info .info-box');if(info[3])info[3].querySelector('div').innerHTML='<strong>ქულები:</strong> ღია ბოლოების ჯამი,<br>5-ის ჯერადი';
-  if(info[4])info[4].querySelector('div').innerHTML='<strong>რიბა:</strong> ნაკლები გუნდის ჯამი,<br>თანაბარი გადადის';
-  if(info[5])info[5].querySelector('div').innerHTML='<strong>მატჩი:</strong> 355-ის შემდეგ<br>არარიბა ხელი წყვეტს';
+  const info=document.querySelectorAll('.bottom-info .info-box');
+  const d3=info[3]?.querySelector('div'), d4=info[4]?.querySelector('div'), d5=info[5]?.querySelector('div');
+  if(d3)d3.innerHTML='<strong>ქულები:</strong> ღია ბოლოების ჯამი,<br>5-ის ჯერადი';
+  if(d4)d4.innerHTML='<strong>რიბა:</strong> ნაკლები გუნდის ჯამი,<br>თანაბარი გადადის';
+  if(d5)d5.innerHTML='<strong>მატჩი:</strong> 355-ის შემდეგ<br>არარიბა ხელი წყვეტს';
 }
 
 /* =========================================================
@@ -4617,8 +4619,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
-<script id="dg-bottom-tools-v7">
+<script id="dg-bottom-tools-v8">
 (()=>{
+function initBottomTools(){
   const boxes=[...document.querySelectorAll('.bottom-info .info-box')];
   if(boxes.length<6) return;
   const items=[
@@ -4650,6 +4653,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   });
   $('dgBottomRestart')?.addEventListener('click',()=>{ if(confirm('თამაში თავიდან დაიწყოს?')) location.reload(); });
   $('dgBottomSettings')?.addEventListener('click',()=>{ $('settingsBtn')?.click(); });
+}
+// Let the main game boot/deal/render first, then replace the lower info boxes with controls.
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initBottomTools);
+else setTimeout(initBottomTools,0);
 })();
 </script>
 
