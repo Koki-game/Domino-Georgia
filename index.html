@@ -4855,5 +4855,100 @@ else setTimeout(initBottomTools,0);
 </script>
 <!-- DG V15 LAYOUT MENU END -->
 
+
+
+<!-- DG V16 VISUAL HAND ALIGNMENT START -->
+<style id="dg-v16-hand-alignment">
+/* V16 visual-only changes. Game rules/engine are untouched. */
+
+/* Player 1: move left of the top hidden hand and below the score strip,
+   so Team A points remain fully visible. */
+.player-top{
+  left:31.5%!important;
+  top:25.0%!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:150!important;
+}
+
+/* Top opponent hand: raise it until its wooden rack touches the lower edge
+   of the DOMINO GEORGIA centre frame. */
+.hidden-top{
+  left:50%!important;
+  top:20.1%!important;
+  transform:translateX(-50%)!important;
+  gap:5px!important;
+  padding:4px 5px!important;
+  border:2px solid #4a210e!important;
+  border-radius:0 0 8px 8px!important;
+  background:linear-gradient(180deg,#6f3517,#3a170a 72%,#1d0b05)!important;
+  box-shadow:inset 0 1px 0 rgba(255,215,150,.22),0 3px 7px rgba(0,0,0,.6)!important;
+  z-index:95!important;
+}
+.hidden-top .tile-back{
+  width:28px!important;
+  height:38px!important;
+}
+
+/* Players 4 and 2: mirrored wooden racks on the side rails.
+   Their closed dominoes are rotated to landscape orientation. */
+.hidden-left,
+.hidden-right{
+  top:52%!important;
+  transform:translateY(-50%)!important;
+  gap:4px!important;
+  padding:5px 4px!important;
+  border:2px solid #4a210e!important;
+  border-radius:8px!important;
+  background:linear-gradient(90deg,#351407,#6e3517 50%,#2b1006)!important;
+  box-shadow:inset 0 0 8px rgba(0,0,0,.65),0 3px 7px rgba(0,0,0,.6)!important;
+  z-index:92!important;
+}
+.hidden-left{
+  left:6.3%!important;
+}
+.hidden-right{
+  right:6.3%!important;
+}
+.hidden-left .tile-back,
+.hidden-right .tile-back{
+  width:38px!important;
+  height:27px!important;
+  border-radius:5px!important;
+}
+
+/* Keep the two side racks visually identical/mirrored. */
+.hidden-left,
+.hidden-right{
+  min-width:46px!important;
+  align-items:center!important;
+}
+
+@media(max-height:560px){
+  .player-top{
+    left:31%!important;
+    top:24.5%!important;
+  }
+  .hidden-top{
+    top:19.7%!important;
+  }
+  .hidden-top .tile-back{
+    width:26px!important;
+    height:35px!important;
+  }
+  .hidden-left,
+  .hidden-right{
+    top:52%!important;
+  }
+  .hidden-left{left:6.1%!important;}
+  .hidden-right{right:6.1%!important;}
+  .hidden-left .tile-back,
+  .hidden-right .tile-back{
+    width:35px!important;
+    height:25px!important;
+  }
+}
+</style>
+<!-- DG V16 VISUAL HAND ALIGNMENT END -->
+
 </body>
 </html>
