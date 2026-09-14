@@ -1791,6 +1791,346 @@ button:active{
 }
 </style>
 
+
+<style id="dg-v9-team-layout">
+/* ===== V9: avatar teams + full felt + compact hamburger menu ===== */
+
+#game{
+  background:#2b1208!important;
+}
+
+/* Very small outer wood edge. */
+.shell{
+  border:2px solid #160905!important;
+  box-shadow:
+    inset 0 0 0 1px #8b4a26,
+    inset 0 0 16px rgba(0,0,0,.75)!important;
+}
+
+/* Compact top strip. */
+.top-panel{
+  left:.35%!important;
+  right:.35%!important;
+  top:.3%!important;
+  height:13.2%!important;
+  grid-template-columns:minmax(0,1fr) 27% minmax(0,1fr)!important;
+  gap:4px!important;
+  z-index:120!important;
+}
+
+.team-score{
+  border:2px solid #3a1609!important;
+  border-radius:10px!important;
+  overflow:visible!important;
+  background:
+    linear-gradient(180deg,rgba(77,34,15,.98),rgba(28,12,7,.99))!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(161,85,40,.75),
+    inset 0 0 13px #000,
+    0 3px 7px rgba(0,0,0,.75)!important;
+}
+
+.logo{
+  border:2px solid #321308!important;
+  border-radius:0 0 14px 14px!important;
+  box-shadow:
+    inset 0 0 0 2px rgba(181,101,49,.42),
+    inset 0 -8px 15px rgba(0,0,0,.45),
+    0 4px 8px rgba(0,0,0,.8)!important;
+}
+.logo-main{
+  font-size:clamp(25px,3vw,48px)!important;
+  line-height:.9!important;
+}
+.logo-sub{
+  margin-top:2px!important;
+  font-size:clamp(9px,1vw,15px)!important;
+  letter-spacing:.45em!important;
+}
+.logo-text{
+  display:none!important;
+}
+.logo-flag{
+  font-size:clamp(11px,1.1vw,18px)!important;
+}
+
+/* New team avatar panels. */
+.dg-team-wrap{
+  height:100%;
+  display:grid;
+  grid-template-rows:28% 72%;
+  position:relative;
+}
+.dg-team-label{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#f6dfb1;
+  font-size:clamp(10px,1.08vw,17px);
+  font-weight:900;
+  border-bottom:1px solid rgba(139,73,35,.8);
+  text-shadow:0 2px 2px #000;
+}
+.dg-team-main{
+  min-height:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:3px 12px;
+}
+.dg-team-avatars{
+  display:flex;
+  align-items:center;
+  gap:clamp(5px,.65vw,10px);
+}
+.dg-team-avatar{
+  position:relative;
+  width:clamp(40px,4.8vw,68px);
+  height:clamp(40px,4.8vw,68px);
+  flex:0 0 auto;
+  border:2px solid #ddb354;
+  border-radius:50%;
+  background-position:center!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+  box-shadow:0 0 0 1px #321808,0 3px 7px #000;
+  cursor:pointer;
+}
+.dg-team-avatar::after{
+  content:"";
+  position:absolute;
+  right:0;
+  bottom:0;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  border:2px solid #e8ffe9;
+  background:#20e94b;
+  box-shadow:0 0 5px #22ff54;
+}
+.dg-team-avatar:active{transform:scale(.96);}
+.dg-team-score{
+  color:#ffe0a0;
+  font-family:Georgia,serif;
+  font-size:clamp(14px,1.55vw,26px);
+  font-weight:900;
+  white-space:nowrap;
+  text-shadow:0 2px 3px #000;
+}
+.dg-avatar-pop{
+  position:absolute;
+  top:calc(100% + 5px);
+  min-width:145px;
+  padding:8px 10px;
+  border:1px solid #9b6a32;
+  border-radius:9px;
+  background:rgba(6,25,21,.97);
+  box-shadow:0 6px 16px rgba(0,0,0,.8);
+  color:#fff;
+  font-size:12px;
+  z-index:400;
+  display:none;
+}
+.team-score:first-child .dg-avatar-pop{left:10px;}
+.team-score:last-child .dg-avatar-pop{right:10px;}
+.dg-avatar-pop.show{display:block;}
+.dg-avatar-pop strong{display:block;font-size:14px;}
+.dg-avatar-pop span{display:block;margin-top:3px;color:#ffd466;font-weight:800;}
+
+/* Remove side clutter and floating player name cards. */
+.room-info,
+.side-note,
+.player,
+.top-actions,
+#profileButton,
+#sideMenu,
+.bottom-info,
+.bottom-left-actions,
+.bottom-right-actions{
+  display:none!important;
+}
+
+/* Felt uses almost the full screen; wood is only a slim perimeter. */
+.table-area{
+  left:.35%!important;
+  right:.35%!important;
+  top:13.45%!important;
+  bottom:.35%!important;
+  width:auto!important;
+  height:auto!important;
+  border-left:5px solid #5c2a13!important;
+  border-right:5px solid #5c2a13!important;
+  border-bottom:5px solid #5c2a13!important;
+  border-top:3px solid #4a200e!important;
+  border-radius:8px!important;
+  overflow:hidden!important;
+  box-shadow:
+    inset 0 0 0 2px rgba(18,66,46,.42),
+    inset 0 0 26px rgba(0,0,0,.26),
+    0 0 5px rgba(0,0,0,.8)!important;
+  z-index:8!important;
+}
+
+/* Large, soft DOMINO GEORGIA mark on the felt. */
+.watermark{
+  opacity:.14!important;
+  top:48%!important;
+  transform:translate(-50%,-50%)!important;
+}
+.watermark .crown{
+  font-size:clamp(34px,5vw,72px)!important;
+  color:#d8d2a7!important;
+}
+.watermark-text{
+  color:#e3d6a5!important;
+  font-family:Georgia,serif!important;
+  font-size:clamp(18px,2.4vw,38px)!important;
+  font-weight:700!important;
+  letter-spacing:.32em!important;
+  line-height:1.05!important;
+  text-shadow:0 2px 2px rgba(0,0,0,.4)!important;
+}
+
+/* Board gets far more room for long branches. */
+#dominoBoard{
+  left:3%!important;
+  right:3%!important;
+  top:11%!important;
+  bottom:17%!important;
+  height:auto!important;
+  width:auto!important;
+  z-index:35!important;
+}
+
+/* Opponents remain visible but tucked close to the edges. */
+.hidden-top{
+  top:15.2%!important;
+  left:50%!important;
+}
+.hidden-left{
+  left:1.3%!important;
+  top:34%!important;
+}
+.hidden-right{
+  right:1.3%!important;
+  top:34%!important;
+}
+.hidden-hand{gap:2px!important;}
+.tile-back{
+  width:clamp(26px,2.5vw,37px)!important;
+  height:clamp(37px,4.2vw,58px)!important;
+}
+.hidden-left .tile-back,
+.hidden-right .tile-back{
+  width:clamp(25px,2.3vw,35px)!important;
+  height:clamp(34px,3.8vw,52px)!important;
+}
+
+/* Own rack stays low on the felt; no large bottom information bar. */
+#playerHand{
+  bottom:1.15%!important;
+  height:13.5%!important;
+  padding:5px 12px 4px!important;
+  border-width:2px!important;
+  background:linear-gradient(180deg,rgba(111,51,22,.92),rgba(48,20,9,.96))!important;
+  z-index:90!important;
+}
+#playerHand .domino{
+  width:clamp(28px,3.05vw,43px)!important;
+  height:clamp(50px,5.8vw,78px)!important;
+  border-width:1.5px!important;
+}
+#playerHand .pip{
+  width:clamp(4.5px,.48vw,6px)!important;
+  height:clamp(4.5px,.48vw,6px)!important;
+}
+
+/* Compact menu button. */
+#dgMenuButton{
+  position:absolute;
+  right:1.15%;
+  bottom:1.25%;
+  z-index:550;
+  width:48px;
+  height:48px;
+  border:2px solid #80502a;
+  border-radius:12px;
+  color:#fff2d2;
+  background:linear-gradient(#4a2b1a,#17100c);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.18),0 4px 10px rgba(0,0,0,.75);
+  font-size:28px;
+  font-weight:900;
+  line-height:1;
+  cursor:pointer;
+}
+#dgMenuPanel{
+  position:absolute;
+  right:1.15%;
+  bottom:calc(1.25% + 55px);
+  z-index:560;
+  width:min(250px,31vw);
+  display:none;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  padding:8px;
+  border:2px solid #6e3b20;
+  border-radius:12px;
+  background:rgba(25,14,9,.97);
+  box-shadow:0 9px 24px rgba(0,0,0,.82);
+}
+#dgMenuPanel.show{display:grid;}
+.dg-menu-item{
+  min-height:42px;
+  padding:7px 8px;
+  border:1px solid #654226;
+  border-radius:9px;
+  color:#f8ead0;
+  background:linear-gradient(#34251b,#17120e);
+  font-weight:800;
+  font-size:12px;
+  cursor:pointer;
+}
+.dg-menu-item span{
+  display:block;
+  font-size:19px;
+  line-height:1.1;
+  margin-bottom:2px;
+}
+
+/* Emoji chat floats above the new menu/hand. */
+#emojiPanel{
+  z-index:700!important;
+  bottom:16%!important;
+  left:auto!important;
+  right:2%!important;
+}
+
+/* Keep turn feedback small and out of the center. */
+#turnMessage{
+  top:15.3%!important;
+  bottom:auto!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  z-index:600!important;
+}
+
+/* Endpoint choice buttons always above tiles. */
+.dg-port-choice{z-index:900!important;}
+
+@media(max-height:600px){
+  .top-panel{height:14.2%!important;}
+  .table-area{top:14.45%!important;}
+  .dg-team-main{padding:2px 8px!important;}
+  .dg-team-avatar{width:40px!important;height:40px!important;}
+  .dg-team-score{font-size:14px!important;}
+  #dominoBoard{top:10%!important;bottom:18%!important;}
+  #playerHand{height:14%!important;bottom:.9%!important;}
+  #dgMenuButton{width:42px;height:42px;font-size:24px;}
+  #dgMenuPanel{bottom:50px;width:240px;}
+}
+</style>
+
 </head>
 
 <body>
@@ -4353,7 +4693,7 @@ function playToPort(player,index,portId){
   handleParentPortBeforeClose(port);
   port.active=false;
   G.hands[player].splice(index,1);
-  const pl={id:tile.id,a:tile.a,b:tile.b,r1:vals.r1,r2:vals.r2,touching:vals.touching,outer:vals.outer,x:c.x,y:c.y,ori:c.ori,dir:c.dir,isDouble:isDouble(tile),opening:false,isStake:false,stakeUnlocked:false,normalConnections:1};
+  const pl={id:tile.id,a:tile.a,b:tile.b,r1:vals.r1,r2:vals.r2,touching:vals.touching,outer:vals.outer,x:c.x,y:c.y,ori:c.ori,dir:c.dir,parentTileId:port.sourceTileId,isDouble:isDouble(tile),opening:false,isStake:false,stakeUnlocked:false,normalConnections:1};
   G.placements.push(pl);createOutput(pl);G.lastPlayer=player;G.passStreak=0;G.selectedIndex=null;clearChoices();
   const total=openTotal();
   if(total===35){renderAll();G.handOver=G.matchOver=true;message(`35! ${teamName(team(player))} იგებს მატჩს!`,6000);return true;}
@@ -4555,26 +4895,38 @@ startRound=function(){
 
 
 /* =========================================================
-   FINAL ROUTING OVERRIDE V6
-   After the stake tile, the first TWO placed tiles stay straight.
-   The THIRD tile after the stake may start the turn.
+   FINAL ROUTING OVERRIDE V9
+   EACH branch from the stake stays straight for its first TWO tiles.
+   The THIRD tile on that branch may turn. This applies on every
+   active side of the stake after that side is available.
 ========================================================= */
-function placedAfterStakeCount(){
-  if(!G.stakeId) return 999;
-  const i=G.placements.findIndex(p=>p.id===G.stakeId);
-  if(i<0) return 999;
-  return Math.max(0,G.placements.length-i-1);
+function branchDepthFromStake(sourceTileId){
+  if(!G.stakeId || !sourceTileId) return 999;
+  if(sourceTileId===G.stakeId) return 0;
+
+  let depth=0;
+  let current=getPlacement(sourceTileId);
+  const seen=new Set();
+
+  while(current && !seen.has(current.id)){
+    seen.add(current.id);
+    depth++;
+    if(current.parentTileId===G.stakeId) return depth;
+    if(!current.parentTileId) break;
+    current=getPlacement(current.parentTileId);
+  }
+  return 999;
 }
 
 choosePlacement=function(port,tile){
-  const afterStake=placedAfterStakeCount();
-  const thirdAfterStakeCanTurn=afterStake>=2;
+  /* The tile being placed is one step after the port's source tile.
+     Depth 1 and 2 stay straight; depth 3+ can turn. */
+  const newDepth=branchDepthFromStake(port.sourceTileId)+1;
+  const canTurn=newDepth>=3;
 
   const dirs=isDouble(tile)
     ? [port.dir]
-    : (thirdAfterStakeCanTurn
-        ? [port.dir,RIGHT[port.dir],LEFT[port.dir]]
-        : [port.dir]);
+    : (canTurn ? [port.dir,RIGHT[port.dir],LEFT[port.dir]] : [port.dir]);
 
   const lim=boardLimits();
   let best=null,bestScore=-Infinity;
@@ -4582,24 +4934,26 @@ choosePlacement=function(port,tile){
   for(const dir of dirs){
     const c=candidate(port,tile,dir);
     const rr=rectAt(c.x,c.y,c.ori);
-    let score=dir===port.dir?95:0;
+    let score=dir===port.dir?98:0;
     let bad=0;
 
     for(const ex of G.placements){
+      /* The tile attached to this port is allowed to touch its parent. */
+      if(ex.id===port.sourceTileId) continue;
       const er=rectAt(ex.x,ex.y,ex.ori);
       const ov=overlap(rr,er);
       if(ov) bad+=ov;
     }
 
-    score-=bad*60;
+    score-=bad*70;
 
     const ox=Math.max(0,Math.max(Math.abs(rr.l),Math.abs(rr.r))-lim.x);
     const oy=Math.max(0,Math.max(Math.abs(rr.t),Math.abs(rr.b))-lim.y);
-    score-=ox*135+oy*165;
+    score-=ox*145+oy*175;
 
     const [dx,dy]=DIR[dir];
     if(c.x*dx+c.y*dy<0) score+=22;
-    score-=Math.abs(c.x)*.025+Math.abs(c.y)*.04;
+    score-=Math.abs(c.x)*.022+Math.abs(c.y)*.038;
 
     if(score>bestScore){
       bestScore=score;
@@ -4607,7 +4961,7 @@ choosePlacement=function(port,tile){
     }
   }
 
-  return best;
+  return best || directCenter(port,tile,port.dir);
 };
 
 function boot(){
@@ -4657,6 +5011,179 @@ function initBottomTools(){
 // Let the main game boot/deal/render first, then replace the lower info boxes with controls.
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initBottomTools);
 else setTimeout(initBottomTools,0);
+})();
+</script>
+
+
+<script id="dg-v9-avatar-menu">
+(()=>{
+  const $=id=>document.getElementById(id);
+
+  function avatarBackground(selector){
+    const el=document.querySelector(selector);
+    if(!el) return '';
+    return getComputedStyle(el).backgroundImage || '';
+  }
+
+  function currentNames(){
+    const my=($('myNickname')?.textContent||'მოთამაშე 3').trim();
+    return ['მოთამაშე 1','მოთამაშე 2',my||'მოთამაშე 3','მოთამაშე 4'];
+  }
+
+  function makeTeamPanel(box,team,players,scoreId){
+    if(!box) return;
+
+    const selectors={
+      0:'.player-top .avatar',
+      1:'.player-right .avatar',
+      2:'.player-bottom .avatar',
+      3:'.player-left .avatar'
+    };
+    const ratings={0:1250,1:1020,2:1100,3:980};
+    const names=currentNames();
+
+    box.innerHTML=`
+      <div class="dg-team-wrap">
+        <div class="dg-team-label">გუნდი ${team}</div>
+        <div class="dg-team-main">
+          <div class="dg-team-avatars">
+            ${players.map(p=>`<button class="dg-team-avatar" type="button" data-player="${p}" aria-label="${names[p]}"></button>`).join('')}
+          </div>
+          <div class="dg-team-score" id="${scoreId}">0 / 355</div>
+        </div>
+        <div class="dg-avatar-pop"></div>
+      </div>`;
+
+    box.querySelectorAll('.dg-team-avatar').forEach(btn=>{
+      const p=Number(btn.dataset.player);
+      const bg=avatarBackground(selectors[p]);
+      if(bg && bg!=='none') btn.style.backgroundImage=bg;
+
+      btn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const pop=box.querySelector('.dg-avatar-pop');
+        const already=pop.classList.contains('show') && pop.dataset.player===String(p);
+
+        document.querySelectorAll('.dg-avatar-pop').forEach(x=>{
+          x.classList.remove('show');
+          x.removeAttribute('data-player');
+        });
+
+        if(already) return;
+        const freshNames=currentNames();
+        pop.innerHTML=`<strong>${freshNames[p]}</strong><span>★ ${ratings[p]}</span>`;
+        pop.dataset.player=String(p);
+        pop.classList.add('show');
+      });
+    });
+  }
+
+  function buildTeams(){
+    const teams=[...document.querySelectorAll('.team-score')];
+    if(teams.length<2) return;
+    /* Cross-seated teams: 1+3 and 2+4. */
+    makeTeamPanel(teams[0],'A',[0,2],'teamAScore');
+    makeTeamPanel(teams[1],'B',[1,3],'teamBScore');
+  }
+
+  function buildMenu(){
+    if($('dgMenuButton')) return;
+    const game=$('game');
+    if(!game) return;
+
+    const btn=document.createElement('button');
+    btn.id='dgMenuButton';
+    btn.type='button';
+    btn.setAttribute('aria-label','მენიუ');
+    btn.textContent='☰';
+
+    const panel=document.createElement('div');
+    panel.id='dgMenuPanel';
+    panel.innerHTML=`
+      <button class="dg-menu-item" data-act="chat"><span>💬</span>ჩატი</button>
+      <button class="dg-menu-item" data-act="sound"><span>🔊</span>ხმა</button>
+      <button class="dg-menu-item" data-act="full"><span>⛶</span>ეკრანი</button>
+      <button class="dg-menu-item" data-act="rules"><span>📖</span>წესები</button>
+      <button class="dg-menu-item" data-act="restart"><span>↻</span>თავიდან</button>
+      <button class="dg-menu-item" data-act="settings"><span>⚙️</span>პარამეტრები</button>
+      <button class="dg-menu-item" data-act="invite"><span>🔗</span>მოწვევა</button>
+      <button class="dg-menu-item" data-act="surrender"><span>⚑</span>დანებება</button>`;
+
+    game.appendChild(panel);
+    game.appendChild(btn);
+
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      panel.classList.toggle('show');
+    });
+
+    panel.addEventListener('click',async e=>{
+      const item=e.target.closest('.dg-menu-item');
+      if(!item) return;
+      e.stopPropagation();
+      const act=item.dataset.act;
+
+      if(act==='chat') $('chatBtn')?.click();
+      if(act==='sound'){
+        $('soundBtn')?.click();
+        const src=$('soundBtn');
+        const muted=src?.textContent?.includes('🔇');
+        item.querySelector('span').textContent=muted?'🔇':'🔊';
+      }
+      if(act==='full'){
+        try{
+          if(!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+          else await document.exitFullscreen?.();
+        }catch(_){}
+      }
+      if(act==='rules'){
+        alert(
+          'DOMINO GEORGIA\n\n'+
+          '• 4 მოთამაშე — გუნდები 1+3 და 2+4.\n'+
+          '• პირველი ხელი იწყება 6-6-ით.\n'+
+          '• გახსნილი დუბლი არის სტავკა; საწყისად მუშაობს 2 ჩვეულებრივი მხარე.\n'+
+          '• ორივე ჩვეულებრივი მხარის დაკავების შემდეგ სტავკის დამატებითი მხარეებიც იხსნება.\n'+
+          '• სტავკიდან თითოეულ მიმართულებაზე პირველი 2 ქვა მიდის პირდაპირ; მესამე ქვიდან შეიძლება მოხვევა.\n'+
+          '• ღია ბოლოების ჯამი 5-ის ჯერადზე იძლევა შესაბამის ქულას; ზუსტად 35 — მყისიერი მატჩის მოგებაა.\n'+
+          '• რიბა და გავლა ავტომატურად ფიქსირდება.'
+        );
+      }
+      if(act==='restart'){
+        if(confirm('თამაში თავიდან დაიწყოს?')) location.reload();
+      }
+      if(act==='settings') $('settingsBtn')?.click();
+      if(act==='invite') $('inviteBtn')?.click();
+      if(act==='surrender') $('surrenderBtn')?.click();
+
+      if(act!=='chat' && act!=='sound') panel.classList.remove('show');
+    });
+
+    document.addEventListener('click',e=>{
+      if(!e.target.closest('#dgMenuPanel')&&!e.target.closest('#dgMenuButton')){
+        panel.classList.remove('show');
+      }
+      if(!e.target.closest('.dg-team-avatar')&&!e.target.closest('.dg-avatar-pop')){
+        document.querySelectorAll('.dg-avatar-pop').forEach(x=>x.classList.remove('show'));
+      }
+    });
+  }
+
+  function initV9(){
+    buildTeams();
+    buildMenu();
+
+    /* Keep score text correct after replacing the old abacus markup. */
+    const oldA=document.querySelector('#teamAScore');
+    const oldB=document.querySelector('#teamBScore');
+    if(oldA && !oldA.textContent.trim()) oldA.textContent='0 / 355';
+    if(oldB && !oldB.textContent.trim()) oldB.textContent='0 / 355';
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(initV9,80));
+  }else{
+    setTimeout(initV9,80);
+  }
 })();
 </script>
 
