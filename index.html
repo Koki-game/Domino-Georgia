@@ -1791,6 +1791,31 @@ button:active{
 }
 </style>
 
+<!-- build: 2026-09-15 v18-no-overlap-highlight -->
+
+<style id="dg-v18-choice-no-overlap">
+/* Endpoint selection: light the actual domino instead of relying on floating numbers. */
+.dg-board-tile.dg-choice-tile{
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  z-index:900!important;
+  filter:brightness(1.12) drop-shadow(0 0 7px #ffd45c) drop-shadow(0 0 13px rgba(255,178,34,.95))!important;
+  box-shadow:
+    inset 2px 2px 3px rgba(255,255,255,.98),
+    inset -3px -3px 4px rgba(82,61,29,.28),
+    0 0 0 3px rgba(255,213,88,.95),
+    0 0 16px rgba(255,186,43,.95),
+    0 6px 8px rgba(0,0,0,.58)!important;
+}
+.dg-port-choice.dg-side-choice{
+  width:16px!important;height:16px!important;
+  padding:0!important;border:2px solid #fff0b2!important;
+  background:#e8a62c!important;
+  box-shadow:0 0 9px #ffd45c,0 2px 4px rgba(0,0,0,.7)!important;
+  font-size:0!important;
+}
+</style>
+<!-- build: 2026-09-15 v20-routing-fixed -->
 </head>
 
 <body>
@@ -4301,16 +4326,94 @@ function orderedValues(tile,port,dir){
   return {r1:outer,r2:touching,touching,outer};
 }
 function outputPoint(pl){const [dx,dy]=DIR[pl.dir];const d=pl.isDouble?HH:HW;return {x:pl.x+dx*d,y:pl.y+dy*d};}
-function createOutput(pl){const q=outputPoint(pl);createPort({sourceTileId:pl.id,value:pl.outer,x:q.x,y:q.y,dir:pl.dir,kind:'normal',contribution:pl.isDouble?pl.outer*2:pl.outer});}
+function createOutput(pl){
+  const q=outputPoint(pl);
+  createPort({
+    sourceTileId:pl.id,
+    value:pl.outer,
+    x:q.x,
+    y:q.y,
+    dir:pl.dir,
+    kind:'normal',
+    contribution:pl.isDouble?pl.outer*2:pl.outer,
+    branchType:pl.branchType||null,
+    branchDepth:pl.branchType?((pl.branchDepth||0)+1):0,
+    branchTurned:!!pl.branchTurned,
+    branchTurnState:pl.branchTurnState||'normal',
+    branchId:pl.branchId||null
+  });
+}
+
+function branchMetaForPlacement(port,tile,c){
+  const type=port.branchType||null;
+  const depth=Number.isFinite(port.branchDepth)?port.branchDepth:0;
+  let turned=!!port.branchTurned;
+  let state=port.branchTurnState||'normal';
+
+  if(type==='extra'&&!turned){
+    if(c.turned){
+      turned=true;
+      state='done';
+    }else if(state==='afterDouble'){
+      // A double at the turning point delays the bend:
+      // first a normal tile must continue straight, then the following tile may turn.
+      if(!isDouble(tile))state='turnNext';
+    }else if(state==='turnNext'){
+      if(isDouble(tile))state='afterDouble';
+    }else if(depth>=2){
+      if(isDouble(tile))state='afterDouble';
+      else state='turnNext';
+    }
+  }else if(type==='main'&&!turned&&c.turned){
+    turned=true;
+    state='done';
+  }
+
+  return {
+    branchType:type,
+    branchDepth:depth,
+    branchTurned:turned,
+    branchTurnState:state,
+    branchId:port.branchId||null
+  };
+}
 
 function unlockStake(pl){
-  if(pl.stakeUnlocked)return; pl.isStake=true;pl.stakeUnlocked=true;G.stakeId=pl.id;
+  if(pl.stakeUnlocked)return;
+  pl.isStake=true;
+  pl.stakeUnlocked=true;
+  G.stakeId=pl.id;
+
+  // IMPORTANT SCORING RULE:
+  // stake sides 3 and 4 are available for play, but an EMPTY extra side
+  // contributes ZERO points. It starts contributing only after a real tile
+  // has been placed on that side and creates a genuine open end.
   if(pl.ori==='V'){
-    createPort({sourceTileId:pl.id,value:pl.a,x:pl.x,y:pl.y-HW,dir:'N',kind:'stake',contribution:pl.a});
-    createPort({sourceTileId:pl.id,value:pl.a,x:pl.x,y:pl.y+HW,dir:'S',kind:'stake',contribution:pl.a});
+    createPort({
+      sourceTileId:pl.id,value:pl.a,x:pl.x,y:pl.y-HW,dir:'N',
+      kind:'stake',contribution:0,
+      branchType:'extra',branchDepth:0,branchTurned:false,
+      branchTurnState:'normal',branchId:`${pl.id}-extra-N`
+    });
+    createPort({
+      sourceTileId:pl.id,value:pl.a,x:pl.x,y:pl.y+HW,dir:'S',
+      kind:'stake',contribution:0,
+      branchType:'extra',branchDepth:0,branchTurned:false,
+      branchTurnState:'normal',branchId:`${pl.id}-extra-S`
+    });
   }else{
-    createPort({sourceTileId:pl.id,value:pl.a,x:pl.x-HW,y:pl.y,dir:'W',kind:'stake',contribution:pl.a});
-    createPort({sourceTileId:pl.id,value:pl.a,x:pl.x+HW,y:pl.y,dir:'E',kind:'stake',contribution:pl.a});
+    createPort({
+      sourceTileId:pl.id,value:pl.a,x:pl.x-HW,y:pl.y,dir:'W',
+      kind:'stake',contribution:0,
+      branchType:'extra',branchDepth:0,branchTurned:false,
+      branchTurnState:'normal',branchId:`${pl.id}-extra-W`
+    });
+    createPort({
+      sourceTileId:pl.id,value:pl.a,x:pl.x+HW,y:pl.y,dir:'E',
+      kind:'stake',contribution:0,
+      branchType:'extra',branchDepth:0,branchTurned:false,
+      branchTurnState:'normal',branchId:`${pl.id}-extra-E`
+    });
   }
   message(`${pl.a}-${pl.b} — სტავკა გაიხსნა`,1700);
 }
@@ -4336,8 +4439,18 @@ function openingTile(player,index){
   if(dbl){
     G.stakeId=pl.id;
     // Two initial main sides jointly count the double once. After the first closes, the survivor becomes 2*v.
-    createPort({sourceTileId:pl.id,value:tile.a,x:-HH,y:0,dir:'W',kind:'normal',contribution:tile.a});
-    createPort({sourceTileId:pl.id,value:tile.a,x: HH,y:0,dir:'E',kind:'normal',contribution:tile.a});
+    createPort({
+      sourceTileId:pl.id,value:tile.a,x:-HH,y:0,dir:'W',
+      kind:'normal',contribution:tile.a,
+      branchType:'main',branchDepth:0,branchTurned:false,
+      branchTurnState:'normal',branchId:`${pl.id}-main-W`
+    });
+    createPort({
+      sourceTileId:pl.id,value:tile.a,x: HH,y:0,dir:'E',
+      kind:'normal',contribution:tile.a,
+      branchType:'main',branchDepth:0,branchTurned:false,
+      branchTurnState:'normal',branchId:`${pl.id}-main-E`
+    });
   }else{
     createPort({sourceTileId:pl.id,value:tile.a,x:-HW,y:0,dir:'W',kind:'normal',contribution:tile.a});
     createPort({sourceTileId:pl.id,value:tile.b,x: HW,y:0,dir:'E',kind:'normal',contribution:tile.b});
@@ -4348,19 +4461,48 @@ function openingTile(player,index){
 }
 
 function playToPort(player,index,portId){
-  if(G.handOver||G.matchOver)return false; const tile=G.hands[player][index],port=getPort(portId);if(!tile||!port||!matches(tile,port))return false;
-  const c=choosePlacement(port,tile), vals=orderedValues(tile,port,c.dir);
+  if(G.handOver||G.matchOver)return false;
+  const tile=G.hands[player][index],port=getPort(portId);
+  if(!tile||!port||!matches(tile,port))return false;
+
+  const c=choosePlacement(port,tile);
+  const vals=orderedValues(tile,port,c.dir);
+  const branchMeta=branchMetaForPlacement(port,tile,c);
+
   handleParentPortBeforeClose(port);
   port.active=false;
   G.hands[player].splice(index,1);
-  const pl={id:tile.id,a:tile.a,b:tile.b,r1:vals.r1,r2:vals.r2,touching:vals.touching,outer:vals.outer,x:c.x,y:c.y,ori:c.ori,dir:c.dir,isDouble:isDouble(tile),opening:false,isStake:false,stakeUnlocked:false,normalConnections:1};
-  G.placements.push(pl);createOutput(pl);G.lastPlayer=player;G.passStreak=0;G.selectedIndex=null;clearChoices();
+
+  const pl={
+    id:tile.id,a:tile.a,b:tile.b,
+    r1:vals.r1,r2:vals.r2,touching:vals.touching,outer:vals.outer,
+    x:c.x,y:c.y,ori:c.ori,dir:c.dir,
+    isDouble:isDouble(tile),
+    opening:false,isStake:false,stakeUnlocked:false,normalConnections:1,
+    ...branchMeta
+  };
+
+  G.placements.push(pl);
+  createOutput(pl);
+  G.lastPlayer=player;
+  G.passStreak=0;
+  G.selectedIndex=null;
+  clearChoices();
+
   const total=openTotal();
-  if(total===35){renderAll();G.handOver=G.matchOver=true;message(`35! ${teamName(team(player))} იგებს მატჩს!`,6000);return true;}
+  if(total===35){
+    renderAll();
+    G.handOver=G.matchOver=true;
+    message(`35! ${teamName(team(player))} იგებს მატჩს!`,6000);
+    return true;
+  }
   if(total>0&&total%5===0)addScore(team(player),total,`ღია ბოლოები ${total} — +${total}`);
+
   renderAll();
   if(G.hands[player].length===0){finishNormal(player);return true;}
-  updatePotentialCloser(player,tile);nextTurn();return true;
+  updatePotentialCloser(player,tile);
+  nextTurn();
+  return true;
 }
 
 function allMoves(){const out=[];if(!G.placements.length)return out;for(let p=0;p<4;p++)G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>out.push({p,i,t,port})));return out;}
@@ -4404,8 +4546,59 @@ function humanPlay(i){
   const legal=legalPorts(t);if(!legal.length){message('ეს ქვა აქ ვერ მიდის');return;}if(legal.length===1){playToPort(HUMAN,i,legal[0].id);return;}G.selectedIndex=i;renderHand();showChoices(legal,i);message('აირჩიე მხარე');
 }
 
-function clearChoices(){const l=document.querySelector('.dg-board-layer');if(l)l.querySelectorAll('.dg-port-choice').forEach(x=>x.remove());}
-function showChoices(ports,index){const l=document.querySelector('.dg-board-layer');if(!l)return;for(const p of ports){const b=document.createElement('button');b.className='dg-port-choice';b.textContent=p.value;b.style.left=`${p.x}px`;b.style.top=`${p.y}px`;b.onclick=e=>{e.stopPropagation();clearChoices();playToPort(HUMAN,index,p.id);};l.appendChild(b);}}
+function clearChoices(){
+  const l=document.querySelector('.dg-board-layer');
+  if(!l)return;
+  l.querySelectorAll('.dg-port-choice').forEach(x=>x.remove());
+  l.querySelectorAll('.dg-choice-tile').forEach(x=>{
+    x.classList.remove('dg-choice-tile');
+    x.style.pointerEvents='';
+    x.onclick=null;
+  });
+}
+function showChoices(ports,index){
+  const l=document.querySelector('.dg-board-layer');
+  if(!l)return;
+  const groups=new Map();
+  for(const p of ports){
+    if(!groups.has(p.sourceTileId))groups.set(p.sourceTileId,[]);
+    groups.get(p.sourceTileId).push(p);
+  }
+  for(const [tileId,list] of groups){
+    const tileEl=l.querySelector(`.dg-board-tile[data-tile-id="${tileId}"]`);
+    if(tileEl){
+      tileEl.classList.add('dg-choice-tile');
+      tileEl.style.pointerEvents='auto';
+      if(list.length===1){
+        tileEl.onclick=e=>{
+          e.stopPropagation();
+          const id=list[0].id;
+          clearChoices();
+          playToPort(HUMAN,index,id);
+        };
+      }
+    }
+    // If one domino has more than one legal open side (typically the stake),
+    // keep tiny side dots only to distinguish WHICH side; the domino itself
+    // still glows as the main selection target.
+    if(list.length>1){
+      for(const p of list){
+        const b=document.createElement('button');
+        b.className='dg-port-choice dg-side-choice';
+        b.textContent='';
+        b.setAttribute('aria-label','აირჩიე მხარე');
+        b.style.left=`${p.x}px`;
+        b.style.top=`${p.y}px`;
+        b.onclick=e=>{
+          e.stopPropagation();
+          clearChoices();
+          playToPort(HUMAN,index,p.id);
+        };
+        l.appendChild(b);
+      }
+    }
+  }
+}
 
 function updateScores(){
   if($('teamAScore'))$('teamAScore').textContent=`${G.scores[0]} / 355`;if($('teamBScore'))$('teamBScore').textContent=`${G.scores[1]} / 355`;
@@ -4414,7 +4607,7 @@ function updateScores(){
 function updateAbacus(box,score){if(!box)return;const rows=[...box.querySelectorAll('.abacus-row')],caps=[100,100,100,50,5];let rem=Math.min(score,355);rows.forEach((r,idx)=>{const beads=[...r.querySelectorAll('.bead')];const used=Math.min(rem,caps[idx]);const n=caps[idx]===5?(used>=5?beads.length:0):Math.round(used/caps[idx]*beads.length);beads.forEach((b,i)=>b.classList.toggle('off',i>=n));rem-=used;});}
 
 function renderHidden(){const map=[['topHiddenHand',0],['rightHiddenHand',1],['leftHiddenHand',3]];for(const [id,p] of map){const e=$(id);if(!e)continue;e.innerHTML='';for(let i=0;i<G.hands[p].length;i++){const d=document.createElement('div');d.className='tile-back';e.appendChild(d);}}}
-function makeTileEl(pl){const d=document.createElement('div');d.className=`domino dg-board-tile ${pl.ori==='H'?'dg-horizontal':'dg-vertical'}${pl.isStake?' stake-domino':''}`;d.innerHTML=halfHTML(pl.r1)+halfHTML(pl.r2);const w=pl.ori==='H'?W:H,h=pl.ori==='H'?H:W;d.style.left=`${pl.x-w/2}px`;d.style.top=`${pl.y-h/2}px`;return d;}
+function makeTileEl(pl){const d=document.createElement('div');d.className=`domino dg-board-tile ${pl.ori==='H'?'dg-horizontal':'dg-vertical'}${pl.isStake?' stake-domino':''}`;d.dataset.tileId=pl.id;d.innerHTML=halfHTML(pl.r1)+halfHTML(pl.r2);const w=pl.ori==='H'?W:H,h=pl.ori==='H'?H:W;d.style.left=`${pl.x-w/2}px`;d.style.top=`${pl.y-h/2}px`;return d;}
 function renderBoard(){
   const b=$('dominoBoard');if(!b)return;b.innerHTML='<div class="dg-board-layer"></div>';const l=b.firstElementChild;G.placements.forEach(pl=>l.appendChild(makeTileEl(pl)));requestAnimationFrame(fitBoard);
 }
@@ -4555,60 +4748,141 @@ startRound=function(){
 
 
 /* =========================================================
-   FINAL ROUTING OVERRIDE V6
-   After the stake tile, the first TWO placed tiles stay straight.
-   The THIRD tile after the stake may start the turn.
+   FINAL ROUTING OVERRIDE V20
+   - Stake LEFT/RIGHT main sides: first 8 dominoes stay straight.
+   - Stake TOP/BOTTOM extra sides: first 3 dominoes stay straight.
+   - After a DOUBLE, the next domino NEVER turns; it continues straight.
+   - Doubles themselves never make the 90-degree bend.
+   - If the required straight position would overlap another domino,
+     collision safety may bend to the clean side instead.
+   - After a branch has made its first bend, it normally continues straight.
 ========================================================= */
-function placedAfterStakeCount(){
-  if(!G.stakeId) return 999;
-  const i=G.placements.findIndex(p=>p.id===G.stakeId);
-  if(i<0) return 999;
-  return Math.max(0,G.placements.length-i-1);
+
+function routeOverlap(c,ignoreId=null){
+  const rr=rectAt(c.x,c.y,c.ori);
+  let total=0;
+  for(const ex of G.placements){
+    if(ignoreId&&ex.id===ignoreId)continue;
+    total+=overlap(rr,rectAt(ex.x,ex.y,ex.ori));
+  }
+  return total;
+}
+
+function rectGap(a,b){
+  const gx=Math.max(0,Math.max(a.l-b.r,b.l-a.r));
+  const gy=Math.max(0,Math.max(a.t-b.b,b.t-a.b));
+  if(gx===0&&gy===0)return 0;
+  return Math.hypot(gx,gy);
+}
+
+function routeClearance(c,ignoreId=null){
+  const rr=rectAt(c.x,c.y,c.ori);
+  let best=Infinity;
+  for(const ex of G.placements){
+    if(ignoreId&&ex.id===ignoreId)continue;
+    const er=rectAt(ex.x,ex.y,ex.ori);
+    if(overlap(rr,er)>0.01)return -1;
+    best=Math.min(best,rectGap(rr,er));
+  }
+  return Number.isFinite(best)?best:999;
+}
+
+function routeOverflow(c,lim){
+  const rr=rectAt(c.x,c.y,c.ori);
+  return (
+    Math.max(0,-lim.x-rr.l)+
+    Math.max(0,rr.r-lim.x)+
+    Math.max(0,-lim.y-rr.t)+
+    Math.max(0,rr.b-lim.y)
+  );
+}
+
+function routeRadial(c){
+  return Math.abs(c.x)+Math.abs(c.y)*1.08;
+}
+
+function sourceWasDouble(port){
+  const parent=getPlacement(port.sourceTileId);
+  return !!(parent&&parent.isDouble);
 }
 
 choosePlacement=function(port,tile){
-  const afterStake=placedAfterStakeCount();
-  const thirdAfterStakeCanTurn=afterStake>=2;
-
-  const dirs=isDouble(tile)
-    ? [port.dir]
-    : (thirdAfterStakeCanTurn
-        ? [port.dir,RIGHT[port.dir],LEFT[port.dir]]
-        : [port.dir]);
-
   const lim=boardLimits();
-  let best=null,bestScore=-Infinity;
+  const type=port.branchType||null;
+  const depth=Number.isFinite(port.branchDepth)?port.branchDepth:0;
+  const turned=!!port.branchTurned;
+  const parentDouble=sourceWasDouble(port);
 
-  for(const dir of dirs){
+  let mode='auto';
+
+  /* Doubles never bend. Also, the domino immediately AFTER a double
+     must continue straight, regardless of the scheduled bend point. */
+  if(isDouble(tile)||parentDouble){
+    mode='straight';
+  }else if(type==='main'&&!turned){
+    /* LEFT/RIGHT sides from the stake: dominoes 1..8 are straight.
+       Domino 9 may make the first bend. */
+    mode=depth<8?'straight':'turn';
+  }else if(type==='extra'&&!turned){
+    /* TOP/BOTTOM sides from the stake: dominoes 1..3 are straight.
+       Domino 4 may make the first bend. */
+    mode=depth<3?'straight':'turn';
+  }else if(turned){
+    /* Once a branch has bent, keep the new lane straight. */
+    mode='straight';
+  }
+
+  let dirs;
+  if(mode==='straight')dirs=[port.dir];
+  else if(mode==='turn')dirs=[RIGHT[port.dir],LEFT[port.dir]];
+  else dirs=[port.dir,RIGHT[port.dir],LEFT[port.dir]];
+
+  const evalDir=dir=>{
     const c=candidate(port,tile,dir);
-    const rr=rectAt(c.x,c.y,c.ori);
-    let score=dir===port.dir?95:0;
-    let bad=0;
+    return {
+      c,dir,
+      overlap:routeOverlap(c,port.sourceTileId),
+      overflow:routeOverflow(c,lim),
+      radial:routeRadial(c),
+      clearance:routeClearance(c,port.sourceTileId)
+    };
+  };
 
-    for(const ex of G.placements){
-      const er=rectAt(ex.x,ex.y,ex.ori);
-      const ov=overlap(rr,er);
-      if(ov) bad+=ov;
-    }
+  let candidates=dirs.map(evalDir);
+  let clean=candidates.filter(x=>x.overlap<=0.01);
 
-    score-=bad*60;
-
-    const ox=Math.max(0,Math.max(Math.abs(rr.l),Math.abs(rr.r))-lim.x);
-    const oy=Math.max(0,Math.max(Math.abs(rr.t),Math.abs(rr.b))-lim.y);
-    score-=ox*135+oy*165;
-
-    const [dx,dy]=DIR[dir];
-    if(c.x*dx+c.y*dy<0) score+=22;
-    score-=Math.abs(c.x)*.025+Math.abs(c.y)*.04;
-
-    if(score>bestScore){
-      bestScore=score;
-      best=c;
+  /* Never place on top of another domino. If the scheduled straight path
+     is blocked, try both 90-degree alternatives and choose a clean one. */
+  if(!clean.length&&!isDouble(tile)){
+    const emergency=[RIGHT[port.dir],LEFT[port.dir],port.dir]
+      .filter((d,i,a)=>a.indexOf(d)===i)
+      .map(evalDir);
+    const safe=emergency.filter(x=>x.overlap<=0.01);
+    if(safe.length){
+      candidates=emergency;
+      clean=safe;
     }
   }
 
-  return best;
-};
+  const pool=clean.length?clean:candidates;
+
+  pool.sort((a,b)=>{
+    if(Math.abs(a.overlap-b.overlap)>.01)return a.overlap-b.overlap;
+    if(Math.abs(a.overflow-b.overflow)>.01)return a.overflow-b.overflow;
+    if(Math.abs(a.clearance-b.clearance)>.5)return b.clearance-a.clearance;
+
+    /* At a scheduled bend choose the outside/free side. */
+    if(mode==='turn'&&Math.abs(a.radial-b.radial)>.01)return b.radial-a.radial;
+
+    /* Otherwise prefer keeping the current line straight. */
+    const as=a.dir===port.dir?1:0;
+    const bs=b.dir===port.dir?1:0;
+    if(as!==bs)return bs-as;
+    return a.radial-b.radial;
+  });
+
+  return pool[0].c;
+}
 
 function boot(){
   const table=document.querySelector('.table-area'),board=$('dominoBoard');if(table&&board)table.appendChild(board);
@@ -4649,7 +4923,7 @@ function initBottomTools(){
     }catch(e){}
   });
   $('dgBottomRules')?.addEventListener('click',()=>{
-    alert('პირველი ხელი იწყება 6-6-ით. სტავკის შემდეგ მოხვევა შეიძლება მესამე ქვიდან. ქულები ითვლება მოქმედი ღია ბოლოებიდან; 35 — მყისიერი მოგებაა.');
+    alert('პირველი ხელი იწყება 6-6-ით. სტავკის 1/2 მხარეებზე პირველი ჩაკეტვის შემდეგ დარჩენილი თავისუფალი მთავარი მხარე ითვლება დუპლის სრული მნიშვნელობით (მაგ. 6-6 = 12). ორივე მთავარი მხარის ჩაკეტვის შემდეგ ცარიელი 3/4 მხარეები ქულაში არ ითვლება. 3/4 მხარეებზე პირველი 2 ქვა მიდის პირდაპირ, მესამე უხვევს; თუ მესამე დუპლია, დუპლი არ უხვევს, მის შემდეგ ერთი ჩვეულებრივი ქვა მიდის პირდაპირ და შემდეგი უხვევს. ზუსტად 35 — მყისიერი მოგებაა.');
   });
   $('dgBottomRestart')?.addEventListener('click',()=>{ if(confirm('თამაში თავიდან დაიწყოს?')) location.reload(); });
   $('dgBottomSettings')?.addEventListener('click',()=>{ $('settingsBtn')?.click(); });
@@ -4836,7 +5110,7 @@ else setTimeout(initBottomTools,0);
       }
 
       if(act==='rules'){
-        alert('თამაშის მოქმედი წესები უცვლელია.');
+        alert('მოქმედი წესები რჩება. დამატებით: 6-6 გახსნაზე ერთი მთავარი მხარის ჩაკეტვის შემდეგ მეორე ღია მთავარი მხარე ითვლება 12-ად; ორივეს ჩაკეტვის შემდეგ ცარიელი 3/4 მხარეები ქულაში 0-ია. 1/2 მხარეებზე 8 ქვა პირდაპირ მიდის. 3/4 მხარეებზე 2 ქვა პირდაპირ მიდის, მესამე უხვევს და შემდეგი 8 ქვა ისევ პირდაპირ მიდის. თუ მესამე დუპლია, დუპლი რჩება პირდაპირ, მის შემდეგ ერთი ჩვეულებრივი ქვა მიდის პირდაპირ და მომდევნო უხვევს.');
       }
 
       if(act==='restart' && confirm('თამაში თავიდან დაიწყოს?')){
@@ -4949,6 +5223,85 @@ else setTimeout(initBottomTools,0);
 }
 </style>
 <!-- DG V16 VISUAL HAND ALIGNMENT END -->
+
+
+<!-- DG V19 LONG ROUTES + GOLD BRAND START -->
+<style id="dg-v19-gold-brand">
+/* Gold DOMINO GEORGIA identity spread across the felt. */
+.watermark{
+  left:50%!important;
+  top:52%!important;
+  width:88%!important;
+  transform:translate(-50%,-50%)!important;
+  color:rgba(229,181,76,.24)!important;
+  text-align:center!important;
+}
+.watermark .crown{
+  color:rgba(235,188,80,.25)!important;
+  font-size:clamp(72px,9vw,142px)!important;
+  line-height:.72!important;
+  text-shadow:0 2px 2px rgba(0,0,0,.32),0 0 18px rgba(212,155,48,.09)!important;
+}
+.watermark .watermark-text{
+  margin-top:12px!important;
+  color:rgba(236,192,91,.25)!important;
+  font-family:Georgia,serif!important;
+  font-size:clamp(22px,3.35vw,50px)!important;
+  font-weight:800!important;
+  letter-spacing:.34em!important;
+  line-height:1.18!important;
+  text-shadow:0 2px 2px rgba(0,0,0,.32),0 0 14px rgba(224,165,53,.08)!important;
+}
+
+/* Branded backs for every opponent domino. */
+.tile-back{
+  position:relative!important;
+  overflow:hidden!important;
+}
+.tile-back::before{
+  content:"♛";
+  position:absolute;
+  left:50%;
+  top:43%;
+  transform:translate(-50%,-50%);
+  color:rgba(161,113,30,.72);
+  font-family:Georgia,serif;
+  font-size:clamp(7px,.72vw,11px);
+  line-height:1;
+  text-shadow:0 1px 0 rgba(255,255,255,.45);
+  z-index:2;
+  pointer-events:none;
+}
+.tile-back::after{
+  content:"DOMINO\\A GEORGIA";
+  white-space:pre;
+  position:absolute;
+  left:50%;
+  top:69%;
+  transform:translate(-50%,-50%);
+  width:96%;
+  color:rgba(130,87,20,.68);
+  font-family:Georgia,serif;
+  font-size:clamp(3.7px,.38vw,5.7px);
+  font-weight:800;
+  line-height:1.05;
+  letter-spacing:.05em;
+  text-align:center;
+  text-shadow:0 1px 0 rgba(255,255,255,.5);
+  z-index:2;
+  pointer-events:none;
+}
+.hidden-left .tile-back::before,
+.hidden-right .tile-back::before{top:39%;font-size:7px;}
+.hidden-left .tile-back::after,
+.hidden-right .tile-back::after{top:69%;font-size:3.8px;line-height:1;}
+
+@media(max-height:560px){
+  .watermark .watermark-text{font-size:clamp(19px,3vw,38px)!important;}
+  .tile-back::after{font-size:3.5px;}
+}
+</style>
+<!-- DG V19 LONG ROUTES + GOLD BRAND END -->
 
 </body>
 </html>
