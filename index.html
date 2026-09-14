@@ -9387,5 +9387,482 @@ renderBoard=function(){
 };
 
 </script>
+  <!-- ======================================================
+     DOMINO GEORGIA — NO OVERLAP GEOMETRY
+====================================================== -->
+
+<script>
+
+/* ======================================================
+   EXACT TILE CENTER
+
+   აღარ ვიყენებთ ხელოვნურ JOIN_TIGHTNESS-ს.
+   ქვები ზუსტად კიდით ეხება ერთმანეთს.
+====================================================== */
+
+proposedCenter=function(
+  port,
+  tile,
+  dirName
+){
+
+  const vector=
+    DIR[dirName];
+
+
+  const distance=
+    isDouble(tile)
+      ? SHORT_HALF
+      : LONG_HALF;
+
+
+  return{
+
+    x:
+      port.x+
+      vector.x*distance,
+
+    y:
+      port.y+
+      vector.y*distance
+
+  };
+
+};
+
+
+/* ======================================================
+   EXACT OUTER PORT
+====================================================== */
+
+createOuterPort=function(
+  placement
+){
+
+  const vector=
+    DIR[
+      placement.direction
+    ];
+
+
+  const distance=
+    placement.isDouble
+      ? SHORT_HALF
+      : LONG_HALF;
+
+
+  createPort({
+
+    sourceTileId:
+      placement.id,
+
+    value:
+      placement.outer,
+
+    x:
+      placement.x+
+      vector.x*distance,
+
+    y:
+      placement.y+
+      vector.y*distance,
+
+    dir:
+      placement.direction,
+
+    kind:"normal",
+
+    contribution:
+      placement.isDouble
+        ? placement.outer*2
+        : placement.outer
+
+  });
+
+};
+
+
+/* ======================================================
+   TILE ANGLE FOR CANDIDATE
+====================================================== */
+
+function dgCandidateAngle(
+  tile,
+  direction
+){
+
+  if(
+    isDouble(tile)
+  ){
+
+    return(
+      direction==="E" ||
+      direction==="W"
+    )
+      ? 90
+      : 0;
+
+  }
+
+
+  return(
+    direction==="N" ||
+    direction==="S"
+  )
+    ? 90
+    : 0;
+
+}
+
+
+/* ======================================================
+   RECTANGLE OF TILE
+====================================================== */
+
+function dgBox(
+  x,
+  y,
+  angle
+){
+
+  const vertical=
+    Math.abs(angle)%180===90;
+
+
+  const width=
+    vertical
+      ? TILE_H
+      : TILE_W;
+
+
+  const height=
+    vertical
+      ? TILE_W
+      : TILE_H;
+
+
+  return{
+
+    left:
+      x-width/2,
+
+    right:
+      x+width/2,
+
+    top:
+      y-height/2,
+
+    bottom:
+      y+height/2
+
+  };
+
+}
+
+
+/* ======================================================
+   OVERLAP CHECK
+====================================================== */
+
+function dgOverlapAmount(
+  a,
+  b
+){
+
+  const overlapX=
+    Math.min(
+      a.right,
+      b.right
+    )
+    -
+    Math.max(
+      a.left,
+      b.left
+    );
+
+
+  const overlapY=
+    Math.min(
+      a.bottom,
+      b.bottom
+    )
+    -
+    Math.max(
+      a.top,
+      b.top
+    );
+
+
+  /*
+    კიდით შეხება ნორმალურია.
+    რეალური გადაფარვა მხოლოდ >2px-ზე.
+  */
+
+  if(
+    overlapX<=2 ||
+    overlapY<=2
+  ){
+
+    return 0;
+
+  }
+
+
+  return(
+    overlapX*
+    overlapY
+  );
+
+}
+
+
+/* ======================================================
+   SMART DIRECTION — NO OVERLAP
+====================================================== */
+
+chooseDirection=function(
+  port,
+  tile
+){
+
+  const candidates=[
+
+    port.dir,
+
+    TURN_RIGHT[
+      port.dir
+    ],
+
+    TURN_LEFT[
+      port.dir
+    ]
+
+  ];
+
+
+  /*
+    ჯაჭვი ამ არეში ვამყოფოთ.
+  */
+
+  const X_LIMIT=300;
+  const Y_LIMIT=130;
+
+
+  let bestDirection=
+    candidates[0];
+
+
+  let bestScore=
+    -Infinity;
+
+
+  candidates.forEach(
+    direction=>{
+
+      const position=
+        proposedCenter(
+          port,
+          tile,
+          direction
+        );
+
+
+      const angle=
+        dgCandidateAngle(
+          tile,
+          direction
+        );
+
+
+      const candidateBox=
+        dgBox(
+          position.x,
+          position.y,
+          angle
+        );
+
+
+      let score=0;
+
+
+      /* ===============================================
+         სხვა ქვებთან გადაფარვა
+      =============================================== */
+
+      gameState.placements
+        .forEach(
+          existing=>{
+
+            /*
+              ქვა, რომელსაც პირდაპირ ვუერთდებით,
+              არ ითვლება collision-ად.
+            */
+
+            if(
+              existing.id===
+              port.sourceTileId
+            ){
+
+              return;
+
+            }
+
+
+            const existingBox=
+              dgBox(
+                existing.x,
+                existing.y,
+                existing.angle
+              );
+
+
+            const overlap=
+              dgOverlapAmount(
+                candidateBox,
+                existingBox
+              );
+
+
+            if(overlap>0){
+
+              /*
+                რეალური გადაფარვა ძალიან
+                დიდი ჯარიმაა.
+              */
+
+              score-=
+                5000+
+                overlap*10;
+
+            }
+
+          }
+        );
+
+
+      /* ===============================================
+         პირდაპირ გაგრძელება გვირჩევნია
+      =============================================== */
+
+      if(
+        direction===
+        port.dir
+      ){
+
+        score+=60;
+
+      }
+
+
+      /* ===============================================
+         მწვანე მაგიდის ლოგიკური საზღვრები
+      =============================================== */
+
+      const overflowX=
+        Math.max(
+          0,
+          Math.abs(position.x)-
+          X_LIMIT
+        );
+
+
+      const overflowY=
+        Math.max(
+          0,
+          Math.abs(position.y)-
+          Y_LIMIT
+        );
+
+
+      score-=
+        overflowX*40;
+
+
+      score-=
+        overflowY*55;
+
+
+      /*
+        კიდესთან მისვლისას
+        ცენტრისკენ შემობრუნებას უპირატესობა.
+      */
+
+      const vector=
+        DIR[direction];
+
+
+      const towardCenter=
+        (
+          position.x*
+          vector.x
+          +
+          position.y*
+          vector.y
+        )<0;
+
+
+      if(towardCenter){
+
+        score+=25;
+
+      }
+
+
+      /*
+        ზედმეტად შორს გასვლას
+        მცირე დამატებითი ჯარიმა.
+      */
+
+      score-=
+        Math.abs(position.x)*.04;
+
+
+      score-=
+        Math.abs(position.y)*.07;
+
+
+      if(
+        score>
+        bestScore
+      ){
+
+        bestScore=
+          score;
+
+        bestDirection=
+          direction;
+
+      }
+
+    }
+  );
+
+
+  return bestDirection;
+
+};
+
+
+/* ======================================================
+   REFRESH BOARD
+====================================================== */
+
+setTimeout(
+  ()=>{
+
+    if(
+      typeof renderAll===
+      "function"
+    ){
+
+      renderAll();
+
+    }
+
+  },
+  200
+);
+
+</script>
 </body>
 </html>
