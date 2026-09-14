@@ -4660,5 +4660,200 @@ else setTimeout(initBottomTools,0);
 })();
 </script>
 
+
+<!-- DG V15 LAYOUT MENU START -->
+<style id="dg-v15-layout-menu">
+/* Requested layout only. Game rules/engine stay untouched. */
+
+/* Remove the crossed-out bottom controls and the old lower function strip. */
+.bottom-left-actions,
+.bottom-right-actions,
+.bottom-info{
+  display:none!important;
+}
+
+/* Keep any old top action cluster out of the playing area; all functions are in ☰. */
+.top-actions{
+  display:none!important;
+}
+
+/* Move player cards to the marked wood/felt edge positions. */
+.player-top{
+  left:35.5%!important;
+  top:20.1%!important;
+  transform:translate(-50%,-50%)!important;
+}
+.player-right{
+  right:.7%!important;
+  top:31.5%!important;
+  transform:translateY(-50%)!important;
+}
+.player-left{
+  left:.7%!important;
+  top:67.5%!important;
+  transform:translateY(-50%)!important;
+}
+
+/* Player 3 card stays hidden; own tiles are the identity at the bottom. */
+.player-bottom{display:none!important;}
+
+/* Own hand goes all the way down, replacing the removed lower strip. */
+#playerHand{
+  bottom:.15%!important;
+  height:11.2%!important;
+  min-height:54px!important;
+  padding:3px 10px 2px!important;
+  gap:3px!important;
+  z-index:800!important;
+  border-radius:9px 9px 0 0!important;
+}
+#playerHand .domino{
+  width:27px!important;
+  height:48px!important;
+}
+#playerHand .domino.selected{
+  transform:translateY(-5px) scale(1.02)!important;
+}
+
+/* Give the felt a little more usable vertical room now that the lower strip is gone. */
+.table-area{
+  bottom:8.0%!important;
+}
+#dominoBoard{
+  bottom:5.8%!important;
+}
+
+/* One compact hamburger menu in the lower-right wood. */
+#dgV15MenuWrap{
+  position:absolute;
+  right:.55%;
+  bottom:.55%;
+  z-index:20000;
+}
+#dgV15MenuBtn{
+  width:46px;
+  height:40px;
+  border:2px solid #9a552c;
+  border-radius:9px;
+  color:#ffe6b6;
+  background:linear-gradient(145deg,#6a3216,#2b1007 72%);
+  box-shadow:inset 0 1px 0 rgba(255,225,170,.18),0 3px 8px rgba(0,0,0,.75);
+  font-size:25px;
+  font-weight:900;
+  line-height:1;
+  cursor:pointer;
+}
+#dgV15MenuPanel{
+  display:none;
+  position:absolute;
+  right:0;
+  bottom:47px;
+  width:170px;
+  padding:6px;
+  border:1px solid #8f4d27;
+  border-radius:9px;
+  background:linear-gradient(160deg,rgba(72,32,14,.985),rgba(18,8,5,.985));
+  box-shadow:0 8px 20px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,220,160,.1);
+}
+#dgV15MenuWrap.open #dgV15MenuPanel{
+  display:grid;
+  gap:4px;
+}
+.dg-v15-menu-item{
+  min-height:31px;
+  padding:5px 8px;
+  border:1px solid rgba(165,101,55,.55);
+  border-radius:6px;
+  background:rgba(12,10,8,.65);
+  color:#f8ead0;
+  text-align:left;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+.dg-v15-menu-item:active{transform:scale(.98);}
+
+@media(max-height:560px){
+  .player-top{left:35%!important;top:19.4%!important;}
+  .player-right{right:.45%!important;top:30.5%!important;}
+  .player-left{left:.45%!important;top:68%!important;}
+  #playerHand{bottom:.1%!important;height:10.7%!important;min-height:49px!important;}
+  #playerHand .domino{width:25px!important;height:44px!important;}
+  .table-area{bottom:7.4%!important;}
+  #dominoBoard{bottom:5.2%!important;}
+  #dgV15MenuBtn{width:41px;height:35px;font-size:22px;}
+}
+</style>
+
+<script id="dg-v15-menu">
+(()=>{
+  function initDGMenu(){
+    if(document.getElementById('dgV15MenuWrap')) return;
+    const game=document.getElementById('game');
+    if(!game) return;
+
+    const wrap=document.createElement('div');
+    wrap.id='dgV15MenuWrap';
+    wrap.innerHTML=`
+      <button id="dgV15MenuBtn" type="button" aria-label="მენიუ">☰</button>
+      <div id="dgV15MenuPanel">
+        <button class="dg-v15-menu-item" data-act="sound">🔊 ხმა</button>
+        <button class="dg-v15-menu-item" data-act="chat">💬 ჩატი</button>
+        <button class="dg-v15-menu-item" data-act="pass">↩ გავიარე</button>
+        <button class="dg-v15-menu-item" data-act="riba">🔒 რიბა?</button>
+        <button class="dg-v15-menu-item" data-act="surrender">⚑ დანებება</button>
+        <button class="dg-v15-menu-item" data-act="full">⛶ სრული ეკრანი</button>
+        <button class="dg-v15-menu-item" data-act="rules">📖 წესები</button>
+        <button class="dg-v15-menu-item" data-act="restart">↻ თავიდან დაწყება</button>
+        <button class="dg-v15-menu-item" data-act="settings">⚙️ პარამეტრები</button>
+      </div>`;
+    game.appendChild(wrap);
+
+    const btn=wrap.querySelector('#dgV15MenuBtn');
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      wrap.classList.toggle('open');
+    });
+
+    wrap.addEventListener('click',async e=>{
+      const item=e.target.closest('[data-act]');
+      if(!item) return;
+      e.stopPropagation();
+      const act=item.dataset.act;
+
+      if(act==='sound') document.getElementById('soundBtn')?.click();
+      if(act==='chat') document.getElementById('chatBtn')?.click();
+      if(act==='pass') document.getElementById('passBtn')?.click();
+      if(act==='riba') document.getElementById('ribaBtn')?.click();
+      if(act==='surrender') document.getElementById('surrenderBtn')?.click();
+      if(act==='settings') document.getElementById('settingsBtn')?.click();
+
+      if(act==='full'){
+        try{
+          if(!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+          else await document.exitFullscreen?.();
+        }catch(_e){}
+      }
+
+      if(act==='rules'){
+        alert('თამაშის მოქმედი წესები უცვლელია.');
+      }
+
+      if(act==='restart' && confirm('თამაში თავიდან დაიწყოს?')){
+        location.reload();
+      }
+
+      wrap.classList.remove('open');
+    });
+
+    document.addEventListener('click',()=>wrap.classList.remove('open'));
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initDGMenu);
+  else initDGMenu();
+})();
+</script>
+<!-- DG V15 LAYOUT MENU END -->
+
 </body>
 </html>
