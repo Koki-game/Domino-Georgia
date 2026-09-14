@@ -1845,7 +1845,7 @@ button:active{
         <div class="abacus">
 
           <div class="abacus-row">
-            <span class="abacus-label">100</span>
+            <span class="abacus-label">1000</span>
             <div class="rail">
               <div class="beads">
                 <i class="bead"></i>
@@ -1877,22 +1877,10 @@ button:active{
             </div>
           </div>
 
-          <div class="abacus-row">
-            <span class="abacus-label">100</span>
-            <div class="rail">
-              <div class="beads">
-                <i class="bead"></i>
-                <i class="bead"></i>
-                <i class="bead off"></i>
-                <i class="bead off"></i>
-                <i class="bead off"></i>
-                <i class="bead off"></i>
-              </div>
-            </div>
-          </div>
+          
 
           <div class="abacus-row">
-            <span class="abacus-label">50</span>
+            <span class="abacus-label">10</span>
             <div class="rail">
               <div class="beads">
                 <i class="bead"></i>
@@ -1968,7 +1956,7 @@ button:active{
         <div class="abacus">
 
           <div class="abacus-row">
-            <span class="abacus-label">100</span>
+            <span class="abacus-label">1000</span>
             <div class="rail">
               <div class="beads">
                 <i class="bead"></i>
@@ -1995,21 +1983,10 @@ button:active{
             </div>
           </div>
 
-          <div class="abacus-row">
-            <span class="abacus-label">100</span>
-            <div class="rail">
-              <div class="beads">
-                <i class="bead"></i>
-                <i class="bead off"></i>
-                <i class="bead off"></i>
-                <i class="bead off"></i>
-                <i class="bead off"></i>
-              </div>
-            </div>
-          </div>
+          
 
           <div class="abacus-row">
-            <span class="abacus-label">50</span>
+            <span class="abacus-label">10</span>
             <div class="rail">
               <div class="beads">
                 <i class="bead"></i>
@@ -4604,7 +4581,20 @@ function updateScores(){
   if($('teamAScore'))$('teamAScore').textContent=`${G.scores[0]} / 355`;if($('teamBScore'))$('teamBScore').textContent=`${G.scores[1]} / 355`;
   updateAbacus(document.querySelectorAll('.team-score')[0],G.scores[0]);updateAbacus(document.querySelectorAll('.team-score')[1],G.scores[1]);
 }
-function updateAbacus(box,score){if(!box)return;const rows=[...box.querySelectorAll('.abacus-row')],caps=[100,100,100,50,5];let rem=Math.min(score,355);rows.forEach((r,idx)=>{const beads=[...r.querySelectorAll('.bead')];const used=Math.min(rem,caps[idx]);const n=caps[idx]===5?(used>=5?beads.length:0):Math.round(used/caps[idx]*beads.length);beads.forEach((b,i)=>b.classList.toggle('off',i>=n));rem-=used;});}
+function updateAbacus(box,score){
+  if(!box)return;
+  const rows=[...box.querySelectorAll('.abacus-row')];
+  const values=[1000,100,10,5];
+  let rem=Math.max(0,Math.floor(score));
+  rows.forEach((r,idx)=>{
+    const beads=[...r.querySelectorAll('.bead')];
+    const value=values[idx]||1;
+    const count=Math.floor(rem/value);
+    rem%=value;
+    const n=Math.min(beads.length,count);
+    beads.forEach((b,i)=>b.classList.toggle('off',i>=n));
+  });
+}
 
 function renderHidden(){const map=[['topHiddenHand',0],['rightHiddenHand',1],['leftHiddenHand',3]];for(const [id,p] of map){const e=$(id);if(!e)continue;e.innerHTML='';for(let i=0;i<G.hands[p].length;i++){const d=document.createElement('div');d.className='tile-back';e.appendChild(d);}}}
 function makeTileEl(pl){const d=document.createElement('div');d.className=`domino dg-board-tile ${pl.ori==='H'?'dg-horizontal':'dg-vertical'}${pl.isStake?' stake-domino':''}`;d.dataset.tileId=pl.id;d.innerHTML=halfHTML(pl.r1)+halfHTML(pl.r2);const w=pl.ori==='H'?W:H,h=pl.ori==='H'?H:W;d.style.left=`${pl.x-w/2}px`;d.style.top=`${pl.y-h/2}px`;return d;}
@@ -5302,6 +5292,240 @@ else setTimeout(initBottomTools,0);
 }
 </style>
 <!-- DG V19 LONG ROUTES + GOLD BRAND END -->
+
+<!-- DG V21 FINAL TODAY START -->
+<style id="dg-v21-final-today">
+/* Today: visual/UI polish only. Game rules and V20 routing stay untouched. */
+
+/* Bigger gold table identity. */
+.watermark{
+  left:50%!important;
+  top:51%!important;
+  width:94%!important;
+  transform:translate(-50%,-50%)!important;
+  color:rgba(238,192,83,.30)!important;
+  text-align:center!important;
+  pointer-events:none!important;
+}
+.watermark .crown{
+  position:relative!important;
+  display:inline-block!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:clamp(88px,12vw,178px)!important;
+  line-height:.62!important;
+  color:rgba(239,190,70,.34)!important;
+  text-shadow:
+    0 2px 2px rgba(0,0,0,.38),
+    0 0 18px rgba(232,172,48,.18),
+    0 0 34px rgba(232,172,48,.08)!important;
+  filter:drop-shadow(0 4px 2px rgba(0,0,0,.22));
+}
+.watermark .crown::before,
+.watermark .crown::after{
+  content:"◆";
+  position:absolute;
+  top:47%;
+  color:rgba(238,190,72,.28);
+  font-size:.18em;
+  text-shadow:0 1px 1px rgba(0,0,0,.35);
+}
+.watermark .crown::before{right:108%;}
+.watermark .crown::after{left:108%;}
+.watermark .watermark-text{
+  margin-top:15px!important;
+  color:rgba(244,200,92,.31)!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:clamp(30px,4.8vw,70px)!important;
+  font-weight:900!important;
+  letter-spacing:.28em!important;
+  line-height:1.06!important;
+  text-shadow:
+    0 2px 2px rgba(0,0,0,.36),
+    0 0 16px rgba(233,173,48,.12)!important;
+}
+
+/* Score/turn messages live in the lower-left corner of the green felt. */
+.table-area #turnMessage{
+  left:1.35%!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:1.35%!important;
+  transform:none!important;
+  min-width:0!important;
+  max-width:52%!important;
+  padding:5px 10px!important;
+  border-radius:12px!important;
+  font-size:clamp(9px,.9vw,13px)!important;
+  text-align:left!important;
+  white-space:nowrap!important;
+  background:rgba(10,39,28,.72)!important;
+  border:1px solid rgba(234,195,106,.34)!important;
+  box-shadow:0 3px 8px rgba(0,0,0,.42)!important;
+  z-index:400!important;
+}
+
+/* Table number above the hamburger button, clear of every control. */
+#roomCode.dg-table-number{
+  display:block!important;
+  position:absolute!important;
+  right:.55%!important;
+  bottom:47px!important;
+  z-index:19990!important;
+  width:auto!important;
+  height:auto!important;
+  margin:0!important;
+  padding:4px 8px!important;
+  border:1px solid rgba(157,86,42,.72)!important;
+  border-radius:7px!important;
+  color:#f5dfb1!important;
+  background:linear-gradient(145deg,rgba(91,41,17,.96),rgba(34,14,7,.96))!important;
+  box-shadow:inset 0 1px 0 rgba(255,221,164,.12),0 3px 8px rgba(0,0,0,.55)!important;
+  font-size:clamp(8px,.76vw,11px)!important;
+  font-weight:800!important;
+  line-height:1.15!important;
+  white-space:nowrap!important;
+  pointer-events:none!important;
+}
+
+@media(max-height:560px){
+  .watermark .crown{font-size:clamp(70px,10vw,128px)!important;}
+  .watermark .watermark-text{font-size:clamp(24px,4vw,48px)!important;}
+  #roomCode.dg-table-number{bottom:41px!important;font-size:8px!important;padding:3px 6px!important;}
+  .table-area #turnMessage{bottom:1%!important;font-size:9px!important;padding:4px 8px!important;}
+}
+</style>
+<script id="dg-v21-final-today-js">
+(()=>{
+  function finishTodayUI(){
+    const game=document.getElementById('game');
+    const table=document.querySelector('.table-area');
+    const msg=document.getElementById('turnMessage');
+    const room=document.getElementById('roomCode');
+
+    /* Move the existing message element into the felt, preserving all game logic. */
+    if(table && msg && msg.parentElement!==table) table.appendChild(msg);
+
+    /* Reuse the existing live table-number element instead of duplicating it. */
+    if(game && room){
+      room.classList.add('dg-table-number');
+      if(room.parentElement!==game) game.appendChild(room);
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',finishTodayUI);
+  else finishTodayUI();
+})();
+</script>
+<!-- DG V21 FINAL TODAY END -->
+
+
+<!-- DG V22 ROOM CARD + ABACUS START -->
+<style id="dg-v22-room-card-abacus">
+/* Requested only: 4-value abacus and move full room/table info above the hamburger. */
+.abacus{grid-template-rows:repeat(4,1fr)!important;}
+
+/* Whole room information card: თბილისი, table number, players, target, online. */
+.room-info.dg-room-card{
+  display:block!important;
+  position:absolute!important;
+  left:auto!important;
+  right:.55%!important;
+  top:auto!important;
+  bottom:47px!important;
+  width:auto!important;
+  min-width:126px!important;
+  height:auto!important;
+  padding:6px 9px!important;
+  margin:0!important;
+  z-index:19980!important;
+  border:1px solid rgba(157,86,42,.74)!important;
+  border-radius:8px!important;
+  color:#ead9b7!important;
+  background:linear-gradient(145deg,rgba(91,41,17,.96),rgba(34,14,7,.97))!important;
+  box-shadow:inset 0 1px 0 rgba(255,221,164,.12),0 3px 8px rgba(0,0,0,.58)!important;
+  pointer-events:none!important;
+}
+.room-info.dg-room-card small,
+.room-info.dg-room-card strong{
+  display:block!important;
+  position:static!important;
+  width:auto!important;
+  height:auto!important;
+  margin:0 0 2px!important;
+  padding:0!important;
+  border:0!important;
+  background:none!important;
+  box-shadow:none!important;
+  white-space:nowrap!important;
+  line-height:1.18!important;
+}
+.room-info.dg-room-card strong{
+  color:#fff0c7!important;
+  font-size:clamp(9px,.86vw,12px)!important;
+  font-weight:900!important;
+}
+.room-info.dg-room-card small{
+  color:#e2cfaa!important;
+  font-size:clamp(7px,.68vw,10px)!important;
+}
+.room-info.dg-room-card #roomCode{
+  color:#f5dfb1!important;
+  font-weight:800!important;
+}
+.room-info.dg-room-card .online{
+  position:static!important;
+  display:block!important;
+  margin-top:3px!important;
+  color:#31e866!important;
+  font-size:clamp(7px,.68vw,10px)!important;
+  line-height:1.1!important;
+}
+
+/* Cancel V21's separate floating room-number styling when it is back in the card. */
+.room-info.dg-room-card #roomCode.dg-table-number{
+  position:static!important;
+  right:auto!important;
+  bottom:auto!important;
+  z-index:auto!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:none!important;
+  box-shadow:none!important;
+}
+
+@media(max-height:560px){
+  .room-info.dg-room-card{
+    right:.45%!important;
+    bottom:41px!important;
+    min-width:112px!important;
+    padding:4px 7px!important;
+  }
+}
+</style>
+<script id="dg-v22-room-card-abacus-js">
+(()=>{
+  function applyV22(){
+    const game=document.getElementById('game');
+    const room=document.querySelector('.room-info');
+    const roomCode=document.getElementById('roomCode');
+
+    /* V21 moved only the table number out. Put it back in its original room card. */
+    if(room && roomCode && roomCode.parentElement!==room){
+      const roomName=document.getElementById('roomName');
+      if(roomName) roomName.insertAdjacentElement('afterend',roomCode);
+      else room.appendChild(roomCode);
+    }
+
+    if(room){
+      room.classList.add('dg-room-card');
+      if(game && room.parentElement!==game) game.appendChild(room);
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',applyV22);
+  else applyV22();
+})();
+</script>
+<!-- DG V22 ROOM CARD + ABACUS END -->
 
 </body>
 </html>
