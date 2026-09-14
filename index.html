@@ -1791,6 +1791,7 @@ button:active{
 }
 </style>
 
+<!-- build: 2026-09-14 v11-wide-felt-no-overlap -->
 </head>
 
 <body>
@@ -4281,8 +4282,14 @@ function directCenter(port,tile,dir){
 function turnCenter(port,tile,dir){
   if(isDouble(tile)) return directCenter(port,tile,port.dir);
   const [ox,oy]=DIR[port.dir], [nx,ny]=DIR[dir];
-  // New tile touches the old open edge with its near half, then turns 90°.
-  return {x:port.x+ox*HH+nx*(W/4),y:port.y+oy*HH+ny*(W/4),dir,ori:orientationFromDir(tile,dir),turned:true};
+  // Clean 90° elbow: move a half tile-width away from the source edge,
+  // then a full half-length into the new direction. This prevents overlap.
+  const seamGap=1.5;
+  return {
+    x:port.x+ox*(HH+seamGap)+nx*(HW+seamGap),
+    y:port.y+oy*(HH+seamGap)+ny*(HW+seamGap),
+    dir,ori:orientationFromDir(tile,dir),turned:true
+  };
 }
 function candidate(port,tile,dir){return dir===port.dir?directCenter(port,tile,dir):turnCenter(port,tile,dir);}
 function boardLimits(){
@@ -4602,16 +4609,27 @@ startRound=function(){
    After the first turn, continue straight and only turn again when
    the felt edge/collision makes it necessary.
 ========================================================= */
-function placementIsClean(c,lim){
+function placementIsClean(c,lim,sourceTileId=null){
   const rr=rectAt(c.x,c.y,c.ori);
   const inside=
     rr.l>=-lim.x && rr.r<=lim.x &&
     rr.t>=-lim.y && rr.b<=lim.y;
   if(!inside)return false;
   for(const ex of G.placements){
-    if(overlap(rr,rectAt(ex.x,ex.y,ex.ori))>1)return false;
+    if(ex.id===sourceTileId)continue;
+    if(overlap(rr,rectAt(ex.x,ex.y,ex.ori))>0.25)return false;
   }
   return true;
+}
+
+function collisionAmount(c,sourceTileId=null){
+  const rr=rectAt(c.x,c.y,c.ori);
+  let total=0;
+  for(const ex of G.placements){
+    if(ex.id===sourceTileId)continue;
+    total+=overlap(rr,rectAt(ex.x,ex.y,ex.ori));
+  }
+  return total;
 }
 
 function scoreRouteCandidate(c,port,lim,preferStraight){
@@ -4649,7 +4667,7 @@ choosePlacement=function(port,tile){
   }
 
   const evaluated=dirs.map(dir=>({dir,c:candidate(port,tile,dir)}));
-  const clean=evaluated.filter(x=>placementIsClean(x.c,lim));
+  const clean=evaluated.filter(x=>placementIsClean(x.c,lim,port.sourceTileId));
 
   if(forceFirstTurn){
     const cleanTurns=clean.filter(x=>x.dir!==port.dir);
@@ -4666,18 +4684,32 @@ choosePlacement=function(port,tile){
     return clean[0].c;
   }
 
-  /* Last-resort fallback: never disappear outside the felt if a clean
-     candidate is impossible; choose the smallest overflow/collision. */
-  let best=evaluated[0]?.c||candidate(port,tile,port.dir), bestPenalty=Infinity;
-  for(const x of evaluated){
-    const rr=rectAt(x.c.x,x.c.y,x.c.ori);
-    let penalty=0;
-    penalty+=Math.max(0,-lim.x-rr.l)+Math.max(0,rr.r-lim.x);
-    penalty+=Math.max(0,-lim.y-rr.t)+Math.max(0,rr.b-lim.y);
-    for(const ex of G.placements)penalty+=overlap(rr,rectAt(ex.x,ex.y,ex.ori))*30;
-    if(penalty<bestPenalty){bestPenalty=penalty;best=x.c;}
+  /* Strict no-overlap fallback. If the route is crowded, keep the tile
+     separated by a tiny seam instead of ever placing it on top of another tile.
+     fitBoard() will still keep the whole chain visible inside the felt. */
+  let best=null,bestPenalty=Infinity;
+  const fallbackDirs=isDouble(tile)?[port.dir]:[...new Set([...(forceFirstTurn?[RIGHT[port.dir],LEFT[port.dir]]:[]),port.dir,RIGHT[port.dir],LEFT[port.dir]])];
+  for(const dir of fallbackDirs){
+    const base=candidate(port,tile,dir);
+    const [dx,dy]=DIR[dir];
+    for(let gap=0;gap<=84;gap+=2){
+      const c={...base,x:base.x+dx*gap,y:base.y+dy*gap};
+      if(collisionAmount(c,port.sourceTileId)>0.25)continue;
+      const rr=rectAt(c.x,c.y,c.ori);
+      const overflow=
+        Math.max(0,-lim.x-rr.l)+Math.max(0,rr.r-lim.x)+
+        Math.max(0,-lim.y-rr.t)+Math.max(0,rr.b-lim.y);
+      const turnPenalty=(forceFirstTurn&&dir===port.dir)?10000:0;
+      const gapPenalty=gap*1.4;
+      const penalty=overflow*25+turnPenalty+gapPenalty;
+      if(penalty<bestPenalty){bestPenalty=penalty;best=c;}
+      if(overflow===0&&gap<=6)break;
+    }
   }
-  return best;
+  if(best)return best;
+
+  // Extremely defensive fallback; normal play should never reach this path.
+  return candidate(port,tile,port.dir);
 };
 
 function boot(){
@@ -4863,6 +4895,202 @@ else setTimeout(initBottomTools,0);
     document.addEventListener('click',()=>document.querySelectorAll('.team-avatar-btn.open').forEach(x=>x.classList.remove('open')));
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+
+
+<style id="dg-v11-layout">
+/* =========================================================
+   V11 — WIDER FELT / THINNER WOOD / COMPACT HANDS
+========================================================= */
+.room-info,.side-note{display:none!important;}
+.top-actions{display:none!important;}
+.bottom-info{display:none!important;}
+
+/* Shorter top scoreboard/logo strip so the felt starts higher. */
+.top-panel{
+  left:.55%!important;
+  right:.55%!important;
+  top:.45%!important;
+  height:16.6%!important;
+  grid-template-columns:minmax(0,1fr) 28% minmax(0,1fr)!important;
+  gap:5px!important;
+}
+.team-score{border-width:2px!important;border-radius:9px!important;}
+.team-title{height:24%!important;font-size:clamp(9px,1vw,15px)!important;}
+.team-avatar-btn{width:clamp(34px,3.9vw,48px)!important;height:clamp(34px,3.9vw,48px)!important;}
+.team-total{font-size:clamp(15px,2vw,30px)!important;}
+.logo{border-width:2px!important;border-radius:0 0 12px 12px!important;}
+.logo-main{font-size:clamp(23px,3vw,43px)!important;line-height:.9!important;}
+.logo-sub{font-size:clamp(9px,1.05vw,14px)!important;letter-spacing:.24em!important;margin-top:3px!important;gap:7px!important;}
+.logo-flag{font-size:clamp(11px,1.3vw,18px)!important;}
+.logo-text{display:none!important;}
+
+/* The green felt now uses almost the whole screen width/height. */
+.table-area{
+  left:4.15%!important;
+  right:4.15%!important;
+  top:17.25%!important;
+  bottom:10.7%!important;
+  border:2px solid #32150b!important;
+  outline:1px solid #92502a!important;
+  border-radius:3px!important;
+}
+#dominoBoard{
+  left:.8%!important;
+  right:.8%!important;
+  top:4.3%!important;
+  bottom:6.5%!important;
+  overflow:visible!important;
+}
+
+/* Opponents' hidden tiles are smaller and sit in the wood rails, not on the felt. */
+.hidden-hand{
+  background:linear-gradient(90deg,#351407,#6f3516 45%,#2b1006)!important;
+  border:1px solid rgba(170,91,43,.72)!important;
+  box-shadow:inset 0 0 8px rgba(0,0,0,.72),0 2px 4px rgba(0,0,0,.55)!important;
+  padding:3px!important;
+  border-radius:6px!important;
+  z-index:90!important;
+}
+.tile-back{width:21px!important;height:29px!important;border-radius:4px!important;}
+.hidden-top{
+  left:50%!important;
+  top:16.55%!important;
+  transform:translateX(-50%)!important;
+  gap:3px!important;
+}
+.hidden-top .tile-back{width:23px!important;height:31px!important;}
+.hidden-left{
+  left:.45%!important;
+  top:31%!important;
+  gap:2px!important;
+}
+.hidden-right{
+  right:.45%!important;
+  top:31%!important;
+  gap:2px!important;
+}
+.hidden-left .tile-back,.hidden-right .tile-back{width:20px!important;height:27px!important;}
+.hidden-bottom{display:none!important;}
+
+/* Own hand sits as low as possible in a compact wood rack. */
+#playerHand{
+  bottom:.35%!important;
+  height:9.65%!important;
+  min-height:52px!important;
+  gap:3px!important;
+  padding:3px 8px 3px!important;
+  border-width:2px!important;
+  border-radius:8px 8px 3px 3px!important;
+  background:linear-gradient(180deg,#713719,#431b0c 68%,#1f0c05)!important;
+  box-shadow:inset 0 2px 0 rgba(255,199,123,.22),0 -3px 9px rgba(0,0,0,.62)!important;
+}
+#playerHand .domino{width:27px!important;height:47px!important;border-radius:6px!important;}
+#playerHand .domino.selected{transform:translateY(-4px) scale(1.025)!important;}
+#playerHand .pip{width:4.7px!important;height:4.7px!important;}
+
+/* Slightly tighter board pips without changing the tile colour. */
+.dg-board-tile .pip{width:6.5px!important;height:6.5px!important;}
+
+/* One functional hamburger menu in the bottom-right wood rail. */
+#dgMenuWrap{
+  position:absolute;
+  right:.55%;
+  bottom:.55%;
+  z-index:10000;
+}
+#dgMenuBtn{
+  width:44px;height:38px;
+  border:1px solid #a45c2d;
+  border-radius:8px;
+  color:#ffe5b2;
+  background:linear-gradient(145deg,#6c3315,#2b1006 72%);
+  box-shadow:inset 0 1px 0 rgba(255,220,160,.18),0 3px 8px rgba(0,0,0,.7);
+  font-size:24px;font-weight:900;line-height:1;cursor:pointer;
+}
+#dgMenuPanel{
+  display:none;
+  position:absolute;
+  right:0;
+  bottom:46px;
+  width:154px;
+  padding:5px;
+  border:1px solid #8d4a25;
+  border-radius:9px;
+  background:linear-gradient(160deg,rgba(70,31,13,.98),rgba(20,9,5,.98));
+  box-shadow:0 8px 18px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,218,157,.12);
+}
+#dgMenuWrap.open #dgMenuPanel{display:grid;gap:4px;}
+.dg-menu-item{
+  min-height:31px;
+  border:1px solid rgba(164,102,55,.58);
+  border-radius:6px;
+  background:rgba(15,12,9,.62);
+  color:#f8ead0;
+  text-align:left;
+  padding:5px 8px;
+  font-size:12px;font-weight:700;cursor:pointer;
+}
+.dg-menu-item:active{transform:scale(.98);}
+
+@media(max-height:560px){
+  .top-panel{height:16.2%!important;}
+  .team-avatar-btn{width:34px!important;height:34px!important;}
+  .table-area{left:3.8%!important;right:3.8%!important;top:16.9%!important;bottom:10.1%!important;}
+  #dominoBoard{left:.6%!important;right:.6%!important;top:3.5%!important;bottom:5.8%!important;}
+  .hidden-top{top:16.2%!important;}
+  .hidden-left,.hidden-right{top:29.5%!important;}
+  #playerHand{bottom:.25%!important;height:9.2%!important;min-height:48px!important;}
+  #playerHand .domino{width:25px!important;height:44px!important;}
+  .tile-back{width:19px!important;height:26px!important;}
+  .hidden-left .tile-back,.hidden-right .tile-back{width:18px!important;height:25px!important;}
+  #dgMenuBtn{width:40px;height:34px;font-size:21px;}
+}
+</style>
+
+<script id="dg-v11-menu">
+(()=>{
+  function initMenu(){
+    if(document.getElementById('dgMenuWrap'))return;
+    const game=document.getElementById('game');
+    if(!game)return;
+    const wrap=document.createElement('div');
+    wrap.id='dgMenuWrap';
+    wrap.innerHTML=`
+      <button id="dgMenuBtn" type="button" aria-label="მენიუ">☰</button>
+      <div id="dgMenuPanel">
+        <button class="dg-menu-item" data-act="sound">🔊 ხმა</button>
+        <button class="dg-menu-item" data-act="chat">💬 ჩატი</button>
+        <button class="dg-menu-item" data-act="full">⛶ სრული ეკრანი</button>
+        <button class="dg-menu-item" data-act="rules">📖 წესები</button>
+        <button class="dg-menu-item" data-act="restart">↻ თავიდან დაწყება</button>
+        <button class="dg-menu-item" data-act="settings">⚙️ პარამეტრები</button>
+      </div>`;
+    game.appendChild(wrap);
+    const btn=wrap.querySelector('#dgMenuBtn');
+    btn.addEventListener('click',e=>{e.stopPropagation();wrap.classList.toggle('open');});
+    wrap.addEventListener('click',async e=>{
+      const item=e.target.closest('[data-act]');
+      if(!item)return;
+      e.stopPropagation();
+      const act=item.dataset.act;
+      if(act==='sound')document.getElementById('soundBtn')?.click();
+      if(act==='chat')document.getElementById('chatBtn')?.click();
+      if(act==='full'){
+        try{
+          if(!document.fullscreenElement)await document.documentElement.requestFullscreen?.();
+          else await document.exitFullscreen?.();
+        }catch(_e){}
+      }
+      if(act==='rules')alert('პირველი ხელი იწყება 6-6-ით. სტავკის ძირითადი 1 და 2 მხარე 5 ქვას პირდაპირ ატარებს და შემდეგ უხვევს; დამატებითი 3 და 4 მხარე 2 ქვას ატარებს და მესამე ქვაზე უხვევს. ქვები ერთმანეთს არ უნდა გადაეფაროს. ქულები ითვლება მოქმედი ღია ბოლოებიდან; ზუსტად 35 — მყისიერი მოგებაა.');
+      if(act==='restart'&&confirm('თამაში თავიდან დაიწყოს?'))location.reload();
+      if(act==='settings')document.getElementById('settingsBtn')?.click();
+      wrap.classList.remove('open');
+    });
+    document.addEventListener('click',()=>wrap.classList.remove('open'));
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initMenu);else initMenu();
 })();
 </script>
 
