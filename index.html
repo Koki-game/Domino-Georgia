@@ -7129,5 +7129,58 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <!-- DG V33 PUBLIC MATCHMAKING + HEART LEVELS END -->
 
+
+<!-- DG V34 TEST WITH 3 BOTS START -->
+<style id="dg-v34-test-css">
+#dgV33Badge{display:none!important}
+#dgV34Badge{position:fixed;right:10px;top:10px;z-index:77000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV34Badge{display:none}
+#dgTestBots{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:13px;border-radius:12px;border:1px solid #6f5b2e;background:linear-gradient(145deg,#2d2610,#171205);color:#f7e7c2;cursor:pointer}
+#dgTestBots b{display:block;font-size:15px;color:#ffe39a}#dgTestBots small{display:block;margin-top:2px;color:#c8b98d;font-size:11px;line-height:1.4}#dgTestBots .i{font-size:24px;min-width:34px;text-align:center}
+</style>
+<script type="module" id="dg-v34-test-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,getDoc,setDoc,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const PROFILE_KEY='dg_domino_v25_profile',SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup',ROOMS='dominoRooms';
+let app,auth,db,uid='',busy=false;
+const $=id=>document.getElementById(id);
+function localProfile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
+function nick(){return (localProfile().nickname||$('myNickname')?.textContent||'Player').trim().slice(0,18)||'Player'}
+function country(){return (localProfile().country||'GE').toUpperCase().slice(0,2)}
+function badge(){if($('dgV34Badge'))return;const b=document.createElement('div');b.id='dgV34Badge';b.textContent='V34';document.body.appendChild(b)}
+function toast(text){let e=$('dgV32Toast');if(!e){e=document.createElement('div');e.id='dgV32Toast';document.body.appendChild(e)}e.textContent=text;e.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),4200)}
+async function uniqueCode(){for(let i=0;i<40;i++){const c=String(Math.floor(1000+Math.random()*9000));if(!(await getDoc(doc(db,ROOMS,c))).exists())return c}throw new Error('No room code available')}
+function addButton(){
+  const options=document.querySelector('#dgChoiceStep .dg-entry-options');if(!options||$('dgTestBots'))return;
+  const b=document.createElement('button');b.id='dgTestBots';b.type='button';
+  b.innerHTML='<span class="i">🧪</span><span><b>Test with 3 Bots</b><small>Start a private test match instantly. Test matches do not add ♥ rating points.</small></span>';
+  options.appendChild(b);b.addEventListener('click',startTest);
+}
+async function startTest(){
+  if(busy||!uid||!db)return;busy=true;toast('Creating a private 3-BOT test match…');
+  try{
+    const code=await uniqueCode(),old=Date.now()-120000;
+    const players=[
+      {uid:'BOT_'+code+'_A',name:'BOT Alpha',country:'US',seat:0,joinedAt:old,lastSeen:old,botActive:true,hearts:0,level:1,wins:0,games:0},
+      {uid:'BOT_'+code+'_B',name:'BOT Beta',country:'DE',seat:1,joinedAt:old,lastSeen:old,botActive:true,hearts:0,level:1,wins:0,games:0},
+      {uid:uid,name:nick(),country:country(),seat:2,joinedAt:Date.now(),lastSeen:Date.now(),botActive:false},
+      {uid:'BOT_'+code+'_C',name:'BOT Gamma',country:'GB',seat:3,joinedAt:old,lastSeen:old,botActive:true,hearts:0,level:1,wins:0,games:0}
+    ];
+    await setDoc(doc(db,ROOMS,code),{code,mode:'test',testMode:true,hostUid:uid,status:'playing',matchId:'test_'+Date.now().toString(36),createdAt:serverTimestamp(),startedAt:serverTimestamp(),updatedAt:serverTimestamp(),players});
+    sessionStorage.setItem(SESSION,code);localStorage.setItem(BACKUP,code);window.DG_MATCH_ALLOWED=true;
+    $('dgEntryOverlay')?.classList.add('hidden');$('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
+    toast('TEST started: you + 3 BOTs. No ♥ rating is awarded.');
+  }catch(e){console.error('V34 test',e);toast('Test match error: '+(e?.message||e))}finally{busy=false}
+}
+async function boot(){
+  badge();addButton();
+  try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});addButton()}catch(e){console.error('V34 boot',e)}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V34 TEST WITH 3 BOTS END -->
+
 </body>
 </html>
