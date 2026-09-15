@@ -4353,7 +4353,7 @@ button:active{
 'use strict';
 
 const $=id=>document.getElementById(id);
-const HUMAN=2; // bottom player = player 3 in the target visual
+let HUMAN=2; // V30: local online player seat is dynamic; default bottom=2
 const TARGET=355;
 const W=76,H=44;
 const HW=W/2, HH=H/2;
@@ -4369,6 +4369,19 @@ const G={
   passStreak:0, stakeId:null, threshold:false, handOver:false, matchOver:false,
   aiBusy:false, tileSeq:1, portSeq:1, selectedIndex:null
 };
+
+function dgStateSnapshot(){
+  try{return JSON.parse(JSON.stringify(G));}catch(e){return null;}
+}
+function dgNotifyState(){
+  if(!window.DG_ONLINE_MULTIPLAYER || window.DG_ENGINE_APPLYING_REMOTE || window.DG_ENGINE_SUPPRESS_SYNC)return;
+  if(typeof window.DG_ENGINE_STATE_CHANGED!=='function')return;
+  queueMicrotask(()=>{
+    if(window.DG_ENGINE_APPLYING_REMOTE || window.DG_ENGINE_SUPPRESS_SYNC)return;
+    const snap=dgStateSnapshot();
+    if(snap)window.DG_ENGINE_STATE_CHANGED(snap);
+  });
+}
 
 const team=p=>(p===0||p===2)?0:1;
 const teamName=t=>t===0?'გუნდი A':'გუნდი B';
@@ -4638,20 +4651,27 @@ function addScore(t,pts,msg){G.scores[t]+=pts;if(G.scores[t]>=TARGET)G.threshold
 function handPips(p){return G.hands[p].reduce((s,t)=>s+t.a+t.b,0);}
 function teamRemain(t){return t===0?handPips(0)+handPips(2):handPips(1)+handPips(3);}
 function finishNormal(player){
-  if(G.handOver)return;G.handOver=true;const wt=team(player),lt=1-wt;let earned=round5(teamRemain(lt))+G.carry;G.carry=0;if(earned)addScore(wt,earned);G.nextStarter=player;message(`${teamName(wt)} — ხელი +${earned}`,2300);
+  if(G.handOver)return;G.handOver=true;const wt=team(player),lt=1-wt;let earned=round5(teamRemain(lt))+G.carry;G.carry=0;if(earned)addScore(wt,earned);G.nextStarter=player;message(`${teamName(wt)} — ხელი +${earned}`,2300);dgNotifyState();
   if(G.threshold)setTimeout(resolveMatch,1900);else setTimeout(nextRound,2200);
 }
-function resolveMatch(){const [a,b]=G.scores;if(a===b){message(`${a}:${b} — კიდევ ერთი ხელი`,2200);setTimeout(nextRound,2300);return;}const wt=a>b?0:1;G.matchOver=true;message(`${teamName(wt)} — მატჩის გამარჯვებული! ${a}:${b}`,6000);setTimeout(()=>showWinCelebration(wt,false),420);}
+function resolveMatch(){const [a,b]=G.scores;if(a===b){message(`${a}:${b} — კიდევ ერთი ხელი`,2200);setTimeout(nextRound,2300);return;}const wt=a>b?0:1;G.matchOver=true;message(`${teamName(wt)} — მატჩის გამარჯვებული! ${a}:${b}`,6000);dgNotifyState();setTimeout(()=>showWinCelebration(wt,false),420);}
 function finishRiba(){
   if(G.handOver)return;G.handOver=true;const a=teamRemain(0),b=teamRemain(1);const closer=G.pendingCloser??G.lastPlayer??0;G.nextStarter=closer;
-  if(a===b){const c=round5(a);G.carry+=c;message(`რიბა ${a}:${b} — გადადის +${c}`,2600);setTimeout(nextRound,2600);return;}
-  const wt=a<b?0:1, loser=wt===0?b:a;let earned=round5(loser)+G.carry;G.carry=0;addScore(wt,earned);message(`რიბა — ${teamName(wt)} +${earned}`,2600);setTimeout(nextRound,2600);
+  if(a===b){const c=round5(a);G.carry+=c;message(`რიბა ${a}:${b} — გადადის +${c}`,2600);dgNotifyState();setTimeout(nextRound,2600);return;}
+  const wt=a<b?0:1, loser=wt===0?b:a;let earned=round5(loser)+G.carry;G.carry=0;addScore(wt,earned);message(`რიბა — ${teamName(wt)} +${earned}`,2600);dgNotifyState();setTimeout(nextRound,2600);
 }
 function pass(p){
   if(G.handOver||G.matchOver||hasMove(p))return;G.passStreak++;message(`${names[p]} — გაიარა`,900);
   if(G.passStreak>=4){finishRiba();return;}G.current=(p+1)%4;renderAll();scheduleTurn();
 }
-function scheduleTurn(){if(G.handOver||G.matchOver)return;if(G.current===HUMAN){setTimeout(()=>{if(G.current===HUMAN&&!G.handOver&&!hasMove(HUMAN)&&G.placements.length)pass(HUMAN);},450);}else setTimeout(aiTurn,520);}
+function scheduleTurn(){
+  if(G.handOver||G.matchOver)return;
+  if(window.DG_ONLINE_MULTIPLAYER){
+    if(G.current===HUMAN){setTimeout(()=>{if(G.current===HUMAN&&!G.handOver&&!hasMove(HUMAN)&&G.placements.length)pass(HUMAN);},450);}
+    return;
+  }
+  if(G.current===HUMAN){setTimeout(()=>{if(G.current===HUMAN&&!G.handOver&&!hasMove(HUMAN)&&G.placements.length)pass(HUMAN);},450);}else setTimeout(aiTurn,520);
+}
 function nextTurn(){if(G.handOver||G.matchOver)return;G.current=(G.current+1)%4;G.aiBusy=false;renderAll();scheduleTurn();}
 
 function aiOpening(p){let best=0,score=-1;G.hands[p].forEach((t,i)=>{let s=tilePips(t)+(isDouble(t)?10:0)+(t.a===5&&t.b===5?50:0);if(s>score){score=s;best=i;}});return best;}
@@ -4741,7 +4761,11 @@ function updateAbacus(box,score){
   });
 }
 
-function renderHidden(){const map=[['topHiddenHand',0],['rightHiddenHand',1],['leftHiddenHand',3]];for(const [id,p] of map){const e=$(id);if(!e)continue;e.innerHTML='';for(let i=0;i<G.hands[p].length;i++){const d=document.createElement('div');d.className='tile-back';e.appendChild(d);}}}
+function renderHidden(){
+  const top=(HUMAN+2)%4,right=(HUMAN+3)%4,left=(HUMAN+1)%4;
+  const map=[['topHiddenHand',top],['rightHiddenHand',right],['leftHiddenHand',left]];
+  for(const [id,p] of map){const e=$(id);if(!e)continue;e.innerHTML='';for(let i=0;i<G.hands[p].length;i++){const d=document.createElement('div');d.className='tile-back';e.appendChild(d);}}
+}
 function makeTileEl(pl){const d=document.createElement('div');d.className=`domino dg-board-tile ${pl.ori==='H'?'dg-horizontal':'dg-vertical'}${pl.isStake?' stake-domino':''}`;d.dataset.tileId=pl.id;d.innerHTML=halfHTML(pl.r1)+halfHTML(pl.r2);const w=pl.ori==='H'?W:H,h=pl.ori==='H'?H:W;d.style.left=`${pl.x-w/2}px`;d.style.top=`${pl.y-h/2}px`;return d;}
 function renderBoard(){
   const b=$('dominoBoard');if(!b)return;b.innerHTML='<div class="dg-board-layer"></div>';const l=b.firstElementChild;G.placements.forEach(pl=>l.appendChild(makeTileEl(pl)));requestAnimationFrame(fitBoard);
@@ -4751,11 +4775,15 @@ function fitBoard(){
 }
 function renderHand(){const h=$('playerHand');if(!h)return;h.innerHTML='';G.hands[HUMAN].forEach((t,i)=>{const d=document.createElement('div');d.className='domino';if(G.current===HUMAN&&(!G.placements.length||legalPorts(t).length))d.classList.add('playable');if(G.selectedIndex===i)d.classList.add('selected');d.innerHTML=halfHTML(t.a)+halfHTML(t.b);d.onclick=()=>humanPlay(i);h.appendChild(d);});}
 function updateTurn(){
-  document.querySelectorAll('.player-card').forEach((c,i)=>c.style.filter='');const cards=document.querySelectorAll('.player-card');const visualIndex={0:0,1:2,2:3,3:1}[G.current];if(cards[visualIndex]&&!G.handOver&&!G.matchOver)cards[visualIndex].style.filter='drop-shadow(0 0 8px rgba(255,205,72,.95))';
+  document.querySelectorAll('.player-card').forEach(c=>c.style.filter='');
+  const rel=(G.current-HUMAN+2+4)%4;
+  const roots=['.player-top','.player-right','.player-bottom','.player-left'];
+  const card=document.querySelector(`${roots[rel]} .player-card`);
+  if(card&&!G.handOver&&!G.matchOver)card.style.filter='drop-shadow(0 0 8px rgba(255,205,72,.95))';
   const p=$('passBtn');if(p){p.disabled=!(G.current===HUMAN&&!G.handOver&&!hasMove(HUMAN));}
   const r=$('ribaBtn');if(r)r.disabled=true;
 }
-function renderAll(){updateScores();renderHidden();renderHand();renderBoard();updateTurn();}
+function renderAll(){updateScores();renderHidden();renderHand();renderBoard();updateTurn();dgNotifyState();}
 
 function resetRound(){G.placements=[];G.ports=[];G.portSeq=1;G.passStreak=0;G.stakeId=null;G.pendingCloser=null;G.lastPlayer=null;G.selectedIndex=null;G.handOver=false;G.aiBusy=false;clearChoices();}
 function startRound(){
@@ -5123,6 +5151,36 @@ function showWinCelebration(winnerTeam,special35=false){
   $('dgWinOther')?.addEventListener('click',showTablePicker);
   $('dgWinExit')?.addEventListener('click',showExitScreen);
 }
+
+window.DG_ENGINE={
+  setHumanSeat(seat){const n=Number(seat);if(Number.isInteger(n)&&n>=0&&n<4){HUMAN=n;renderAll();}return HUMAN;},
+  getHumanSeat(){return HUMAN;},
+  getState(){return dgStateSnapshot();},
+  loadState(state){
+    if(!state||typeof state!=='object')return false;
+    window.DG_ENGINE_APPLYING_REMOTE=true;
+    try{
+      const copy=JSON.parse(JSON.stringify(state));
+      Object.keys(G).forEach(k=>{if(Object.prototype.hasOwnProperty.call(copy,k))G[k]=copy[k];});
+      G.selectedIndex=null;G.aiBusy=false;clearChoices();renderAll();
+    }finally{window.DG_ENGINE_APPLYING_REMOTE=false;}
+    scheduleTurn();return true;
+  },
+  createOnlineMatch(){
+    window.DG_ENGINE_SUPPRESS_SYNC=true;
+    try{
+      hideWinCelebration();
+      G.hands=[[],[],[],[]];G.placements=[];G.ports=[];G.scores=[0,0];G.carry=0;
+      G.current=0;G.round=1;G.nextStarter=null;G.lastPlayer=null;G.pendingCloser=null;
+      G.passStreak=0;G.stakeId=null;G.threshold=false;G.handOver=false;G.matchOver=false;
+      G.aiBusy=false;G.tileSeq=1;G.portSeq=1;G.selectedIndex=null;
+      deal();const st=find66();if(!st)throw new Error('6-6 ვერ მოიძებნა');
+      G.current=st.p;openingTile(st.p,st.i);G.current=(st.p+1)%4;renderAll();
+    }finally{window.DG_ENGINE_SUPPRESS_SYNC=false;}
+    const snap=dgStateSnapshot();scheduleTurn();return snap;
+  },
+  rerender(){renderAll();},message
+};
 
 function boot(){
   const table=document.querySelector('.table-area'),board=$('dominoBoard');if(table&&board)table.appendChild(board);
@@ -6497,7 +6555,7 @@ function addBadge(){
 function addRoomNote(){
   const card=document.querySelector('#dgOnlineOverlay .dg-online-card');
   if(!card||card.querySelector('.dg-v29-note'))return;
-  const n=document.createElement('div');n.className='dg-v29-note';n.textContent='V29 · ეს ოთახი უკვე რეალურად სინქრონდება Firebase-ით სხვადასხვა ტელეფონს შორის. სვლების სინქრონიზაცია შემდეგ ეტაპზე ჩაირთვება.';card.appendChild(n);
+  const n=document.createElement('div');n.className='dg-v29-note';n.textContent='V30 · ოთახი და დომინოს პარტია სინქრონდება Firebase-ით სხვადასხვა ტელეფონს შორის.';card.appendChild(n);
 }
 
 function applyPlayers(room){
@@ -6528,7 +6586,7 @@ function renderRoom(room){
   if(leave)leave.disabled=false;
   setMsg(`${count}/4 მოთამაშე · ${room.status==='playing'?'თამაში დაწყებულია':'ველოდებით'}`);
   applyPlayers(room);
-  if(room.status==='playing'&&lastStatus!=='playing'&&(room.players||[]).some(p=>p.uid===uid)){
+  if(room.status==='playing'&&lastStatus!=='playing'&&(room.players||[]).some(p=>p.uid===uid)&&!window.DG_V30_ACTIVE){
     window.DG_MATCH_ALLOWED=true;
     document.getElementById('dgEntryOverlay')?.classList.add('hidden');
     document.getElementById('dgOnlineOverlay')?.classList.remove('show');
@@ -6717,6 +6775,66 @@ body.dg-lobby-mode #dgEntryOverlay{display:flex}
 })();
 </script>
 <!-- DG V29 SINGLE-FILE BOOT GUARD + CACHE CLEANUP END -->
+
+
+
+<!-- DG V30 REAL MATCH STATE SYNC START -->
+<style id="dg-v30-sync-css">
+#dgV29Badge{display:none!important}
+#dgV30Badge{position:fixed;right:10px;top:10px;z-index:70000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV30Badge{display:none}
+#dgEntryQuick{display:none!important}
+#dgV30SyncState{display:inline-flex;align-items:center;gap:5px;margin-left:6px;padding:5px 8px;border-radius:999px;border:1px solid #2b7d4d;background:#0a2b19;color:#7aefa4;font-size:10px;font-weight:900}
+#dgV30SyncState.wait{border-color:#806a32;background:#2d240b;color:#f0cc6d}
+#dgV30SyncState.err{border-color:#8a423c;background:#35110f;color:#ff9c93}
+</style>
+<script>window.DG_V30_ACTIVE=true;</script>
+<script type="module" id="dg-v30-sync-js">
+import { getApps, getApp, initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore, doc, onSnapshot, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const ROOM_SESSION='dg_domino_v29_room',COLLECTION='dominoRooms';
+let app=null,auth=null,db=null,uid='',roomCode='',unsub=null,currentRoom=null,localSeat=2,lastAppliedVersion=0,syncTimer=null,initializing=false,ready=false;
+const $=id=>document.getElementById(id);
+function addBadge(){if($('dgV30Badge'))return;const b=document.createElement('div');b.id='dgV30Badge';b.textContent='V30';document.body.appendChild(b)}
+function statePill(text,kind=''){let e=$('dgV30SyncState');if(!e){const f=$('dgFirebaseState');if(!f)return;e=document.createElement('span');e.id='dgV30SyncState';f.insertAdjacentElement('afterend',e)}e.textContent=text;e.className=kind}
+function activeMode(){window.DG_MATCH_ALLOWED=true;window.DG_ENTRY_READY=true;window.DG_ONLINE_MULTIPLAYER=true;document.body.classList.remove('dg-lobby-mode');document.body.classList.add('dg-match-mode','dg-game-active');$('dgEntryOverlay')?.classList.add('hidden');$('dgOnlineOverlay')?.classList.remove('show')}
+function lobbyMode(){window.DG_ONLINE_MULTIPLAYER=false;document.body.classList.remove('dg-match-mode','dg-game-active');document.body.classList.add('dg-lobby-mode')}
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function roomRef(code){return doc(db,COLLECTION,code)}
+function waitEngine(){return new Promise((resolve,reject)=>{let n=0;const t=setInterval(()=>{if(window.DG_ENGINE){clearInterval(t);resolve(window.DG_ENGINE)}else if(++n>200){clearInterval(t);reject(new Error('game engine timeout'))}},25)})}
+async function applyRoom(room){
+  currentRoom=room;const me=(room.players||[]).find(p=>p.uid===uid);if(!me)return;
+  localSeat=Number(me.seat);window.DG_ONLINE_MULTIPLAYER=true;const eng=await waitEngine();eng.setHumanSeat(localSeat);
+  if(room.status!=='playing'){statePill('● მატჩი ელოდება','wait');return}
+  activeMode();const version=Number(room.gameVersion||0);
+  if(room.gameState&&version>lastAppliedVersion){lastAppliedVersion=version;eng.loadState(clone(room.gameState));statePill('● თამაში სინქრონში','');return}
+  if(!room.gameState&&room.hostUid===uid&&!initializing){
+    initializing=true;statePill('● პარტია იქმნება','wait');
+    try{
+      const state=eng.createOnlineMatch();
+      await runTransaction(db,async tx=>{const ref=roomRef(room.code),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const data=snap.data();if(data.gameState)return;tx.update(ref,{gameState:clone(state),gameVersion:1,gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()})});
+      lastAppliedVersion=Math.max(lastAppliedVersion,1);statePill('● თამაში სინქრონში','');
+    }catch(e){console.error('V30 init',e);statePill('● სინქრონიზაციის შეცდომა','err')}finally{initializing=false}
+  }else if(!room.gameState){statePill('● HOST ქმნის პარტიას','wait')}
+}
+async function pushState(state){
+  if(!ready||!roomCode||!currentRoom||currentRoom.status!=='playing'||window.DG_ENGINE_APPLYING_REMOTE)return;
+  clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{const expected=lastAppliedVersion;try{
+    await runTransaction(db,async tx=>{const ref=roomRef(roomCode),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const room=snap.data(),serverVersion=Number(room.gameVersion||0);if(serverVersion!==expected)throw new Error('stale-state');tx.update(ref,{gameState:clone(state),gameVersion:serverVersion+1,gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()});lastAppliedVersion=serverVersion+1});statePill('● თამაში სინქრონში','');
+  }catch(e){if(e?.message!=='stale-state')console.error('V30 push',e);statePill(e?.message==='stale-state'?'● განახლება მოვიდა':'● სინქრონიზაციის შეცდომა',e?.message==='stale-state'?'wait':'err')}},90)
+}
+window.DG_ENGINE_STATE_CHANGED=pushState;
+function attach(code){if(code===roomCode&&unsub)return;unsub?.();unsub=null;roomCode=code||'';currentRoom=null;lastAppliedVersion=0;if(!roomCode){lobbyMode();return}unsub=onSnapshot(roomRef(roomCode),snap=>{if(!snap.exists()){statePill('● ოთახი დაიხურა','err');return}const room={code:snap.id,...snap.data()};applyRoom(room).catch(e=>{console.error(e);statePill('● სინქრონიზაციის შეცდომა','err')})},e=>{console.error(e);statePill('● Firebase შეცდომა','err')})}
+function watchRoomCode(){const code=sessionStorage.getItem(ROOM_SESSION)||'';if(code!==roomCode)attach(code)}
+async function boot(){
+  addBadge();const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V30 · მეგობრის ოთახში 4 მოთამაშის რეალური დომინოს პარტია სინქრონდება Firebase-ით.';
+  try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});ready=true;watchRoomCode();setInterval(watchRoomCode,350)}catch(e){console.error('V30 boot',e);statePill('● V30 ვერ ჩაირთო','err')}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V30 REAL MATCH STATE SYNC END -->
 
 </body>
 </html>
