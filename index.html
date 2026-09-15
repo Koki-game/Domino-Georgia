@@ -6922,6 +6922,24 @@ function statePill(text,kind=''){let e=$('dgV30SyncState');if(!e){const f=$('dgF
 function activeMode(){window.DG_MATCH_ALLOWED=true;window.DG_ENTRY_READY=true;window.DG_ONLINE_MULTIPLAYER=true;document.body.classList.remove('dg-lobby-mode');document.body.classList.add('dg-match-mode','dg-game-active');$('dgEntryOverlay')?.classList.add('hidden');$('dgOnlineOverlay')?.classList.remove('show')}
 function lobbyMode(){window.DG_ONLINE_MULTIPLAYER=false;document.body.classList.remove('dg-match-mode','dg-game-active');document.body.classList.add('dg-lobby-mode')}
 function clone(v){return JSON.parse(JSON.stringify(v))}
+/* Firestore does not allow nested arrays. G.hands is [[],[],[],[]], so store
+   the four hands in an object and rebuild the engine shape on every client. */
+function encodeState(state){
+  const c=clone(state);
+  if(Array.isArray(c?.hands)){
+    c.handsBySeat={s0:c.hands[0]||[],s1:c.hands[1]||[],s2:c.hands[2]||[],s3:c.hands[3]||[]};
+    delete c.hands;
+  }
+  return c;
+}
+function decodeState(state){
+  const c=clone(state||{});
+  if(!Array.isArray(c.hands)&&c.handsBySeat){
+    c.hands=[c.handsBySeat.s0||[],c.handsBySeat.s1||[],c.handsBySeat.s2||[],c.handsBySeat.s3||[]];
+  }
+  delete c.handsBySeat;
+  return c;
+}
 function roomRef(code){return doc(db,COLLECTION,code)}
 function waitEngine(){return new Promise((resolve,reject)=>{let n=0;const t=setInterval(()=>{if(window.DG_ENGINE){clearInterval(t);resolve(window.DG_ENGINE)}else if(++n>200){clearInterval(t);reject(new Error('game engine timeout'))}},25)})}
 async function applyRoom(room){
@@ -6929,12 +6947,12 @@ async function applyRoom(room){
   localSeat=Number(me.seat);window.DG_ONLINE_MULTIPLAYER=true;const eng=await waitEngine();eng.setHumanSeat(localSeat);
   if(room.status!=='playing'){statePill('● მატჩი ელოდება','wait');return}
   activeMode();const version=Number(room.gameVersion||0);
-  if(room.gameState&&version>lastAppliedVersion){lastAppliedVersion=version;eng.loadState(clone(room.gameState));statePill('● თამაში სინქრონში','');return}
+  if(room.gameState&&version>lastAppliedVersion){lastAppliedVersion=version;eng.loadState(decodeState(room.gameState));eng.setHumanSeat(localSeat);statePill('● თამაში სინქრონში','');return}
   if(!room.gameState&&room.hostUid===uid&&!initializing){
     initializing=true;statePill('● პარტია იქმნება','wait');
     try{
       const state=eng.createOnlineMatch();
-      await runTransaction(db,async tx=>{const ref=roomRef(room.code),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const data=snap.data();if(data.gameState)return;tx.update(ref,{gameState:clone(state),gameVersion:1,gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()})});
+      await runTransaction(db,async tx=>{const ref=roomRef(room.code),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const data=snap.data();if(data.gameState)return;tx.update(ref,{gameState:encodeState(state),gameVersion:1,gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()})});
       lastAppliedVersion=Math.max(lastAppliedVersion,1);statePill('● თამაში სინქრონში','');
     }catch(e){console.error('V30 init',e);statePill('● სინქრონიზაციის შეცდომა','err')}finally{initializing=false}
   }else if(!room.gameState){statePill('● HOST ქმნის პარტიას','wait')}
@@ -6942,7 +6960,7 @@ async function applyRoom(room){
 async function pushState(state){
   if(!ready||!roomCode||!currentRoom||currentRoom.status!=='playing'||window.DG_ENGINE_APPLYING_REMOTE)return;
   clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{const expected=lastAppliedVersion;try{
-    await runTransaction(db,async tx=>{const ref=roomRef(roomCode),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const room=snap.data(),serverVersion=Number(room.gameVersion||0);if(serverVersion!==expected)throw new Error('stale-state');tx.update(ref,{gameState:clone(state),gameVersion:serverVersion+1,gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()});lastAppliedVersion=serverVersion+1});statePill('● თამაში სინქრონში','');
+    await runTransaction(db,async tx=>{const ref=roomRef(roomCode),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const room=snap.data(),serverVersion=Number(room.gameVersion||0);if(serverVersion!==expected)throw new Error('stale-state');tx.update(ref,{gameState:encodeState(state),gameVersion:serverVersion+1,gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()});lastAppliedVersion=serverVersion+1});statePill('● თამაში სინქრონში','');
   }catch(e){if(e?.message!=='stale-state')console.error('V30 push',e);statePill(e?.message==='stale-state'?'● განახლება მოვიდა':'● სინქრონიზაციის შეცდომა',e?.message==='stale-state'?'wait':'err')}},90)
 }
 window.DG_ENGINE_STATE_CHANGED=pushState;
@@ -7843,96 +7861,16 @@ body.dg-game-active #dgV48Badge{display:none}
 </script>
 <!-- DG V48 EXTRA-BRANCH THIRD-TILE TURN + DOUBLE DELAY + AVATAR FIX END -->
 
-<!-- DG V50 FRIEND TURN SYNC STABILITY FIX START -->
-<style id="dg-v50-sync-fix-css">
-#dgV48Badge{display:none!important}
-#dgV49Badge{display:none!important}
-#dgV50Badge{position:fixed;right:10px;top:10px;z-index:92000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
-body.dg-game-active #dgV50Badge{display:none}
+
+
+<!-- DG V51 FIRESTORE HANDS SYNC FIX START -->
+<style id="dg-v51-sync-css">
+#dgV48Badge,#dgV50Badge{display:none!important}
+#dgV51Badge{position:fixed;right:10px;top:10px;z-index:93000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV51Badge{display:none}
 </style>
-<script type="module" id="dg-v50-sync-fix-js">
-import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-import { getFirestore,doc,onSnapshot,runTransaction,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
-const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
-const SESSION='dg_domino_v29_room',ROOMS='dominoRooms';
-let app,auth,db,uid='',code='',unsub=null,lastApplied='',writingFallback=false;
-const $=id=>document.getElementById(id);
-function badge(){if($('dgV50Badge'))return;const b=document.createElement('div');b.id='dgV50Badge';b.textContent='V50';document.body.appendChild(b)}
-function clone(v){return JSON.parse(JSON.stringify(v))}
-function waitEngine(){return new Promise((resolve,reject)=>{let n=0;const t=setInterval(()=>{if(window.DG_ENGINE){clearInterval(t);resolve(window.DG_ENGINE)}else if(++n>240){clearInterval(t);reject(new Error('engine timeout'))}},25)})}
-function enterMatch(){
-  window.DG_MATCH_ALLOWED=true;
-  window.DG_ONLINE_MULTIPLAYER=true;
-  window.DG_ENTRY_READY=true;
-  document.body.classList.remove('dg-lobby-mode');
-  document.body.classList.add('dg-match-mode','dg-game-active');
-  $('dgEntryOverlay')?.classList.add('hidden');
-  $('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
-}
-function hasFullHands(gs){return Array.isArray(gs?.hands)&&gs.hands.length===4&&gs.hands.every(Array.isArray)}
-async function hostFallback(room,eng){
-  if(writingFallback||room.hostUid!==uid||room.status!=='playing'||hasFullHands(room.gameState))return;
-  const st=eng.getState?.();if(!hasFullHands(st))return;
-  writingFallback=true;
-  try{
-    await runTransaction(db,async tx=>{
-      const ref=doc(db,ROOMS,room.code),snap=await tx.get(ref);if(!snap.exists())return;
-      const r=snap.data();if(r.status!=='playing'||hasFullHands(r.gameState))return;
-      tx.update(ref,{gameState:clone(st),gameVersion:Math.max(1,Number(r.gameVersion||0)),gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()});
-    });
-  }catch(e){console.warn('V50 host fallback',e)}finally{writingFallback=false}
-}
-async function hydrate(room){
-  const me=(room.players||[]).find(p=>p.uid===uid);if(!me)return;
-  if(room.status!=='playing')return;
-  const eng=await waitEngine();
-  enterMatch();
-  eng.setHumanSeat?.(Number(me.seat));
-  if(!hasFullHands(room.gameState)){await hostFallback(room,eng);return}
-  const ver=Number(room.gameVersion||0);
-  const key=`${room.code}:${room.matchId||''}:${ver}`;
-  const handEl=$('playerHand');
-  const ownCount=Array.isArray(room.gameState.hands?.[Number(me.seat)])?room.gameState.hands[Number(me.seat)].length:-1;
-  const domCount=handEl?.children?.length??-1;
-  if(key===lastApplied && (ownCount===domCount || ownCount<0))return;
-  window.DG_ONLINE_MULTIPLAYER=true;
-  try{
-    /* Apply a server game version exactly once. Re-rendering the same version on
-       every Firestore heartbeat used to reset taps/choices and made hand tiles
-       appear to jump. */
-    eng.loadState?.(clone(room.gameState));
-    eng.setHumanSeat?.(Number(me.seat));
-    lastApplied=key;
-  }catch(e){console.error('V50 hydrate',e)}
-}
-function attach(c){
-  if(c===code&&unsub)return;
-  unsub?.();unsub=null;code=c||'';lastApplied='';
-  if(!/^\d{4}$/.test(code))return;
-  unsub=onSnapshot(doc(db,ROOMS,code),snap=>{
-    if(!snap.exists())return;
-    const room={code:snap.id,...snap.data()};
-    window.DG_V30_ROOM=room;
-    hydrate(room).catch(e=>console.warn('V50 room hydrate',e));
-  },e=>console.warn('V50 room listener',e));
-}
-function watch(){const c=sessionStorage.getItem(SESSION)||'';if(c!==code)attach(c)}
-async function boot(){
-  badge();
-  try{
-    app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
-    uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});
-    watch();setInterval(watch,300);
-    window.addEventListener('pageshow',()=>setTimeout(watch,100));
-    window.addEventListener('online',()=>setTimeout(watch,120));
-  }catch(e){console.error('V50 boot',e)}
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
-</script>
-<!-- DG V50 FRIEND TURN SYNC STABILITY FIX END -->
+<script id="dg-v51-badge-js">(()=>{const add=()=>{if(document.getElementById('dgV51Badge'))return;const b=document.createElement('div');b.id='dgV51Badge';b.textContent='V51';document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add()})();</script>
+<!-- DG V51 FIRESTORE HANDS SYNC FIX END -->
 
-
-<!-- V50 NOTE: visual-only renders never write game state; each Firestore gameVersion is applied once. -->
 </body>
 </html>
