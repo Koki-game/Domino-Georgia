@@ -6302,7 +6302,7 @@ window.DG_ENTRY_READY=false;
     const sec=document.createElement('section');sec.className='dg-entry-step';sec.id='dgLanguageStep';
     sec.innerHTML=`<div class="dg-entry-title" id="dgLangTitle"></div><div class="dg-entry-sub" id="dgLangSub"></div><div class="dg-language-grid">${languageDefs.map(([c,f,n])=>`<button class="dg-language-btn" data-lang="${c}"><span class="dg-language-flag">${f}</span><span>${n}</span><span class="dg-language-arrow">›</span></button>`).join('')}</div>`;
     const reg=$('dgRegisterStep');host.insertBefore(sec,reg||host.firstChild);
-    sec.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>{const l=b.dataset.lang;applyLanguage(l);const p=profile();if(p){p.language=l;saveProfile(p)}document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));((p&&p.nickname&&p.acceptedRules)?$('dgChoiceStep'):$('dgRegisterStep'))?.classList.add('active');updateFlags();}));
+    sec.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>{const l=b.dataset.lang;localStorage.setItem('dg_domino_v35_language_selected','1');applyLanguage(l);const p=profile();if(p){p.language=l;saveProfile(p)}document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));((p&&p.nickname&&p.acceptedRules)?$('dgChoiceStep'):$('dgRegisterStep'))?.classList.add('active');updateFlags();}));
   }
   function addCountryField(){
     const nick=$('dgRegNick');if(!nick||$('dgCountrySelect'))return;
@@ -6336,7 +6336,14 @@ window.DG_ENTRY_READY=false;
     const k='dg_domino_v24_room_'+code;try{const room=JSON.parse(localStorage.getItem(k)||'null');const me=room?.players?.find(p=>p.id===client);if(me){me.country=getCountry();localStorage.setItem(k,JSON.stringify(room));}}catch(e){}updateFlags();
   }
   function initialStep(){
-    const tr=T.en;setText('#dgLangTitle',tr.chooseLang);setText('#dgLangSub',tr.chooseLangSub);document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));$('dgLanguageStep')?.classList.add('active');
+    const p=profile();
+    const chosen=localStorage.getItem('dg_domino_v35_language_selected')==='1'||!!p?.language;
+    document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));
+    if(chosen){
+      ((p&&p.nickname&&p.acceptedRules)?$('dgChoiceStep'):$('dgRegisterStep'))?.classList.add('active');
+      return;
+    }
+    const tr=T.en;setText('#dgLangTitle',tr.chooseLang);setText('#dgLangSub',tr.chooseLangSub);$('dgLanguageStep')?.classList.add('active');
   }
   function init(){
     if(!$('dgEntryOverlay'))return setTimeout(init,30);
@@ -6981,7 +6988,7 @@ async function heartbeat(){const c=currentCode();if(!uid||!db||!navigator.onLine
 function onRoom(r){room=r||null;if(!room)return;const me=(room.players||[]).find(p=>p.uid===uid);if(me)localStorage.setItem(BACKUP,room.code)}
 window.addEventListener('dg-v30-room',e=>onRoom(e.detail));
 async function markBot(seat,expectedVersion,targetUid){const c=room?.code;if(!c)return false;let ok=false;await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data();if(data.status!=='playing'||Number(data.gameVersion||0)!==expectedVersion||Number(data.gameState?.current)!==seat)return;const players=[...(data.players||[])],i=players.findIndex(p=>p.uid===targetUid);if(i<0)return;const seen=Number(players[i].lastSeen||players[i].joinedAt||0);if(Date.now()-seen<STALE_MS)return;players[i]={...players[i],botActive:true};tx.update(ref,{players,botSeat:seat,botUpdatedAt:serverTimestamp()});ok=true});return ok}
-async function botController(){if(busy||!room||room.status!=='playing'||!room.gameState||!uid||!navigator.onLine)return;const seat=Number(room.gameState.current),version=Number(room.gameVersion||0);if(!Number.isInteger(seat)||seat<0||seat>3)return;const target=(room.players||[]).find(p=>Number(p.seat)===seat);if(!target||target.uid===uid)return;const seen=Number(target.lastSeen||target.joinedAt||0);if(!seen||Date.now()-seen<STALE_MS)return;const now=Date.now();const active=(room.players||[]).filter(p=>p.uid!==target.uid&&now-Number(p.lastSeen||p.joinedAt||0)<STALE_MS).sort((a,b)=>Number(a.seat)-Number(b.seat));if(!active.length||active[0].uid!==uid)return;const key=`${room.code}:${version}:${seat}`;if(key===lastBotKey)return;busy=true;try{const locked=await markBot(seat,version,target.uid);if(!locked)return;const eng=window.DG_ENGINE;if(!eng?.botTakeTurn)return;lastBotKey=key;eng.message?.(`BOT is playing for ${target.name||'player'}…`,1200);await new Promise(r=>setTimeout(r,450));eng.botTakeTurn(seat)}catch(e){console.error('V32 bot',e)}finally{busy=false}}
+async function botController(){if(window.DG_V35_LOCAL_TEST||busy||!room||room.status!=='playing'||!room.gameState||!uid||!navigator.onLine)return;const seat=Number(room.gameState.current),version=Number(room.gameVersion||0);if(!Number.isInteger(seat)||seat<0||seat>3)return;const target=(room.players||[]).find(p=>Number(p.seat)===seat);if(!target||target.uid===uid)return;const seen=Number(target.lastSeen||target.joinedAt||0);if(!seen||Date.now()-seen<STALE_MS)return;const now=Date.now();const active=(room.players||[]).filter(p=>p.uid!==target.uid&&now-Number(p.lastSeen||p.joinedAt||0)<STALE_MS).sort((a,b)=>Number(a.seat)-Number(b.seat));if(!active.length||active[0].uid!==uid)return;const key=`${room.code}:${version}:${seat}`;if(key===lastBotKey)return;busy=true;try{const locked=await markBot(seat,version,target.uid);if(!locked)return;const eng=window.DG_ENGINE;if(!eng?.botTakeTurn)return;lastBotKey=key;eng.message?.(`BOT is playing for ${target.name||'player'}…`,1200);await new Promise(r=>setTimeout(r,450));eng.botTakeTurn(seat)}catch(e){console.error('V32 bot',e)}finally{busy=false}}
 function updateGlobalEnglish(){document.documentElement.lang='en';const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V32 · Global multiplayer · choose your language · temporary BOT takes over disconnected players.';const roomNote=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(roomNote)roomNote.textContent='V32 · Firebase real-time room + synchronized match + reconnect + temporary BOT.'}
 async function boot(){badge();restoreRoomCode();addInstallButton();updateGlobalEnglish();window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;addInstallButton()});window.addEventListener('appinstalled',()=>toast('DOMINO GEORGIA installed successfully.'));setTimeout(registerPWA,1800);try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,700);setInterval(heartbeat,20000);setInterval(botController,1300)}catch(e){console.error('V32 boot',e)}}
 window.addEventListener('online',()=>setTimeout(heartbeat,300));window.addEventListener('pageshow',()=>{restoreRoomCode();setTimeout(heartbeat,500)});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
@@ -7181,6 +7188,114 @@ async function boot(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 </script>
 <!-- DG V34 TEST WITH 3 BOTS END -->
+
+
+
+<!-- DG V35 LOBBY RETURN + ONE-TIME LANGUAGE + LOCAL BOT TEST FIX START -->
+<style id="dg-v35-fixes-css">
+#dgV34Badge{display:none!important}
+#dgV35Badge{position:fixed;right:10px;top:10px;z-index:79000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV35Badge{display:none}
+#dgLobbyHome{display:none;position:fixed;left:max(10px,env(safe-area-inset-left));top:max(10px,env(safe-area-inset-top));z-index:78500;padding:8px 11px;border-radius:11px;border:1px solid rgba(233,184,76,.7);background:rgba(4,14,19,.9);color:#f6d77d;font:900 11px/1 Arial,sans-serif;box-shadow:0 3px 14px rgba(0,0,0,.45);cursor:pointer}
+body.dg-game-active #dgLobbyHome{display:block}
+#dgV35Toast{display:none;position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:80000;width:min(92vw,430px);padding:10px 12px;border-radius:12px;border:1px solid #536d7a;background:rgba(5,15,21,.96);color:#edf4f7;font:800 11px/1.45 Arial,sans-serif;text-align:center;box-shadow:0 7px 24px rgba(0,0,0,.5)}
+#dgV35Toast.show{display:block}
+</style>
+<script id="dg-v35-fixes-js">
+(()=>{
+  const PROFILE_KEY='dg_domino_v25_profile';
+  const LANG_KEY='dg_domino_v26_language';
+  const LANG_CHOSEN='dg_domino_v35_language_selected';
+  const SESSION='dg_domino_v29_room';
+  const BACKUP='dg_domino_v31_room_backup';
+  const $=id=>document.getElementById(id);
+  let startingTest=false;
+  window.DG_V35_LOCAL_TEST=false;
+
+  function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
+  function lang(){return localStorage.getItem(LANG_KEY)||profile().language||'en'}
+  function lobbyText(){return ({ka:'← ლობი',en:'← Lobby',ru:'← Лобби',tr:'← Lobi',de:'← Lobby',ar:'الردهة ←'})[lang()]||'← Lobby'}
+  function toast(text){let e=$('dgV35Toast');if(!e){e=document.createElement('div');e.id='dgV35Toast';document.body.appendChild(e)}e.textContent=text;e.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),3600)}
+  function addBadge(){if(!$('dgV35Badge')){const b=document.createElement('div');b.id='dgV35Badge';b.textContent='V35';document.body.appendChild(b)}}
+  function addLobbyButton(){
+    let b=$('dgLobbyHome');
+    if(!b){b=document.createElement('button');b.id='dgLobbyHome';b.type='button';document.body.appendChild(b)}
+    b.textContent=lobbyText();
+  }
+  function showChoiceOrRegister(){
+    const p=profile();
+    document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));
+    ((p&&p.nickname&&p.acceptedRules)?$('dgChoiceStep'):$('dgRegisterStep'))?.classList.add('active');
+  }
+  function forceLobby(){
+    window.DG_V31_LEAVING=true;
+    sessionStorage.removeItem(SESSION);localStorage.removeItem(BACKUP);
+    /* Keep the local engine from continuing BOT turns under the lobby. */
+    window.DG_ONLINE_MULTIPLAYER=true;
+    window.DG_MATCH_ALLOWED=false;
+    document.body.classList.remove('dg-game-active','dg-match-mode');
+    document.body.classList.add('dg-lobby-mode');
+    $('dgWinOverlay')?.classList.remove('show');
+    $('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
+    const entry=$('dgEntryOverlay');if(entry)entry.classList.remove('hidden');
+    showChoiceOrRegister();
+    addLobbyButton();
+    setTimeout(()=>{
+      document.body.classList.remove('dg-game-active','dg-match-mode');
+      document.body.classList.add('dg-lobby-mode');
+      $('dgEntryOverlay')?.classList.remove('hidden');
+      $('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
+      showChoiceOrRegister();
+    },650);
+  }
+  function setTestNames(){
+    const p=profile();
+    const values=[['.player-top','BOT Alpha'],['.player-right','BOT Beta'],['.player-bottom',p.nickname||'Player'],['.player-left','BOT Gamma']];
+    values.forEach(([sel,name])=>{const e=document.querySelector(sel+' .player-name');if(e)e.textContent=name});
+    document.querySelectorAll('.dg-level-badge').forEach(x=>x.style.display='none');
+  }
+  async function startLocalBotTest(){
+    if(startingTest)return;startingTest=true;
+    try{
+      window.DG_V31_LEAVING=true;
+      window.DG_V35_LOCAL_TEST=true;
+      sessionStorage.removeItem(SESSION);localStorage.removeItem(BACKUP);
+      toast('Starting local test: you + 3 BOTs…');
+      /* Give the old Firebase room listener time to detach before local AI starts. */
+      await new Promise(r=>setTimeout(r,650));
+      const eng=window.DG_ENGINE;if(!eng?.createOnlineMatch)throw new Error('Game engine is not ready');
+      window.DG_MATCH_ALLOWED=true;
+      window.DG_ONLINE_MULTIPLAYER=false;
+      document.body.classList.remove('dg-lobby-mode');
+      document.body.classList.add('dg-match-mode','dg-game-active');
+      $('dgEntryOverlay')?.classList.add('hidden');
+      $('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
+      $('dgWinOverlay')?.classList.remove('show');
+      eng.setHumanSeat?.(2);
+      setTestNames();
+      eng.createOnlineMatch();
+      setTimeout(setTestNames,60);
+      eng.message?.('TEST: you + 3 BOTs',1500);
+    }catch(e){console.error('V35 local bot test',e);toast('Test could not start: '+(e?.message||e));forceLobby()}
+    finally{startingTest=false}
+  }
+  function init(){
+    addBadge();addLobbyButton();
+    const p=profile();if(p?.language)localStorage.setItem(LANG_CHOSEN,'1');
+    document.addEventListener('click',e=>{
+      const langBtn=e.target?.closest?.('.dg-language-btn');if(langBtn){localStorage.setItem(LANG_CHOSEN,'1');setTimeout(addLobbyButton,40)}
+      if(e.target?.closest?.('#dgEntryQuick,#dgEntryCreate,#dgFriendJoin,#dgCreateRoom,#dgJoinRoom'))window.DG_V35_LOCAL_TEST=false;
+      const test=e.target?.closest?.('#dgTestBots');
+      if(test){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();startLocalBotTest();return}
+      const lobby=e.target?.closest?.('#dgLobbyHome');
+      if(lobby){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();forceLobby();return}
+      if(e.target?.closest?.('#dgChangeLanguage'))setTimeout(addLobbyButton,40);
+    },true);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V35 LOBBY RETURN + ONE-TIME LANGUAGE + LOCAL BOT TEST FIX END -->
 
 </body>
 </html>
