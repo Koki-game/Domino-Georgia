@@ -7399,7 +7399,7 @@ body.dg-game-active #dgV37Badge{display:none}
   function trimMenu(){
     const panel=$('dgV15MenuPanel');if(!panel)return;
     panel.querySelectorAll('[data-act]').forEach(btn=>{
-      if(!['full','settings'].includes(btn.dataset.act))btn.remove();
+      if(!['sound','music','full','settings'].includes(btn.dataset.act))btn.remove();
     });
   }
   function init(){
@@ -7516,5 +7516,283 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <!-- DG V42 AVATAR REACTIONS 2S END -->
 
+
+
+<!-- DG V43 SOUND SYSTEM + HAMBURGER MUTE START -->
+<style id="dg-v43-sound-css">
+#dgV42Badge{display:none!important}
+#dgV43Badge{position:fixed;right:10px;top:10px;z-index:85000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV43Badge{display:none}
+#dgV15MenuPanel [data-act="sound"]{display:block!important}
+</style>
+<script id="dg-v43-sound-js">
+(()=>{
+  const KEY='dg_domino_v43_sound';
+  const LANG_KEY='dg_domino_v26_language';
+  let enabled=localStorage.getItem(KEY)!=='off';
+  let ctx=null,lastState=null,lastPlacementId='',lastTurn=null,lastScore='0:0',lastHandOver=false,lastMatchOver=false;
+  let pollTimer=null;
+  const $=id=>document.getElementById(id);
+  const TXT={
+    ka:{on:'🔊 ხმა: ჩართული',off:'🔇 ხმა: გამორთული'},
+    en:{on:'🔊 Sound: ON',off:'🔇 Sound: OFF'},
+    ru:{on:'🔊 Звук: ВКЛ',off:'🔇 Звук: ВЫКЛ'},
+    tr:{on:'🔊 Ses: AÇIK',off:'🔇 Ses: KAPALI'},
+    de:{on:'🔊 Ton: AN',off:'🔇 Ton: AUS'},
+    ar:{on:'🔊 الصوت: تشغيل',off:'🔇 الصوت: إيقاف'}
+  };
+  function lang(){return localStorage.getItem(LANG_KEY)||'en'}
+  function tr(){return TXT[lang()]||TXT.en}
+  function audio(){
+    if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ctx=new C()}
+    if(ctx.state==='suspended')ctx.resume().catch(()=>{});
+    return ctx;
+  }
+  function tone(freq=440,dur=.08,type='sine',gain=.045,delay=0){
+    if(!enabled)return;const c=audio();if(!c)return;const t=c.currentTime+delay;
+    const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+.02);
+  }
+  function dominoClack(){
+    if(!enabled)return;const c=audio();if(!c)return;const now=c.currentTime;
+    const hit=(t,level=1)=>{
+      // Short ivory/bakelite click + small wooden-table knock. No external audio file is used.
+      const len=Math.max(1,Math.floor(c.sampleRate*.055)),buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+      for(let i=0;i<len;i++){const x=i/len;d[i]=(Math.random()*2-1)*Math.pow(1-x,5)}
+      const src=c.createBufferSource(),bp=c.createBiquadFilter(),hp=c.createBiquadFilter(),g=c.createGain();
+      src.buffer=buf;bp.type='bandpass';bp.frequency.value=2450;bp.Q.value=1.15;hp.type='highpass';hp.frequency.value=520;
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.075*level,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+.05);
+      src.connect(bp);bp.connect(hp);hp.connect(g);g.connect(c.destination);src.start(t);src.stop(t+.06);
+      const reson=(freq,amp,dur,delay=0)=>{const o=c.createOscillator(),rg=c.createGain();o.type='triangle';o.frequency.setValueAtTime(freq,t+delay);o.frequency.exponentialRampToValueAtTime(freq*.76,t+delay+dur);rg.gain.setValueAtTime(Math.max(.0001,amp*level),t+delay);rg.gain.exponentialRampToValueAtTime(.0001,t+delay+dur);o.connect(rg);rg.connect(c.destination);o.start(t+delay);o.stop(t+delay+dur+.01)};
+      reson(1450,.026,.035);reson(310,.025,.07,.003);
+    };
+    hit(now,1);
+  }
+  function clickSound(){dominoClack()}
+  function turnSound(){tone(660,.07,'sine',.045);tone(880,.09,'sine',.04,.085)}
+  function errorSound(){tone(150,.13,'sawtooth',.028);tone(115,.15,'sawtooth',.022,.08)}
+  function reactionSound(){tone(760,.055,'sine',.035);tone(1040,.075,'sine',.032,.06)}
+  function scoreSound(){tone(520,.06,'triangle',.035);tone(690,.07,'triangle',.035,.065);tone(860,.09,'triangle',.034,.135)}
+  function handSound(){tone(392,.08,'triangle',.04);tone(523,.09,'triangle',.04,.09);tone(659,.12,'triangle',.04,.19)}
+  function winSound(){[523,659,784,1047].forEach((f,i)=>tone(f,.16,'triangle',.05,i*.12))}
+  function updateUI(){
+    const s=$('soundBtn');if(s)s.textContent=enabled?'🔊':'🔇';
+    const m=document.querySelector('#dgV15MenuPanel [data-act="sound"]');if(m)m.textContent=enabled?tr().on:tr().off;
+  }
+  function ensureMenu(){
+    const panel=$('dgV15MenuPanel');if(!panel)return;
+    let b=panel.querySelector('[data-act="sound"]');
+    if(!b){b=document.createElement('button');b.className='dg-v15-menu-item';b.dataset.act='sound';const full=panel.querySelector('[data-act="full"]');panel.insertBefore(b,full||panel.firstChild)}
+    updateUI();
+  }
+  function setEnabled(v,feedback=true){
+    enabled=!!v;localStorage.setItem(KEY,enabled?'on':'off');updateUI();
+    if(enabled&&feedback){audio();tone(720,.06,'sine',.035);tone(960,.08,'sine',.03,.07)}
+  }
+  function wireMute(){
+    // The legacy sound button already flips its icon. Read its final icon and persist the real state.
+    const s=$('soundBtn');
+    if(s&&!s.dataset.v43){s.dataset.v43='1';s.addEventListener('click',()=>setTimeout(()=>{setEnabled(s.textContent.includes('🔊'),false)},0));}
+    document.addEventListener('click',e=>{
+      const item=e.target?.closest?.('#dgV15MenuPanel [data-act="sound"]');
+      if(!item)return;
+      // Let the legacy menu call soundBtn.click(); our soundBtn listener above stores the state.
+      setTimeout(()=>{ensureMenu();$('dgV15MenuWrap')?.classList.remove('open')},0);
+    });
+  }
+  function pollGame(){
+    const eng=window.DG_ENGINE;if(!eng?.getState)return;const st=eng.getState();if(!st)return;
+    const human=Number(eng.getHumanSeat?.()??2);
+    const placements=Array.isArray(st.placements)?st.placements:[];
+    const last=placements[placements.length-1]?.id||'';
+    if(lastPlacementId&&last&&last!==lastPlacementId)clickSound();
+    lastPlacementId=last;
+    if(lastTurn!==null&&st.current!==lastTurn&&Number(st.current)===human&&!st.handOver&&!st.matchOver)turnSound();
+    lastTurn=Number(st.current);
+    const sc=(st.scores||[0,0]).join(':');if(lastScore!=='0:0'&&sc!==lastScore)scoreSound();lastScore=sc;
+    if(!lastHandOver&&st.handOver&&!st.matchOver)handSound();
+    if(!lastMatchOver&&st.matchOver)winSound();
+    lastHandOver=!!st.handOver;lastMatchOver=!!st.matchOver;lastState=st;
+  }
+  function wireFeedback(){
+    document.addEventListener('click',e=>{
+      const tile=e.target?.closest?.('#playerHand .domino');
+      if(tile&&!tile.classList.contains('playable'))errorSound();
+      if(e.target?.closest?.('.emoji-choice'))reactionSound();
+    },true);
+    const mo=new MutationObserver(ms=>{for(const m of ms){for(const n of m.addedNodes||[]){if(n?.nodeType===1&&(n.classList?.contains('dg-v41-reaction')||n.querySelector?.('.dg-v41-reaction'))){reactionSound();return}}}});
+    mo.observe(document.body,{childList:true,subtree:true});
+  }
+  function badge(){if($('dgV43Badge'))return;const b=document.createElement('div');b.id='dgV43Badge';b.textContent='V43';document.body.appendChild(b)}
+  function init(){
+    badge();ensureMenu();wireMute();wireFeedback();updateUI();
+    // Browsers require a user gesture before audio starts; first tap unlocks it quietly.
+    document.addEventListener('pointerdown',()=>{if(enabled)audio()},{once:true,capture:true});
+    setTimeout(ensureMenu,150);setTimeout(ensureMenu,800);
+    pollTimer=setInterval(pollGame,180);
+    document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-language-btn'))setTimeout(()=>{ensureMenu();updateUI()},40)});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V43 SOUND SYSTEM + HAMBURGER MUTE END -->
+
+
+
+<!-- DG V45 CLASSICAL BACKGROUND MUSIC + REAL DOMINO CLACK START -->
+<style id="dg-v45-music-css">
+#dgV43Badge,#dgV44Badge{display:none!important}
+#dgV45Badge{position:fixed;right:10px;top:10px;z-index:87000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV45Badge{display:none}
+#dgV15MenuPanel [data-act="music"]{display:block!important}
+</style>
+<script id="dg-v45-music-js">
+(()=>{
+  /* V45 music is generated live with WebAudio. It uses no third-party recording,
+     so there is no licensed/copyrighted audio file bundled with the game. */
+  const KEY='dg_domino_v44_music';
+  const LANG_KEY='dg_domino_v26_language';
+  let enabled=localStorage.getItem(KEY)!=='off';
+  let ctx=null,master=null,timer=null,nextBar=0,barIndex=0,unlocked=false;
+  const $=id=>document.getElementById(id);
+  const TXT={
+    ka:{on:'🎵 მუსიკა: ჩართული',off:'🎵 მუსიკა: გამორთული'},
+    en:{on:'🎵 Music: ON',off:'🎵 Music: OFF'},
+    ru:{on:'🎵 Музыка: ВКЛ',off:'🎵 Музыка: ВЫКЛ'},
+    tr:{on:'🎵 Müzik: AÇIK',off:'🎵 Müzik: KAPALI'},
+    de:{on:'🎵 Musik: AN',off:'🎵 Musik: AUS'},
+    ar:{on:'🎵 الموسيقى: تشغيل',off:'🎵 الموسيقى: إيقاف'}
+  };
+  // Calm original classical-style arpeggio progression. Frequencies are generated in code.
+  const BARS=[
+    [130.81,196.00,261.63,329.63,392.00,329.63,261.63,196.00], // C
+    [110.00,164.81,220.00,261.63,329.63,261.63,220.00,164.81], // Am
+    [87.31,130.81,174.61,220.00,261.63,220.00,174.61,130.81],  // F
+    [98.00,146.83,196.00,246.94,293.66,246.94,196.00,146.83], // G
+    [110.00,164.81,220.00,261.63,329.63,261.63,220.00,164.81],
+    [87.31,130.81,174.61,220.00,261.63,220.00,174.61,130.81],
+    [98.00,146.83,196.00,246.94,293.66,246.94,196.00,146.83],
+    [130.81,196.00,261.63,329.63,392.00,329.63,261.63,196.00]
+  ];
+  function lang(){return localStorage.getItem(LANG_KEY)||'en'}
+  function tr(){return TXT[lang()]||TXT.en}
+  function audio(){
+    if(!ctx){
+      const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
+      ctx=new C();master=ctx.createGain();master.gain.value=0;master.connect(ctx.destination);
+    }
+    return ctx;
+  }
+  function ensureMenu(){
+    const panel=$('dgV15MenuPanel');if(!panel)return;
+    let b=panel.querySelector('[data-act="music"]');
+    if(!b){
+      b=document.createElement('button');b.className='dg-v15-menu-item';b.dataset.act='music';
+      const sound=panel.querySelector('[data-act="sound"]');
+      if(sound?.nextSibling)panel.insertBefore(b,sound.nextSibling);else if(sound)panel.appendChild(b);else panel.insertBefore(b,panel.firstChild);
+    }
+    b.textContent=enabled?tr().on:tr().off;
+  }
+  function pluck(freq,start,dur=.44,level=.00235){
+    if(!ctx||!master)return;
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(.00001,start);g.gain.exponentialRampToValueAtTime(level,start+.012);g.gain.exponentialRampToValueAtTime(.00001,start+dur);
+    const o1=ctx.createOscillator(),o2=ctx.createOscillator();o1.type='triangle';o2.type='sine';
+    o1.frequency.setValueAtTime(freq,start);o2.frequency.setValueAtTime(freq*2,start);
+    const g2=ctx.createGain();g2.gain.value=.18;
+    o1.connect(g);o2.connect(g2);g2.connect(g);g.connect(master);o1.start(start);o2.start(start);o1.stop(start+dur+.02);o2.stop(start+Math.min(dur,.28));
+  }
+  function bass(freq,start){
+    if(!ctx||!master)return;const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(freq,start);
+    g.gain.setValueAtTime(.00001,start);g.gain.exponentialRampToValueAtTime(.00135,start+.04);g.gain.exponentialRampToValueAtTime(.00001,start+1.35);
+    o.connect(g);g.connect(master);o.start(start);o.stop(start+1.4);
+  }
+  function scheduleBar(start,idx){
+    const notes=BARS[idx%BARS.length],step=.47;
+    bass(notes[0],start);
+    notes.forEach((f,i)=>pluck(f,start+.08+i*step,.39,i===0?.0028:.00225));
+    // Very soft upper voice, every other bar, to give it a gentle classical feel.
+    if(idx%2===0){[notes[3],notes[4],notes[3],notes[2]].forEach((f,i)=>pluck(f*2,start+.31+i*.94,.34,.00115));}
+  }
+  function pump(){
+    if(!enabled||!unlocked||document.hidden)return;const c=audio();if(!c)return;
+    if(c.state==='suspended')c.resume().catch(()=>{});const now=c.currentTime;if(nextBar<now+.05)nextBar=now+.12;
+    while(nextBar<now+8){scheduleBar(nextBar,barIndex++);nextBar+=3.86;}
+  }
+  function startMusic(){
+    if(!enabled||!unlocked||document.hidden)return;const c=audio();if(!c)return;c.resume?.().catch(()=>{});
+    master.gain.cancelScheduledValues(c.currentTime);master.gain.setTargetAtTime(.88,c.currentTime,.45);
+    nextBar=c.currentTime+.08;barIndex=0;pump();clearInterval(timer);timer=setInterval(pump,2200);
+  }
+  function stopMusic(){clearInterval(timer);timer=null;if(ctx&&master){master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setTargetAtTime(.00001,ctx.currentTime,.2)}}
+  function setEnabled(v){enabled=!!v;localStorage.setItem(KEY,enabled?'on':'off');ensureMenu();if(enabled)startMusic();else stopMusic()}
+  function unlock(){if(unlocked)return;unlocked=true;const c=audio();c?.resume?.().catch(()=>{});if(enabled)startMusic()}
+  function wire(){
+    document.addEventListener('click',e=>{const b=e.target?.closest?.('#dgV15MenuPanel [data-act="music"]');if(!b)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();unlock();setEnabled(!enabled);$('dgV15MenuWrap')?.classList.remove('open')},true);
+    document.addEventListener('pointerdown',unlock,{once:true,capture:true});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)stopMusic();else if(enabled)startMusic()});
+    document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-language-btn'))setTimeout(ensureMenu,50)});
+  }
+  function badge(){if($('dgV45Badge'))return;const b=document.createElement('div');b.id='dgV45Badge';b.textContent='V45';document.body.appendChild(b)}
+  function init(){badge();ensureMenu();wire();setTimeout(ensureMenu,180);setTimeout(ensureMenu,850);setTimeout(ensureMenu,1600)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V45 CLASSICAL BACKGROUND MUSIC + REAL DOMINO CLACK END -->
+
+<!-- DG V46 TURN CLOCK + TIMEOUT BOT + ONE REJOIN START -->
+<style id="dg-v46-turn-clock-css">
+#dgV45Badge{display:none!important}
+#dgV46Badge{position:fixed;right:10px;top:10px;z-index:89000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV46Badge{display:none}
+.player-top,.player-top .player-card{overflow:visible!important}
+.player-top{z-index:620!important}
+.player-top .avatar{z-index:12!important;opacity:1!important;filter:none!important;background-position:center center!important;background-size:cover!important}
+.player .avatar.dg-v46-clock{--dg-v46-p:100%;--dg-v46-c:#39d86b;overflow:visible!important}
+.player .avatar.dg-v46-clock::after{content:"";position:absolute;inset:-6px;border-radius:50%;pointer-events:none;z-index:30;background:conic-gradient(var(--dg-v46-c) var(--dg-v46-p),rgba(20,24,25,.33) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 0);mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 0)}
+.dg-v46-seconds{position:absolute;left:50%;top:-18px;transform:translateX(-50%);z-index:35;min-width:25px;height:17px;padding:0 4px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(5,12,10,.9);border:1px solid var(--dg-v46-c,#39d86b);color:#fff;font:900 10px/1 Arial,sans-serif;box-sizing:border-box;pointer-events:none}
+#dgV46SelfClock{display:none;position:absolute;left:50%;bottom:12.3%;transform:translateX(-50%);z-index:25000;width:38px;height:38px;border-radius:50%;align-items:center;justify-content:center;background:rgba(7,18,13,.92);color:#fff;font:900 12px/1 Arial,sans-serif;box-shadow:0 2px 9px rgba(0,0,0,.55)}
+#dgV46SelfClock.show{display:flex}
+#dgV46SelfClock::before{content:"";position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(var(--dg-v46-self-c,#39d86b) var(--dg-v46-self-p,100%),rgba(20,24,25,.33) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 0);mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 0)}
+#dgV46TimeoutOverlay{display:none;position:fixed;inset:0;z-index:110000;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.64);backdrop-filter:blur(4px)}
+#dgV46TimeoutOverlay.show{display:flex}
+#dgV46TimeoutCard{width:min(92vw,390px);padding:20px 18px;border-radius:18px;border:1px solid #7d5530;background:linear-gradient(155deg,#10191d,#090d0f);color:#f5f7f8;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.65)}
+#dgV46TimeoutCard h3{margin:0 0 8px;color:#f0c96b;font-size:20px}#dgV46TimeoutCard p{margin:0 0 15px;color:#b8c5cb;font-size:12px;line-height:1.5}
+#dgV46ReturnBtn{width:100%;min-height:46px;border-radius:12px;border:1px solid #37a75d;background:linear-gradient(#15964a,#0b6f36);color:#fff;font-weight:1000;cursor:pointer}#dgV46ReturnBtn:disabled{opacity:.5;cursor:not-allowed}
+@media(max-height:560px){#dgV46SelfClock{bottom:11.6%;width:34px;height:34px;font-size:11px}.dg-v46-seconds{top:-16px;min-width:23px;height:15px;font-size:9px}}
+</style>
+<script type="module" id="dg-v46-turn-clock-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,getDoc,runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const ROOMS='dominoRooms',GREEN_MS=30000,RED_MS=15000,TOTAL_MS=45000,LANG_KEY='dg_domino_v26_language';
+const roots=['.player-top','.player-right','.player-bottom','.player-left'];
+let app,auth,db,uid='',room=window.DG_V30_ROOM||null,lastTimerWrite='',handling='',returnBusy=false;
+const $=id=>document.getElementById(id);
+const TXT={ka:{title:'დრო ამოიწურა',body:'შენს ადგილას BOT აგრძელებს თამაშს.',back:'თამაშში დაბრუნება · 1 შანსი',used:'დაბრუნების შანსი უკვე გამოიყენე. BOT გააგრძელებს ამ მატჩს.',returning:'ვბრუნდებით თამაშში…'},en:{title:'Time expired',body:'A BOT is continuing in your seat.',back:'Return to game · 1 chance',used:'Your return chance has already been used. The BOT will finish this match.',returning:'Returning to game…'},ru:{title:'Время вышло',body:'BOT продолжает играть вместо вас.',back:'Вернуться · 1 шанс',used:'Шанс возвращения уже использован. BOT закончит этот матч.',returning:'Возвращаемся…'},tr:{title:'Süre doldu',body:'Yerine BOT oynamaya devam ediyor.',back:'Oyuna dön · 1 hak',used:'Dönüş hakkını kullandın. BOT bu maçı tamamlayacak.',returning:'Oyuna dönülüyor…'},de:{title:'Zeit abgelaufen',body:'Ein BOT spielt auf deinem Platz weiter.',back:'Zurück ins Spiel · 1 Chance',used:'Deine Rückkehr-Chance wurde bereits benutzt. Der BOT beendet dieses Match.',returning:'Rückkehr…'},ar:{title:'انتهى الوقت',body:'الروبوت يواصل اللعب مكانك.',back:'العودة للعبة · فرصة واحدة',used:'تم استخدام فرصة العودة. سيكمل الروبوت هذه المباراة.',returning:'جارٍ العودة…'}};
+function tr(){return TXT[localStorage.getItem(LANG_KEY)||'en']||TXT.en}
+function badge(){if($('dgV46Badge'))return;const b=document.createElement('div');b.id='dgV46Badge';b.textContent='V46';document.body.appendChild(b)}
+function playerForSeat(seat){return (room?.players||[]).find(p=>Number(p.seat)===Number(seat))}
+function me(){return (room?.players||[]).find(p=>p.uid===uid)}
+function isRealPlayer(p){return !!p&&!String(p.uid||'').startsWith('BOT_')}
+function avatarForSeat(seat){let root=document.querySelector(`.player[data-online-seat="${seat}"]`);if(!root&&room&&uid){const mine=me(),mySeat=Number(mine?.seat??2),visual=(Number(seat)-mySeat+2+4)%4;root=document.querySelector(roots[visual])}return root?.querySelector('.avatar')||null}
+function clearRings(){document.querySelectorAll('.avatar.dg-v46-clock').forEach(a=>{a.classList.remove('dg-v46-clock');a.style.removeProperty('--dg-v46-p');a.style.removeProperty('--dg-v46-c');a.querySelector('.dg-v46-seconds')?.remove()});$('dgV46SelfClock')?.classList.remove('show')}
+function ensureSelfClock(){let e=$('dgV46SelfClock');if(e)return e;e=document.createElement('div');e.id='dgV46SelfClock';document.getElementById('game')?.appendChild(e);return e}
+function paintClock(seat,elapsed){clearRings();const red=elapsed>=GREEN_MS,phaseElapsed=red?elapsed-GREEN_MS:elapsed,phaseTotal=red?RED_MS:GREEN_MS,remain=Math.max(0,phaseTotal-phaseElapsed),pct=Math.max(0,Math.min(100,(remain/phaseTotal)*100)),color=red?'#f04444':'#39d86b',secs=Math.max(0,Math.ceil(remain/1000));const a=avatarForSeat(seat),mine=me();if(a&&getComputedStyle(a.closest('.player')||a).display!=='none'){a.classList.add('dg-v46-clock');a.style.setProperty('--dg-v46-p',pct+'%');a.style.setProperty('--dg-v46-c',color);let s=a.querySelector('.dg-v46-seconds');if(!s){s=document.createElement('span');s.className='dg-v46-seconds';a.appendChild(s)}s.textContent=String(secs);s.style.setProperty('--dg-v46-c',color)}else if(mine&&Number(mine.seat)===Number(seat)){const self=ensureSelfClock();self.textContent=String(secs);self.style.setProperty('--dg-v46-self-p',pct+'%');self.style.setProperty('--dg-v46-self-c',color);self.classList.add('show')}}
+function activeController(targetSeat){if(!room||!uid)return false;const now=Date.now(),players=(room.players||[]).filter(isRealPlayer);let active=players.filter(p=>!p.timedOut&&now-Number(p.lastSeen||p.joinedAt||0)<50000&&Number(p.seat)!==Number(targetSeat));if(!active.length)active=players.filter(p=>!p.timedOut&&now-Number(p.lastSeen||p.joinedAt||0)<50000);active.sort((a,b)=>Number(a.seat)-Number(b.seat)||String(a.uid).localeCompare(String(b.uid)));return active[0]?.uid===uid}
+async function ensureTurnTimer(st){if(!db||!room||room.status!=='playing'||st.handOver||st.matchOver)return;const seat=Number(st.current),ver=Number(room.gameVersion||0),target=playerForSeat(seat);if(!isRealPlayer(target)||target.botActive)return;const key=`${ver}:${seat}`,tt=room.turnTimer;if(tt&&tt.key===key&&Number(tt.startedAtMs)>0)return;if(lastTimerWrite===key||!activeController(seat))return;lastTimerWrite=key;try{await runTransaction(db,async tx=>{const ref=doc(db,ROOMS,room.code),snap=await tx.get(ref);if(!snap.exists())return;const r=snap.data(),cur=Number(r.gameState?.current),rv=Number(r.gameVersion||0),k=`${rv}:${cur}`;if(k!==key)return;if(r.turnTimer?.key===key&&Number(r.turnTimer?.startedAtMs)>0)return;tx.update(ref,{turnTimer:{key,seat:cur,version:rv,startedAtMs:Date.now(),expired:false}})})}catch(e){console.warn('V46 timer init',e)}}
+async function timeoutTurn(st){if(!db||!room||!uid)return;const seat=Number(st.current),ver=Number(room.gameVersion||0),key=`${ver}:${seat}`;if(handling===key||!activeController(seat))return;handling=key;let locked=false,targetUid='';try{await runTransaction(db,async tx=>{const ref=doc(db,ROOMS,room.code),snap=await tx.get(ref);if(!snap.exists())return;const r=snap.data(),cur=Number(r.gameState?.current),rv=Number(r.gameVersion||0);if(r.status!=='playing'||cur!==seat||rv!==ver||r.turnTimer?.key!==key||r.turnTimer?.expired)return;const players=[...(r.players||[])],i=players.findIndex(p=>Number(p.seat)===seat);if(i<0||!isRealPlayer(players[i])||players[i].botActive)return;targetUid=players[i].uid;players[i]={...players[i],botActive:true,timedOut:true,timeoutAt:Date.now()};tx.update(ref,{players,turnTimer:{...r.turnTimer,expired:true,expiredAtMs:Date.now()},botSeat:seat,botUpdatedAt:Date.now()});locked=true});if(!locked)return;await new Promise(r=>setTimeout(r,500));const snap=await getDoc(doc(db,ROOMS,room.code));if(!snap.exists())return;const r=snap.data(),p=(r.players||[]).find(x=>x.uid===targetUid);if(r.status==='playing'&&Number(r.gameVersion||0)===ver&&Number(r.gameState?.current)===seat&&p?.botActive&&p?.timedOut)window.DG_ENGINE?.botTakeTurn?.(seat)}catch(e){console.warn('V46 timeout',e)}finally{setTimeout(()=>{if(handling===key)handling=''},900)}}
+function ensureOverlay(){let o=$('dgV46TimeoutOverlay');if(o)return o;o=document.createElement('div');o.id='dgV46TimeoutOverlay';o.innerHTML='<div id="dgV46TimeoutCard"><h3></h3><p></p><button id="dgV46ReturnBtn"></button></div>';document.body.appendChild(o);$('dgV46ReturnBtn')?.addEventListener('click',returnOnce);return o}
+function renderTimeoutOverlay(){const o=ensureOverlay(),mine=me(),tt=tr();if(!mine?.timedOut){o.classList.remove('show');return}const used=mine.returnChanceUsed===true;o.querySelector('h3').textContent=tt.title;o.querySelector('p').textContent=used?tt.used:tt.body;const b=$('dgV46ReturnBtn');b.style.display=used?'none':'block';b.textContent=tt.back;b.disabled=returnBusy;o.classList.add('show')}
+async function returnOnce(){if(returnBusy||!db||!room||!uid)return;returnBusy=true;const b=$('dgV46ReturnBtn');if(b){b.disabled=true;b.textContent=tr().returning}try{await runTransaction(db,async tx=>{const ref=doc(db,ROOMS,room.code),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const r=snap.data(),players=[...(r.players||[])],i=players.findIndex(p=>p.uid===uid);if(i<0)throw new Error('player missing');if(players[i].returnChanceUsed===true)throw new Error('return used');players[i]={...players[i],botActive:false,timedOut:false,returnChanceUsed:true,lastSeen:Date.now(),returnedAt:Date.now()};tx.update(ref,{players})})}catch(e){console.warn('V46 return',e)}finally{returnBusy=false;setTimeout(renderTimeoutOverlay,80)}}
+function onRoom(r){room=r||room;renderTimeoutOverlay()}
+window.addEventListener('dg-v30-room',e=>onRoom(e.detail));window.addEventListener('dg-v30-room-closed',()=>{room=null;clearRings();ensureOverlay().classList.remove('show')});
+function tick(){if(window.DG_V35_LOCAL_TEST){clearRings();return}const eng=window.DG_ENGINE;if(!eng?.getState){clearRings();return}const st=eng.getState();if(!st||!room||room.status!=='playing'||st.handOver||st.matchOver){clearRings();renderTimeoutOverlay();return}const seat=Number(st.current),target=playerForSeat(seat);if(!isRealPlayer(target)||target.botActive){clearRings();renderTimeoutOverlay();return}ensureTurnTimer(st);const tt=room.turnTimer,ver=Number(room.gameVersion||0),key=`${ver}:${seat}`;if(!tt||tt.key!==key||!Number(tt.startedAtMs)){clearRings();return}const elapsed=Math.max(0,Date.now()-Number(tt.startedAtMs));paintClock(seat,elapsed);if(elapsed>=TOTAL_MS)timeoutTurn(st);renderTimeoutOverlay()}
+async function boot(){badge();ensureSelfClock();ensureOverlay();try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setInterval(tick,120)}catch(e){console.warn('V46 boot',e)}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V46 TURN CLOCK + TIMEOUT BOT + ONE REJOIN END -->
 </body>
 </html>
