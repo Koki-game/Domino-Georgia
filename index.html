@@ -5777,5 +5777,198 @@ else setTimeout(initBottomTools,0);
 </script>
 <!-- DG V22 ROOM CARD + ABACUS END -->
 
+
+
+<!-- DG V24 ONLINE ROOMS FOUNDATION START -->
+<style id="dg-v24-online-rooms-css">
+#dgOnlineRoomBtn{
+  width:100%;margin-top:5px;padding:4px 7px;border:1px solid rgba(255,220,150,.36);
+  border-radius:6px;background:linear-gradient(#6b3519,#3a1a0d);color:#ffe8b7;
+  font-size:clamp(7px,.7vw,10px);font-weight:900;cursor:pointer;pointer-events:auto;
+}
+.room-info.dg-room-card{pointer-events:auto!important;}
+#dgOnlineOverlay{
+  position:absolute;inset:0;z-index:26000;display:none;align-items:center;justify-content:center;
+  background:rgba(3,10,8,.78);backdrop-filter:blur(4px);padding:14px;
+}
+#dgOnlineOverlay.show{display:flex;}
+.dg-online-card{
+  width:min(560px,94vw);max-height:88vh;overflow:auto;border:2px solid #8c582d;border-radius:16px;
+  background:linear-gradient(155deg,#3b1c0d,#170b06 68%,#261208);color:#f6e5bf;
+  box-shadow:0 18px 60px #000,inset 0 0 0 1px rgba(255,225,168,.12);padding:18px;
+}
+.dg-online-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.dg-online-title{font-size:clamp(18px,2vw,26px);font-weight:1000;color:#ffe0a3;}
+.dg-online-status{font-size:11px;font-weight:900;padding:5px 8px;border-radius:99px;background:#173d24;color:#61f58d;border:1px solid #31874c;}
+.dg-online-close{border:0;background:transparent;color:#f7ddb0;font-size:24px;cursor:pointer;}
+.dg-online-row{display:flex;gap:8px;flex-wrap:wrap;margin:9px 0;}
+.dg-online-input{flex:1 1 160px;min-width:0;padding:10px 11px;border-radius:9px;border:1px solid #76502f;background:#0f0b08;color:#fff3d3;font-weight:800;outline:none;}
+.dg-online-btn{padding:10px 13px;border-radius:9px;border:1px solid #8a5d34;background:#4b2713;color:#ffe9bd;font-weight:1000;cursor:pointer;}
+.dg-online-btn.primary{background:linear-gradient(#b56a25,#754015);color:#fff8df;border-color:#d18b3a;}
+.dg-online-btn:disabled{opacity:.45;cursor:not-allowed;}
+.dg-room-code-big{text-align:center;font-size:clamp(25px,4vw,42px);font-weight:1000;letter-spacing:5px;color:#ffd26f;margin:8px 0 11px;}
+.dg-seat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;}
+.dg-seat{border:1px solid #5f3d25;border-radius:10px;padding:10px;background:rgba(0,0,0,.22);min-height:58px;}
+.dg-seat b{display:block;color:#ffe5ad;margin-bottom:3px;}.dg-seat small{color:#bca88a;}.dg-seat.me{border-color:#bf7b35;box-shadow:inset 0 0 0 1px rgba(255,203,116,.14);}
+.dg-online-note{font-size:11px;line-height:1.45;color:#c7b69a;margin-top:10px;}
+.dg-online-msg{min-height:20px;margin-top:8px;font-size:12px;font-weight:800;color:#ffd782;}
+@media(max-height:560px){.dg-online-card{padding:11px}.dg-online-row{margin:5px 0}.dg-seat{padding:7px;min-height:46px}.dg-online-note{display:none}}
+</style>
+<script id="dg-v24-online-rooms-js">
+(()=>{
+  const ROOM_PREFIX='dg_domino_v24_room_';
+  const CLIENT_KEY='dg_domino_v24_client';
+  let clientId=sessionStorage.getItem(CLIENT_KEY);
+  if(!clientId){clientId='p_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);sessionStorage.setItem(CLIENT_KEY,clientId);}
+  let currentCode='';
+  let channel=null;
+  const $=id=>document.getElementById(id);
+  const visualRoots=['.player-top','.player-right','.player-bottom','.player-left'];
+  const fallbackNames=['მოთამაშე 1','მოთამაშე 2','მოთამაშე 3','მოთამაშე 4'];
+
+  function nickname(){return ($('dgOnlineNick')?.value||$('myNickname')?.textContent||'მოთამაშე').trim().slice(0,18)||'მოთამაშე';}
+  function key(code){return ROOM_PREFIX+code;}
+  function readRoom(code){try{return JSON.parse(localStorage.getItem(key(code))||'null')}catch(e){return null}}
+  function writeRoom(room){room.updatedAt=Date.now();localStorage.setItem(key(room.code),JSON.stringify(room));notify(room.code);renderRoom();}
+  function notify(code){try{channel?.postMessage({type:'room-update',code,t:Date.now()})}catch(e){}}
+  function newCode(){let c;do{c=String(Math.floor(1000+Math.random()*9000))}while(readRoom(c));return c;}
+  function myPlayer(room){return room?.players?.find(p=>p.id===clientId)||null;}
+  function roomMembers(room){return (room?.players||[]).filter(Boolean);}
+  function cleanRoom(room){
+    if(!room)return room;
+    const cutoff=Date.now()-1000*60*30;
+    room.players=(room.players||[]).filter(p=>p && (p.id===clientId || (p.seenAt||p.joinedAt||0)>cutoff));
+    return room;
+  }
+  function ensureChannel(){
+    if(channel||!('BroadcastChannel' in window))return;
+    channel=new BroadcastChannel('dg_domino_v24_rooms');
+    channel.onmessage=e=>{if(e.data?.code===currentCode)renderRoom();};
+  }
+  function joinChannel(){ensureChannel();}
+
+  function createRoom(){
+    const code=newCode();
+    const room={code,host:clientId,status:'waiting',createdAt:Date.now(),players:[{id:clientId,name:nickname(),seat:2,joinedAt:Date.now(),seenAt:Date.now()}]};
+    currentCode=code;writeRoom(room);$('dgJoinCode').value=code;renderRoom();
+  }
+  function joinRoom(){
+    const code=($('dgJoinCode')?.value||'').replace(/\D/g,'').slice(0,4);
+    if(code.length!==4){setMsg('შეიყვანე 4-ნიშნა ოთახის კოდი');return;}
+    let room=cleanRoom(readRoom(code));
+    if(!room){setMsg('ასეთი ოთახი ვერ მოიძებნა');return;}
+    let me=myPlayer(room);
+    if(!me){
+      if(roomMembers(room).length>=4){setMsg('ოთახი უკვე სავსეა');return;}
+      const used=new Set(room.players.map(p=>p.seat));
+      const seat=[0,1,3,2].find(s=>!used.has(s));
+      room.players.push({id:clientId,name:nickname(),seat,joinedAt:Date.now(),seenAt:Date.now()});
+    }else{me.name=nickname();me.seenAt=Date.now();}
+    currentCode=code;writeRoom(room);renderRoom();
+  }
+  function leaveRoom(){
+    if(currentCode){
+      const room=readRoom(currentCode);
+      if(room){
+        room.players=(room.players||[]).filter(p=>p.id!==clientId);
+        if(room.host===clientId)room.host=room.players[0]?.id||'';
+        if(room.players.length)writeRoom(room); else localStorage.removeItem(key(currentCode));
+      }
+    }
+    currentCode='';applyPlayers(null);renderRoom();
+  }
+  function startOnline(){
+    const room=readRoom(currentCode);if(!room)return;
+    if(room.host!==clientId){setMsg('თამაშს იწყებს ოთახის შემქმნელი');return;}
+    if(roomMembers(room).length<4){setMsg('დასაწყებად საჭიროა 4 მოთამაშე');return;}
+    room.status='playing';room.startedAt=Date.now();writeRoom(room);setMsg('ოთახი მზადაა — შემდეგ ეტაპზე სვლების სინქრონიზაციას ჩავრთავთ');
+  }
+  function setMsg(t){const e=$('dgOnlineMsg');if(e)e.textContent=t||'';}
+
+  function applyPlayers(room){
+    if(!room){
+      visualRoots.forEach((sel,i)=>{const n=document.querySelector(sel+' .player-name');if(n)n.textContent=fallbackNames[i];});
+      return;
+    }
+    const me=myPlayer(room);const mySeat=me?.seat ?? 2;
+    const bySeat=new Map(room.players.map(p=>[p.seat,p]));
+    // Rotate seats so the local player is always visually at the bottom.
+    for(let abs=0;abs<4;abs++){
+      const visual=(abs-mySeat+2+4)%4;
+      const root=document.querySelector(visualRoots[visual]);
+      if(!root)continue;
+      const p=bySeat.get(abs);
+      const name=root.querySelector('.player-name');
+      const dot=root.querySelector('.online-dot');
+      if(name)name.textContent=p?.name||'ველოდებით...';
+      if(dot)dot.style.opacity=p?'1':'.25';
+      root.dataset.onlineSeat=String(abs);
+      root.classList.toggle('dg-online-self',!!p&&p.id===clientId);
+    }
+    const rn=$('roomName'),rc=$('roomCode');
+    if(rn)rn.textContent='ონლაინ ოთახი';
+    if(rc)rc.textContent='მაგიდა #'+room.code;
+  }
+
+  function renderRoom(){
+    const title=$('dgRoomCodeBig'),seats=$('dgSeatGrid'),start=$('dgOnlineStart'),leave=$('dgOnlineLeave');
+    if(!title||!seats)return;
+    if(!currentCode){
+      title.textContent='----';seats.innerHTML='<div class="dg-seat"><b>ოთახში ჯერ არ ხარ</b><small>შექმენი ახალი ან შედი კოდით</small></div>';
+      if(start)start.disabled=true;if(leave)leave.disabled=true;setMsg('');return;
+    }
+    const room=readRoom(currentCode);
+    if(!room){currentCode='';renderRoom();return;}
+    const me=myPlayer(room);if(me){me.seenAt=Date.now();me.name=nickname();localStorage.setItem(key(room.code),JSON.stringify(room));}
+    title.textContent=room.code;
+    const labels=['ადგილი 1','ადგილი 2','ადგილი 3','ადგილი 4'];
+    seats.innerHTML=[0,1,2,3].map(s=>{
+      const p=room.players.find(x=>x.seat===s);const isMe=p?.id===clientId;const isHost=p?.id===room.host;
+      return `<div class="dg-seat${isMe?' me':''}"><b>${p?p.name:'ველოდებით მოთამაშეს...'}</b><small>${labels[s]}${isMe?' · შენ':''}${isHost?' · HOST':''}</small></div>`;
+    }).join('');
+    if(start){start.disabled=!(room.host===clientId&&roomMembers(room).length===4);start.textContent=room.status==='playing'?'თამაში დაწყებულია':'თამაშის დაწყება';}
+    if(leave)leave.disabled=false;
+    setMsg(`${roomMembers(room).length}/4 მოთამაშე · ${room.status==='playing'?'თამაში დაწყებულია':'ველოდებით'}`);
+    applyPlayers(room);
+  }
+
+  function openLobby(){
+    $('dgOnlineOverlay')?.classList.add('show');
+    const n=$('dgOnlineNick');if(n&&!n.value)n.value=($('myNickname')?.textContent||'მოთამაშე 3').trim();
+    renderRoom();
+  }
+  function closeLobby(){$('dgOnlineOverlay')?.classList.remove('show');}
+
+  function buildUI(){
+    const game=$('game');if(!game||$('dgOnlineOverlay'))return;
+    joinChannel();
+    const room=document.querySelector('.room-info');
+    if(room&&!$('dgOnlineRoomBtn')){
+      const b=document.createElement('button');b.id='dgOnlineRoomBtn';b.type='button';b.textContent='🌐 ონლაინ ოთახი';b.onclick=openLobby;room.appendChild(b);
+    }
+    const overlay=document.createElement('div');overlay.id='dgOnlineOverlay';
+    overlay.innerHTML=`<div class="dg-online-card">
+      <div class="dg-online-head"><div><div class="dg-online-title">ონლაინ ოთახები · V24</div><div class="dg-online-status">● კავშირის ტესტი</div></div><button class="dg-online-close" id="dgOnlineClose">×</button></div>
+      <div class="dg-online-row"><input class="dg-online-input" id="dgOnlineNick" maxlength="18" placeholder="შენი სახელი"><button class="dg-online-btn primary" id="dgCreateRoom">ოთახის შექმნა</button></div>
+      <div class="dg-online-row"><input class="dg-online-input" id="dgJoinCode" inputmode="numeric" maxlength="4" placeholder="ოთახის 4-ნიშნა კოდი"><button class="dg-online-btn" id="dgJoinRoom">შესვლა</button></div>
+      <div class="dg-room-code-big" id="dgRoomCodeBig">----</div>
+      <div class="dg-seat-grid" id="dgSeatGrid"></div>
+      <div class="dg-online-msg" id="dgOnlineMsg"></div>
+      <div class="dg-online-row"><button class="dg-online-btn primary" id="dgOnlineStart" disabled>თამაშის დაწყება</button><button class="dg-online-btn" id="dgOnlineLeave" disabled>ოთახიდან გასვლა</button></div>
+      <div class="dg-online-note">V24-ის ეს ეტაპი ამოწმებს ოთახის შექმნას, კოდით შესვლას და 4 მოთამაშის ადგილებს. ერთსა და იმავე საიტზე გახსნილ 4 ჩანართში უკვე შეგიძლია გამოცდა. რეალური სხვადასხვა ტელეფონიდან თამაში შემდეგ ეტაპზე Firebase სინქრონიზაციით ჩაირთვება.</div>
+    </div>`;
+    game.appendChild(overlay);
+    $('dgOnlineClose').onclick=closeLobby;$('dgCreateRoom').onclick=createRoom;$('dgJoinRoom').onclick=joinRoom;$('dgOnlineStart').onclick=startOnline;$('dgOnlineLeave').onclick=leaveRoom;
+    $('dgOnlineNick').addEventListener('change',()=>{const room=readRoom(currentCode);const me=myPlayer(room);if(me){me.name=nickname();writeRoom(room);}});
+    overlay.addEventListener('click',e=>{if(e.target===overlay)closeLobby();});
+    window.addEventListener('storage',e=>{if(currentCode&&e.key===key(currentCode))renderRoom();});
+    setInterval(()=>{if(!currentCode)return;const room=readRoom(currentCode),me=myPlayer(room);if(me){me.seenAt=Date.now();localStorage.setItem(key(room.code),JSON.stringify(room));notify(room.code);}},12000);
+    renderRoom();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',buildUI);else buildUI();
+})();
+</script>
+<!-- DG V24 ONLINE ROOMS FOUNDATION END -->
+
 </body>
 </html>
