@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ka">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 
@@ -5181,6 +5181,24 @@ window.DG_ENGINE={
     }finally{window.DG_ENGINE_SUPPRESS_SYNC=false;}
     const snap=dgStateSnapshot();scheduleTurn();return snap;
   },
+  botTakeTurn(seat){
+    const p=Number(seat);
+    if(!Number.isInteger(p)||p<0||p>3||G.handOver||G.matchOver||G.current!==p)return false;
+    if(!G.placements.length){
+      const i=aiOpening(p);
+      openingTile(p,i);
+      if(!G.hands[p].length){finishNormal(p);return true;}
+      nextTurn();
+      return true;
+    }
+    const moves=[];
+    G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>moves.push({p,i,t,port})));
+    if(!moves.length){pass(p);return true;}
+    moves.sort((a,b)=>aiMoveScore(b)-aiMoveScore(a));
+    const m=moves[0];
+    playToPort(p,m.i,m.port.id);
+    return true;
+  },
   showSyncedResult(){
     if(!G.matchOver)return false;
     const wt=G.scores[0]===G.scores[1]?team(G.lastPlayer??0):(G.scores[0]>G.scores[1]?0:1);
@@ -6256,7 +6274,7 @@ window.DG_ENTRY_READY=false;
   };
   function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')}catch(e){return null}}
   function saveProfile(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p||{}))}
-  function lang(){return localStorage.getItem(LANG_KEY)||profile()?.language||'ka'}
+  function lang(){return localStorage.getItem(LANG_KEY)||profile()?.language||'en'}
   function flag(code){if(!code||code.length!==2)return '🌐';return String.fromCodePoint(...[...code.toUpperCase()].map(c=>127397+c.charCodeAt()))}
   function guessCountry(){
     const raw=(navigator.language||'ka-GE').replace('_','-');const parts=raw.split('-');
@@ -6318,7 +6336,7 @@ window.DG_ENTRY_READY=false;
     const k='dg_domino_v24_room_'+code;try{const room=JSON.parse(localStorage.getItem(k)||'null');const me=room?.players?.find(p=>p.id===client);if(me){me.country=getCountry();localStorage.setItem(k,JSON.stringify(room));}}catch(e){}updateFlags();
   }
   function initialStep(){
-    const tr=T[lang()]||T.ka;setText('#dgLangTitle',tr.chooseLang);setText('#dgLangSub',tr.chooseLangSub);document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));$('dgLanguageStep')?.classList.add('active');
+    const tr=T.en;setText('#dgLangTitle',tr.chooseLang);setText('#dgLangSub',tr.chooseLangSub);document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));$('dgLanguageStep')?.classList.add('active');
   }
   function init(){
     if(!$('dgEntryOverlay'))return setTimeout(init,30);
@@ -6580,7 +6598,7 @@ function applyPlayers(room){
     const visual=(abs-mySeat+2+4)%4;
     const root=document.querySelector(visualRoots[visual]);if(!root)continue;
     const p=bySeat.get(abs);const name=root.querySelector('.player-name');const dot=root.querySelector('.online-dot');
-    if(name)name.textContent=p?.name||'ველოდებით...';if(dot)dot.style.opacity=p?'1':'.25';
+    if(name)name.textContent=p?(p.botActive?'🤖 '+p.name:p.name):'ველოდებით...';if(dot)dot.style.opacity=p?'1':'.25';
     root.dataset.onlineSeat=String(abs);root.classList.toggle('dg-online-self',!!p&&p.uid===uid);
     const av=root.querySelector('.avatar');if(av){let badge=av.querySelector('.dg-country-flag-badge');if(!badge){badge=document.createElement('span');badge.className='dg-country-flag-badge';av.appendChild(badge)}const c=p?.country||'';badge.textContent=c?flag(c):'🌐';badge.classList.toggle('unknown',!c)}
   }
@@ -6595,7 +6613,7 @@ function renderRoom(room){
   }
   title.textContent=room.code;
   const labels=['ადგილი 1','ადგილი 2','ადგილი 3','ადგილი 4'];
-  seats.innerHTML=[0,1,2,3].map(s=>{const p=(room.players||[]).find(x=>x.seat===s);const me=p?.uid===uid;const host=p?.uid===room.hostUid;return `<div class="dg-seat${me?' me':''}"><b>${p?`${flag(p.country||'')} ${p.name}`:'ველოდებით მოთამაშეს...'}</b><small>${labels[s]}${me?' · შენ':''}${host?' · HOST':''}</small></div>`}).join('');
+  seats.innerHTML=[0,1,2,3].map(s=>{const p=(room.players||[]).find(x=>x.seat===s);const me=p?.uid===uid;const host=p?.uid===room.hostUid;return `<div class="dg-seat${me?' me':''}"><b>${p?`${p.botActive?'🤖 ':''}${flag(p.country||'')} ${p.name}`:'ველოდებით მოთამაშეს...'}</b><small>${labels[s]}${me?' · შენ':''}${host?' · HOST':''}${p?.botActive?' · BOT':''}</small></div>`}).join('');
   const count=(room.players||[]).length;
   if(start){start.disabled=!(room.hostUid===uid&&count===4&&room.status!=='playing');start.textContent=room.status==='playing'?'თამაში დაწყებულია':'თამაშის დაწყება'}
   if(leave)leave.disabled=false;
@@ -6844,7 +6862,7 @@ window.DG_ENGINE_STATE_CHANGED=pushState;
 function attach(code){if(code===roomCode&&unsub)return;unsub?.();unsub=null;roomCode=code||'';currentRoom=null;lastAppliedVersion=0;if(!roomCode){lobbyMode();return}unsub=onSnapshot(roomRef(roomCode),snap=>{if(!snap.exists()){window.dispatchEvent(new CustomEvent('dg-v30-room-closed',{detail:{code:roomCode}}));statePill('● ოთახი დაიხურა','err');return}const room={code:snap.id,...snap.data()};applyRoom(room).catch(e=>{console.error(e);statePill('● სინქრონიზაციის შეცდომა','err')})},e=>{console.error(e);statePill('● Firebase შეცდომა','err')})}
 function watchRoomCode(){const code=sessionStorage.getItem(ROOM_SESSION)||'';if(code!==roomCode)attach(code)}
 async function boot(){
-  addBadge();const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V31 · ონლაინ პარტია სინქრონდება და გათიშვის შემდეგ დაბრუნებაც დაცულია.';
+  addBadge();const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V32 · Real-time multiplayer · reconnect protection · temporary BOT takeover.';
   try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});ready=true;watchRoomCode();setInterval(watchRoomCode,350)}catch(e){console.error('V30 boot',e);statePill('● V30 ვერ ჩაირთო','err')}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
@@ -6926,13 +6944,190 @@ async function recoverStalledHand(){
   recoveredVersion=v;try{(await waitEngine()).recoverOnlineTransition?.()}catch(e){recoveredVersion=-1}
 }
 async function boot(){
-  badge();setNet();const note=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(note)note.textContent='V31 · Firebase ონლაინ ოთახი + პარტიის სინქრონიზაცია + გათიშვის შემდეგ დაბრუნება.';
-  try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,900);setInterval(heartbeat,45000);setInterval(maybePromoteHost,15000);setInterval(recoverStalledHand,1800)}catch(e){console.error('V31 boot',e)}
+  badge();setNet();const note=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(note)note.textContent='V32 · Firebase real-time room + synchronized match + reconnect + temporary BOT.';
+  try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,900);setInterval(heartbeat,20000);setInterval(maybePromoteHost,15000);setInterval(recoverStalledHand,1800)}catch(e){console.error('V31 boot',e)}
 }
 window.addEventListener('online',()=>{setNet();setTimeout(heartbeat,250)});window.addEventListener('offline',setNet);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(heartbeat,250)});window.addEventListener('pageshow',()=>setTimeout(heartbeat,400));
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 </script>
 <!-- DG V31 RECONNECT + MATCH RECOVERY END -->
+
+<!-- DG V32 TEMP BOT + GLOBAL ENGLISH + INSTALL START -->
+<style id="dg-v32-global-css">
+#dgV31Badge{display:none!important}
+#dgV32Badge{position:fixed;right:10px;top:10px;z-index:73000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV32Badge{display:none}
+#dgInstallApp{width:100%;margin-top:10px;padding:11px 12px;border-radius:11px;cursor:pointer;border:1px solid #486879;background:linear-gradient(145deg,#102a38,#091923);color:#f5f8fa;font-weight:900;font-size:12px}
+#dgInstallApp:hover{border-color:#d2a640}
+#dgV32Toast{display:none;position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:74000;width:min(92vw,430px);padding:10px 12px;border-radius:12px;border:1px solid #536d7a;background:rgba(5,15,21,.96);color:#edf4f7;font:800 11px/1.45 Arial,sans-serif;text-align:center;box-shadow:0 7px 24px rgba(0,0,0,.5)}
+#dgV32Toast.show{display:block}
+</style>
+<script type="module" id="dg-v32-bot-js">
+import { getApps, getApp, initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore, doc, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup',COLLECTION='dominoRooms';
+const STALE_MS=50000;
+let app,auth,db,uid='',room=null,busy=false,lastBotKey='',installPrompt=null;
+const $=id=>document.getElementById(id);
+function badge(){if($('dgV32Badge'))return;const b=document.createElement('div');b.id='dgV32Badge';b.textContent='V32';document.body.appendChild(b)}
+function toast(text){let t=$('dgV32Toast');if(!t){t=document.createElement('div');t.id='dgV32Toast';document.body.appendChild(t)}t.textContent=text;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),4200)}
+function currentCode(){return sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||''}
+function addInstallButton(){const card=document.querySelector('#dgEntryOverlay .dg-entry-card');if(!card||$('dgInstallApp'))return;const b=document.createElement('button');b.id='dgInstallApp';b.type='button';b.textContent='⬇ Install / Download App';b.addEventListener('click',async()=>{if(installPrompt){installPrompt.prompt();try{await installPrompt.userChoice}catch(e){}installPrompt=null;return}toast('Desktop: open the browser menu and choose “Install DOMINO GEORGIA” or “Create shortcut”. On Android, choose “Add to Home screen”.')});card.appendChild(b)}
+async function registerPWA(){if(!('serviceWorker' in navigator))return;try{await navigator.serviceWorker.register('./service-worker.js',{scope:'./'})}catch(e){console.warn('V32 SW',e)}}
+function restoreRoomCode(){const backup=localStorage.getItem(BACKUP)||'';if(!sessionStorage.getItem(SESSION)&&/^\d{4}$/.test(backup))sessionStorage.setItem(SESSION,backup)}
+async function heartbeat(){const c=currentCode();if(!uid||!db||!navigator.onLine||!/^\d{4}$/.test(c))return;try{await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data(),players=[...(data.players||[])],i=players.findIndex(p=>p.uid===uid);if(i<0)return;players[i]={...players[i],lastSeen:Date.now(),botActive:false};tx.update(ref,{players,presenceUpdatedAt:serverTimestamp()})})}catch(e){}}
+function onRoom(r){room=r||null;if(!room)return;const me=(room.players||[]).find(p=>p.uid===uid);if(me)localStorage.setItem(BACKUP,room.code)}
+window.addEventListener('dg-v30-room',e=>onRoom(e.detail));
+async function markBot(seat,expectedVersion,targetUid){const c=room?.code;if(!c)return false;let ok=false;await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data();if(data.status!=='playing'||Number(data.gameVersion||0)!==expectedVersion||Number(data.gameState?.current)!==seat)return;const players=[...(data.players||[])],i=players.findIndex(p=>p.uid===targetUid);if(i<0)return;const seen=Number(players[i].lastSeen||players[i].joinedAt||0);if(Date.now()-seen<STALE_MS)return;players[i]={...players[i],botActive:true};tx.update(ref,{players,botSeat:seat,botUpdatedAt:serverTimestamp()});ok=true});return ok}
+async function botController(){if(busy||!room||room.status!=='playing'||!room.gameState||!uid||!navigator.onLine)return;const seat=Number(room.gameState.current),version=Number(room.gameVersion||0);if(!Number.isInteger(seat)||seat<0||seat>3)return;const target=(room.players||[]).find(p=>Number(p.seat)===seat);if(!target||target.uid===uid)return;const seen=Number(target.lastSeen||target.joinedAt||0);if(!seen||Date.now()-seen<STALE_MS)return;const now=Date.now();const active=(room.players||[]).filter(p=>p.uid!==target.uid&&now-Number(p.lastSeen||p.joinedAt||0)<STALE_MS).sort((a,b)=>Number(a.seat)-Number(b.seat));if(!active.length||active[0].uid!==uid)return;const key=`${room.code}:${version}:${seat}`;if(key===lastBotKey)return;busy=true;try{const locked=await markBot(seat,version,target.uid);if(!locked)return;const eng=window.DG_ENGINE;if(!eng?.botTakeTurn)return;lastBotKey=key;eng.message?.(`BOT is playing for ${target.name||'player'}…`,1200);await new Promise(r=>setTimeout(r,450));eng.botTakeTurn(seat)}catch(e){console.error('V32 bot',e)}finally{busy=false}}
+function updateGlobalEnglish(){document.documentElement.lang='en';const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V32 · Global multiplayer · choose your language · temporary BOT takes over disconnected players.';const roomNote=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(roomNote)roomNote.textContent='V32 · Firebase real-time room + synchronized match + reconnect + temporary BOT.'}
+async function boot(){badge();restoreRoomCode();addInstallButton();updateGlobalEnglish();window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;addInstallButton()});window.addEventListener('appinstalled',()=>toast('DOMINO GEORGIA installed successfully.'));setTimeout(registerPWA,1800);try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,700);setInterval(heartbeat,20000);setInterval(botController,1300)}catch(e){console.error('V32 boot',e)}}
+window.addEventListener('online',()=>setTimeout(heartbeat,300));window.addEventListener('pageshow',()=>{restoreRoomCode();setTimeout(heartbeat,500)});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V32 TEMP BOT + GLOBAL ENGLISH + INSTALL END -->
+
+
+<!-- DG V33 PUBLIC MATCHMAKING + HEART LEVELS START -->
+<style id="dg-v33-public-css">
+#dgV32Badge{display:none!important}
+#dgV33Badge{position:fixed;right:10px;top:10px;z-index:76000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV33Badge{display:none}
+#dgEntryQuick{display:flex!important;background:linear-gradient(145deg,#7d2fc8,#4b1687)!important;border-color:#a65bef!important;order:-5}
+#dgRankLine{display:flex;align-items:center;gap:7px;margin:-2px 0 10px;padding:8px 10px;border-radius:10px;border:1px solid #3a4e5b;background:#08141b;color:#dbe6eb;font-size:11px;font-weight:900}
+#dgRankLine .heart{color:#ff6684;font-size:15px}#dgRankLine .level{color:#f1ca68}#dgRankLine .wins{margin-left:auto;color:#8ea4af;font-size:10px}
+.dg-level-badge{position:absolute!important;left:-8px!important;top:-7px!important;z-index:10!important;min-width:28px!important;height:20px!important;padding:0 5px!important;border-radius:8px!important;display:flex!important;align-items:center!important;justify-content:center!important;border:2px solid #10171b!important;background:linear-gradient(#f1c95a,#a86c12)!important;color:#171006!important;font:1000 10px/1 Arial,sans-serif!important;box-shadow:0 2px 7px rgba(0,0,0,.65)!important;box-sizing:border-box!important}
+#dgOnlineOverlay.dg-public-mode .dg-online-row:first-of-type,
+#dgOnlineOverlay.dg-public-mode .dg-online-row:nth-of-type(2),
+#dgOnlineOverlay.dg-public-mode #dgRoomCodeBig,
+#dgOnlineOverlay.dg-public-mode #dgOnlineStart,
+#dgOnlineOverlay.dg-public-mode #dgOnlineLeave{display:none!important}
+#dgPublicLeave{display:none}
+#dgOnlineOverlay.dg-public-mode #dgPublicLeave{display:inline-block}
+#dgOnlineOverlay.dg-public-mode .dg-online-title:after{content:' · MATCHMAKING';font-size:.52em;color:#a98ed0;margin-left:5px}
+.dg-public-rank{display:inline-flex;gap:5px;align-items:center;margin-left:4px;font-size:10px;color:#e8c45e;font-weight:900}
+.dg-public-rank .h{color:#ff6f89}
+</style>
+<script type="module" id="dg-v33-public-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,collection,query,where,getDocs,limit,doc,getDoc,setDoc,onSnapshot,runTransaction,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const PROFILE_KEY='dg_domino_v25_profile',LANG_KEY='dg_domino_v26_language',SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup';
+const ROOMS='dominoRooms',PROFILES='dominoProfiles',WIN_HEARTS=25,STALE_WAITING=90000;
+const LEVEL_MIN=[0,100,250,450,700,1000,1400,1900,2500,3200];
+const visualRoots=['.player-top','.player-right','.player-bottom','.player-left'];
+let app,auth,db,uid='',publicCode='',publicUnsub=null,publicRoom=null,profileData=null,matching=false,lastAwardToast='';
+const $=id=>document.getElementById(id);
+function badge(){if($('dgV33Badge'))return;const b=document.createElement('div');b.id='dgV33Badge';b.textContent='V33';document.body.appendChild(b)}
+function localProfile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
+function nick(){return (localProfile().nickname||$('myNickname')?.textContent||'Player').trim().slice(0,18)||'Player'}
+function country(){return (localProfile().country||'GE').toUpperCase().slice(0,2)}
+function flag(c){if(!c||c.length!==2)return '🌐';return String.fromCodePoint(...[...c.toUpperCase()].map(x=>127397+x.charCodeAt()))}
+function levelFor(hearts){const h=Math.max(0,Number(hearts)||0);let lvl=1;for(let i=0;i<LEVEL_MIN.length;i++)if(h>=LEVEL_MIN[i])lvl=i+1;return Math.min(10,lvl)}
+function lang(){return localStorage.getItem(LANG_KEY)||localProfile().language||'en'}
+const TXT={
+ en:{play:'🌐 Play Online',sub:'Join the fullest public table automatically. The match starts at 4/4.',finding:'Finding the best online table…',waiting:'Waiting for online players',leave:'Leave matchmaking',win:'Victory +25 ♥',loss:'Match finished',rank:'LEVEL',wins:'wins'},
+ ka:{play:'🌐 ონლაინ თამაში',sub:'ავტომატურად შეხვალ ყველაზე შევსებულ საჯარო მაგიდაზე. 4/4-ზე თამაში იწყება.',finding:'ვეძებ საუკეთესო ონლაინ მაგიდას…',waiting:'ველოდებით ონლაინ მოთამაშეებს',leave:'ონლაინ რიგიდან გასვლა',win:'გამარჯვება +25 ♥',loss:'თამაში დასრულდა',rank:'დონე',wins:'მოგება'},
+ ru:{play:'🌐 Играть онлайн',sub:'Автоматически войти за самый заполненный публичный стол. Старт при 4/4.',finding:'Ищем лучший онлайн-стол…',waiting:'Ждём игроков',leave:'Выйти из поиска',win:'Победа +25 ♥',loss:'Матч завершён',rank:'УРОВЕНЬ',wins:'побед'},
+ tr:{play:'🌐 Çevrimiçi Oyna',sub:'En dolu herkese açık masaya otomatik katıl. 4/4 olunca oyun başlar.',finding:'En iyi çevrimiçi masa aranıyor…',waiting:'Oyuncular bekleniyor',leave:'Eşleşmeden çık',win:'Zafer +25 ♥',loss:'Maç bitti',rank:'SEVİYE',wins:'galibiyet'},
+ de:{play:'🌐 Online spielen',sub:'Automatisch dem vollsten öffentlichen Tisch beitreten. Start bei 4/4.',finding:'Bester Online-Tisch wird gesucht…',waiting:'Warte auf Spieler',leave:'Matchmaking verlassen',win:'Sieg +25 ♥',loss:'Match beendet',rank:'LEVEL',wins:'Siege'},
+ ar:{play:'🌐 اللعب أونلاين',sub:'انضم تلقائيًا إلى أكثر طاولة عامة امتلاءً. تبدأ اللعبة عند 4/4.',finding:'جارٍ البحث عن أفضل طاولة…',waiting:'بانتظار اللاعبين',leave:'مغادرة البحث',win:'فوز +25 ♥',loss:'انتهت المباراة',rank:'المستوى',wins:'فوز'}
+};
+function t(){return TXT[lang()]||TXT.en}
+function toast(text){if(typeof window.dgV33Toast==='function')return window.dgV33Toast(text);let e=$('dgV32Toast');if(!e){e=document.createElement('div');e.id='dgV32Toast';document.body.appendChild(e)}e.textContent=text;e.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),3800)}
+function profileRef(){return doc(db,PROFILES,uid)}
+async function ensureProfile(){
+  if(profileData)return profileData;
+  const ref=profileRef();
+  try{const snap=await getDoc(ref);if(snap.exists()){profileData={...snap.data(),uid};}else{profileData={uid,name:nick(),country:country(),hearts:0,level:1,wins:0,games:0,createdAt:Date.now()};await setDoc(ref,{...profileData,updatedAt:serverTimestamp()})}}
+  catch(e){console.warn('V33 profile',e);profileData={uid,name:nick(),country:country(),hearts:0,level:1,wins:0,games:0,localOnly:true};if(String(e?.code||'').includes('permission-denied'))toast('Rating needs the V33 Firestore rule for dominoProfiles.');}
+  profileData.name=nick();profileData.country=country();profileData.hearts=Number(profileData.hearts||0);profileData.level=levelFor(profileData.hearts);return profileData;
+}
+function addRankLine(){
+  const choice=$('dgChoiceStep');if(!choice)return;let e=$('dgRankLine');if(!e){e=document.createElement('div');e.id='dgRankLine';const prof=choice.querySelector('.dg-entry-profile');prof?.insertAdjacentElement('afterend',e)}
+  const p=profileData||{hearts:0,level:1,wins:0};const tr=t();e.innerHTML=`<span class="heart">♥</span><span>${Number(p.hearts||0)}</span><span class="level">${tr.rank} ${levelFor(p.hearts)}/10</span><span class="wins">${Number(p.wins||0)} ${tr.wins}</span>`;
+}
+function updatePublicButton(){
+  const b=$('dgEntryQuick');if(!b)return;const tr=t(),bold=b.querySelector('b'),small=b.querySelector('small');if(bold)bold.textContent=tr.play;if(small)small.textContent=tr.sub;
+  const opts=b.parentElement;if(opts&&opts.firstElementChild!==b)opts.insertBefore(b,opts.firstElementChild);
+  if($('dgPublicLeave'))$('dgPublicLeave').textContent=tr.leave;addRankLine();
+}
+function makePlayer(p,seat){return {uid,name:nick(),country:country(),seat,joinedAt:Date.now(),lastSeen:Date.now(),hearts:Number(p.hearts||0),level:levelFor(p.hearts),wins:Number(p.wins||0),games:Number(p.games||0),botActive:false}}
+function avgLevel(players){const a=(players||[]).map(x=>Number(x.level||levelFor(x.hearts||0))).filter(Number.isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:1}
+function activeWaitingPlayers(players){const now=Date.now();return (players||[]).filter(p=>now-Number(p.lastSeen||p.joinedAt||0)<STALE_WAITING)}
+async function uniqueCode(){for(let i=0;i<40;i++){const c=String(Math.floor(1000+Math.random()*9000));if(!(await getDoc(doc(db,ROOMS,c))).exists())return c}throw new Error('No room code available')}
+async function joinCandidate(code,p){
+  const matchId='m_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+  return await runTransaction(db,async tx=>{
+    const ref=doc(db,ROOMS,code),snap=await tx.get(ref);if(!snap.exists())return false;const data=snap.data();if(data.mode!=='public'||data.status!=='waiting')return false;
+    let players=activeWaitingPlayers(data.players);let me=players.find(x=>x.uid===uid);
+    if(!me){if(players.length>=4)return false;const used=new Set(players.map(x=>Number(x.seat)));const seat=[0,1,3,2].find(x=>!used.has(x));players.push(makePlayer(p,seat));}else{me.name=nick();me.country=country();me.lastSeen=Date.now();me.hearts=Number(p.hearts||0);me.level=levelFor(p.hearts);}
+    let hostUid=data.hostUid;if(!players.some(x=>x.uid===hostUid))hostUid=players[0]?.uid||uid;
+    const full=players.length===4;tx.update(ref,{players,hostUid,status:full?'playing':'waiting',matchId:full?(data.matchId||matchId):(data.matchId||null),startedAt:full?serverTimestamp():(data.startedAt||null),updatedAt:serverTimestamp()});return true;
+  });
+}
+async function createPublicRoom(p){
+  const code=await uniqueCode(),matchId='m_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+  await setDoc(doc(db,ROOMS,code),{code,mode:'public',ratingMode:'hearts-v1',hostUid:uid,status:'waiting',matchId,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),players:[makePlayer(p,2)],ratingProcessed:[]});return code;
+}
+async function findRoom(p){
+  const snap=await getDocs(query(collection(db,ROOMS),where('mode','==','public'),limit(30)));const mine=levelFor(p.hearts);
+  const rooms=[];snap.forEach(d=>{const r={code:d.id,...d.data()};if(r.status!=='waiting')return;const active=activeWaitingPlayers(r.players);if(active.length>=4)return;rooms.push({r,active,count:active.length,diff:Math.abs(avgLevel(active)-mine)})});
+  rooms.sort((a,b)=>b.count-a.count||a.diff-b.diff||Number(a.r.createdMs||0)-Number(b.r.createdMs||0));
+  for(const x of rooms){try{if(await joinCandidate(x.r.code,p))return x.r.code}catch(e){console.warn('V33 candidate',e)}}
+  return await createPublicRoom(p);
+}
+function showPublicLobby(code){
+  publicCode=code;sessionStorage.setItem(SESSION,code);localStorage.setItem(BACKUP,code);window.DG_MATCH_ALLOWED=false;
+  $('dgEntryOverlay')?.classList.add('hidden');const o=$('dgOnlineOverlay');o?.classList.add('show','dg-public-mode');
+  const title=o?.querySelector('.dg-online-title');if(title)title.textContent='ONLINE';const msg=$('dgOnlineMsg');if(msg)msg.textContent=t().waiting;
+  let leave=$('dgPublicLeave');if(!leave){leave=document.createElement('button');leave.id='dgPublicLeave';leave.className='dg-online-btn';leave.type='button';leave.textContent=t().leave;const row=$('dgOnlineLeave')?.parentElement;row?.appendChild(leave);leave.addEventListener('click',leavePublic)}
+  attachPublic(code);
+}
+function levelBadge(root,p,show){const av=root?.querySelector('.avatar');if(!av)return;let b=av.querySelector('.dg-level-badge');if(!b){b=document.createElement('span');b.className='dg-level-badge';av.appendChild(b)}b.style.display=show?'flex':'none';if(show&&p)b.textContent='L'+levelFor(p.hearts)}
+function renderPlayers(room){
+  const me=(room.players||[]).find(p=>p.uid===uid),mySeat=Number(me?.seat??2),bySeat=new Map((room.players||[]).map(p=>[Number(p.seat),p]));
+  for(let abs=0;abs<4;abs++){const visual=(abs-mySeat+2+4)%4,root=document.querySelector(visualRoots[visual]);if(!root)continue;const p=bySeat.get(abs),name=root.querySelector('.player-name');root.dataset.onlineSeat=String(abs);if(name&&p)name.textContent=p.name;levelBadge(root,p,room.mode==='public'&&!!p)}
+}
+function renderPublic(room){
+  publicRoom=room;renderPlayers(room);if(room.mode!=='public')return;const o=$('dgOnlineOverlay');
+  if(room.status==='waiting'){o?.classList.add('show','dg-public-mode');$('dgEntryOverlay')?.classList.add('hidden');const title=o?.querySelector('.dg-online-title');if(title)title.textContent='ONLINE';const grid=$('dgSeatGrid');if(grid){const tr=t();grid.innerHTML=[0,1,2,3].map(s=>{const p=(room.players||[]).find(x=>Number(x.seat)===s);return `<div class="dg-seat${p?.uid===uid?' me':''}"><b>${p?`${flag(p.country||'')} ${p.name}`:'…'}</b><small>${p?`<span class="dg-public-rank"><span class="h">♥ ${Number(p.hearts||0)}</span> · L${levelFor(p.hearts)}</span>`:tr.waiting}</small></div>`}).join('')}if($('dgOnlineMsg'))$('dgOnlineMsg').textContent=`${(room.players||[]).length}/4 · ${t().waiting}`;
+  }
+  if(room.status==='playing')o?.classList.remove('show');
+  maybeAward(room);
+}
+function attachPublic(code){if(publicUnsub)publicUnsub();publicUnsub=onSnapshot(doc(db,ROOMS,code),snap=>{if(!snap.exists()){clearPublic();return}const r={code:snap.id,...snap.data()};if(r.mode==='public')renderPublic(r)},e=>console.error('V33 room',e))}
+async function leavePublic(){
+  const c=publicCode||sessionStorage.getItem(SESSION);if(!c)return clearPublic();try{await runTransaction(db,async tx=>{const ref=doc(db,ROOMS,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data();if(data.mode!=='public'||data.status!=='waiting')return;const players=(data.players||[]).filter(p=>p.uid!==uid);if(!players.length){tx.delete(ref);return}const hostUid=data.hostUid===uid?players[0].uid:data.hostUid;tx.update(ref,{players,hostUid,updatedAt:serverTimestamp()})})}catch(e){}clearPublic();$('dgEntryOverlay')?.classList.remove('hidden');$('dgOnlineOverlay')?.classList.remove('show','dg-public-mode')
+}
+function clearPublic(){publicUnsub?.();publicUnsub=null;publicCode='';publicRoom=null;sessionStorage.removeItem(SESSION);localStorage.removeItem(BACKUP)}
+async function matchmaking(){
+  if(matching||!uid||!db)return;matching=true;window.DG_MATCH_ALLOWED=false;const msg=$('dgEntryMsg');if(msg)msg.textContent=t().finding;
+  try{const p=await ensureProfile();updatePublicButton();const code=await findRoom(p);showPublicLobby(code);if(msg)msg.textContent=''}catch(e){console.error('V33 matchmaking',e);toast('Online matchmaking error: '+(e?.message||e))}finally{matching=false}
+}
+async function maybeAward(room){
+  if(!uid||room.mode!=='public'||room.status!=='playing'||!room.gameState?.matchOver)return;const processed=room.ratingProcessed||[];if(processed.includes(uid))return;
+  const me=(room.players||[]).find(p=>p.uid===uid);if(!me)return;const scores=room.gameState.scores||[0,0];if(Number(scores[0])===Number(scores[1]))return;const winner=Number(scores[0])>Number(scores[1])?0:1,won=Number(me.seat)%2===winner;
+  try{const result=await runTransaction(db,async tx=>{const rr=doc(db,ROOMS,room.code),pr=doc(db,PROFILES,uid);const rs=await tx.get(rr),ps=await tx.get(pr);if(!rs.exists())return null;const rd=rs.data(),done=rd.ratingProcessed||[];if(done.includes(uid))return null;const old=ps.exists()?ps.data():{hearts:0,wins:0,games:0};const hearts=Math.max(0,Number(old.hearts||0)+(won?WIN_HEARTS:0)),wins=Number(old.wins||0)+(won?1:0),games=Number(old.games||0)+1,level=levelFor(hearts);const next={uid,name:nick(),country:country(),hearts,wins,games,level,updatedAt:serverTimestamp()};if(ps.exists())tx.update(pr,next);else tx.set(pr,{...next,createdAt:Date.now()});const players=[...(rd.players||[])];const i=players.findIndex(p=>p.uid===uid);if(i>=0)players[i]={...players[i],hearts,wins,games,level};tx.update(rr,{players,ratingProcessed:[...done,uid],ratingUpdatedAt:serverTimestamp()});return {hearts,wins,games,level,won}});if(result){profileData={...(profileData||{}),...result};addRankLine();const key=room.code+':'+uid;if(lastAwardToast!==key){lastAwardToast=key;toast(result.won?t().win:t().loss)}}}catch(e){console.warn('V33 award',e)}
+}
+function onV30Room(room){if(!room)return;if(room.mode==='public'){publicCode=room.code;localStorage.setItem(BACKUP,room.code);renderPublic(room)}else{document.querySelectorAll('.dg-level-badge').forEach(x=>x.style.display='none')}}
+window.addEventListener('dg-v30-room',e=>onV30Room(e.detail));
+function hideWin(){const w=$('dgWinOverlay');if(w)w.classList.remove('show')}
+function lobbyBody(){window.DG_MATCH_ALLOWED=false;window.DG_ONLINE_MULTIPLAYER=false;document.body.classList.remove('dg-game-active','dg-match-mode');document.body.classList.add('dg-lobby-mode')}
+function publicPlayAgain(){clearPublic();hideWin();lobbyBody();setTimeout(matchmaking,80)}
+function publicExit(){clearPublic();hideWin();lobbyBody();const entry=$('dgEntryOverlay');entry?.classList.remove('hidden');document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));$('dgChoiceStep')?.classList.add('active');updatePublicButton()}
+function wire(){
+  document.addEventListener('click',e=>{const q=e.target?.closest?.('#dgEntryQuick');if(q){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();matchmaking();return}const c=e.target?.closest?.('#dgOnlineClose');if(c&&$('dgOnlineOverlay')?.classList.contains('dg-public-mode')){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();leavePublic();return}const again=e.target?.closest?.('#dgWinAgain,#dgWinOther');if(again&&publicRoom?.mode==='public'){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();publicPlayAgain();return}const exit=e.target?.closest?.('#dgWinExit');if(exit&&publicRoom?.mode==='public'){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();publicExit()}},true);
+  document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-language-btn'))setTimeout(updatePublicButton,30)});
+}
+async function boot(){
+  badge();wire();updatePublicButton();try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});await ensureProfile();addRankLine();const r=window.DG_V30_ROOM;if(r)onV30Room(r)}catch(e){console.error('V33 boot',e)}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V33 PUBLIC MATCHMAKING + HEART LEVELS END -->
 
 </body>
 </html>
