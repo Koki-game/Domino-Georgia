@@ -5135,7 +5135,7 @@ function boot(){
     startRound();
   };
   if(window.DG_ENTRY_READY===true)window.dgStartDominoMatch();
-  if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+  if('serviceWorker'in navigator)window.addEventListener('load',async()=>{try{const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}catch(e){}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
@@ -6430,6 +6430,293 @@ body.dg-match-mode #dgV28Badge{display:none}
 })();
 </script>
 <!-- DG V28 CACHE RESET + VERSION BADGE END -->
+
+
+
+<!-- DG V29 FIREBASE REAL ONLINE ROOMS START -->
+<style id="dg-v29-firebase-css">
+#dgFirebaseState{
+  display:inline-flex;align-items:center;gap:6px;margin-left:7px;padding:5px 8px;border-radius:999px;
+  border:1px solid #425865;background:#09151d;color:#b9c9d1;font-size:10px;font-weight:900;vertical-align:middle
+}
+#dgFirebaseState.ok{border-color:#287d48;background:#0b2e1a;color:#77efa0}
+#dgFirebaseState.err{border-color:#89433d;background:#35100e;color:#ff9c92}
+#dgFirebaseState.wait{border-color:#77612e;background:#2a2108;color:#f1cb66}
+#dgV28Badge{display:none!important}
+#dgV29Badge{
+  position:fixed;right:10px;top:10px;z-index:60000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-match-mode #dgV29Badge{display:none}
+.dg-v29-note{margin-top:8px;font-size:10px;line-height:1.45;color:#8ea1ac;text-align:center}
+</style>
+<script type="module" id="dg-v29-firebase-js">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import {
+  getFirestore, doc, getDoc, setDoc, onSnapshot, runTransaction,
+  serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: 'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',
+  authDomain: 'koki-game.firebaseapp.com',
+  projectId: 'koki-game',
+  storageBucket: 'koki-game.firebasestorage.app',
+  messagingSenderId: '926136206820',
+  appId: '1:926136206820:web:b346733b1268bed7f2b3f1'
+};
+
+const PROFILE_KEY='dg_domino_v25_profile';
+const ROOM_SESSION='dg_domino_v29_room';
+const COLLECTION='dominoRooms';
+const visualRoots=['.player-top','.player-right','.player-bottom','.player-left'];
+const $=id=>document.getElementById(id);
+let db=null,auth=null,uid='',currentCode=sessionStorage.getItem(ROOM_SESSION)||'',unsubscribeRoom=null;
+let firebaseReady=false,lastStatus='';
+
+function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
+function nickname(){return (($('dgOnlineNick')?.value||profile().nickname||$('myNickname')?.textContent||'მოთამაშე')+'').trim().slice(0,18)||'მოთამაშე'}
+function country(){return ((profile().country||'GE')+'').toUpperCase().slice(0,2)}
+function flag(code){if(!code||code.length!==2)return '🌐';return String.fromCodePoint(...[...code.toUpperCase()].map(c=>127397+c.charCodeAt()))}
+function roomRef(code){return doc(db,COLLECTION,code)}
+function setMsg(t){const e=$('dgOnlineMsg');if(e)e.textContent=t||''}
+function setState(text,kind='wait'){
+  let e=$('dgFirebaseState');
+  if(!e){
+    const title=document.querySelector('#dgOnlineOverlay .dg-online-title');
+    if(title){e=document.createElement('span');e.id='dgFirebaseState';title.insertAdjacentElement('afterend',e)}
+  }
+  if(e){e.textContent=text;e.className=kind}
+}
+function addBadge(){
+  if($('dgV29Badge'))return;
+  const b=document.createElement('div');b.id='dgV29Badge';b.textContent='V29';document.body.appendChild(b);
+}
+function addRoomNote(){
+  const card=document.querySelector('#dgOnlineOverlay .dg-online-card');
+  if(!card||card.querySelector('.dg-v29-note'))return;
+  const n=document.createElement('div');n.className='dg-v29-note';n.textContent='V29 · ეს ოთახი უკვე რეალურად სინქრონდება Firebase-ით სხვადასხვა ტელეფონს შორის. სვლების სინქრონიზაცია შემდეგ ეტაპზე ჩაირთვება.';card.appendChild(n);
+}
+
+function applyPlayers(room){
+  const me=room?.players?.find(p=>p.uid===uid);const mySeat=me?.seat ?? 2;
+  const bySeat=new Map((room?.players||[]).map(p=>[p.seat,p]));
+  for(let abs=0;abs<4;abs++){
+    const visual=(abs-mySeat+2+4)%4;
+    const root=document.querySelector(visualRoots[visual]);if(!root)continue;
+    const p=bySeat.get(abs);const name=root.querySelector('.player-name');const dot=root.querySelector('.online-dot');
+    if(name)name.textContent=p?.name||'ველოდებით...';if(dot)dot.style.opacity=p?'1':'.25';
+    root.dataset.onlineSeat=String(abs);root.classList.toggle('dg-online-self',!!p&&p.uid===uid);
+    const av=root.querySelector('.avatar');if(av){let badge=av.querySelector('.dg-country-flag-badge');if(!badge){badge=document.createElement('span');badge.className='dg-country-flag-badge';av.appendChild(badge)}const c=p?.country||'';badge.textContent=c?flag(c):'🌐';badge.classList.toggle('unknown',!c)}
+  }
+  const rn=$('roomName'),rc=$('roomCode');if(rn)rn.textContent='ონლაინ ოთახი';if(rc)rc.textContent='მაგიდა #'+room.code;
+}
+
+function renderRoom(room){
+  const title=$('dgRoomCodeBig'),seats=$('dgSeatGrid'),start=$('dgOnlineStart'),leave=$('dgOnlineLeave');if(!title||!seats)return;
+  if(!room){
+    title.textContent='----';seats.innerHTML='<div class="dg-seat"><b>ოთახში ჯერ არ ხარ</b><small>შექმენი ახალი ან შედი კოდით</small></div>';
+    if(start)start.disabled=true;if(leave)leave.disabled=true;return;
+  }
+  title.textContent=room.code;
+  const labels=['ადგილი 1','ადგილი 2','ადგილი 3','ადგილი 4'];
+  seats.innerHTML=[0,1,2,3].map(s=>{const p=(room.players||[]).find(x=>x.seat===s);const me=p?.uid===uid;const host=p?.uid===room.hostUid;return `<div class="dg-seat${me?' me':''}"><b>${p?`${flag(p.country||'')} ${p.name}`:'ველოდებით მოთამაშეს...'}</b><small>${labels[s]}${me?' · შენ':''}${host?' · HOST':''}</small></div>`}).join('');
+  const count=(room.players||[]).length;
+  if(start){start.disabled=!(room.hostUid===uid&&count===4&&room.status!=='playing');start.textContent=room.status==='playing'?'თამაში დაწყებულია':'თამაშის დაწყება'}
+  if(leave)leave.disabled=false;
+  setMsg(`${count}/4 მოთამაშე · ${room.status==='playing'?'თამაში დაწყებულია':'ველოდებით'}`);
+  applyPlayers(room);
+  if(room.status==='playing'&&lastStatus!=='playing'&&(room.players||[]).some(p=>p.uid===uid)){
+    window.DG_MATCH_ALLOWED=true;
+    document.getElementById('dgEntryOverlay')?.classList.add('hidden');
+    document.getElementById('dgOnlineOverlay')?.classList.remove('show');
+    setTimeout(()=>window.dgStartDominoMatch?.(),60);
+  }
+  lastStatus=room.status||'';
+}
+
+function listenRoom(code){
+  unsubscribeRoom?.();unsubscribeRoom=null;currentCode=code||'';lastStatus='';
+  if(!code){sessionStorage.removeItem(ROOM_SESSION);renderRoom(null);return}
+  sessionStorage.setItem(ROOM_SESSION,code);
+  unsubscribeRoom=onSnapshot(roomRef(code),snap=>{
+    if(!snap.exists()){setMsg('ოთახი დაიხურა');listenRoom('');return}
+    const room={code:snap.id,...snap.data()};renderRoom(room);
+  },err=>{setMsg('Firebase კავშირის შეცდომა: '+(err?.code||err?.message||'unknown'));setState('● Firebase შეცდომა','err')});
+}
+
+async function uniqueCode(){
+  for(let i=0;i<30;i++){
+    const code=String(Math.floor(1000+Math.random()*9000));const snap=await getDoc(roomRef(code));if(!snap.exists())return code;
+  }
+  throw new Error('კოდის შექმნა ვერ მოხერხდა');
+}
+
+async function createRoom(){
+  if(!firebaseReady)return setMsg('Firebase ჯერ არ არის მზად');
+  setMsg('ოთახი იქმნება...');
+  try{
+    const code=await uniqueCode();
+    const room={code,hostUid:uid,status:'waiting',createdAt:serverTimestamp(),updatedAt:serverTimestamp(),players:[{uid,name:nickname(),country:country(),seat:2,joinedAt:Date.now()}]};
+    await setDoc(roomRef(code),room);listenRoom(code);if($('dgJoinCode'))$('dgJoinCode').value=code;setMsg('ოთახი შექმნილია — გაუგზავნე კოდი მეგობრებს');
+  }catch(e){console.error(e);setMsg('ოთახის შექმნა ვერ მოხერხდა: '+(e?.code||e?.message||'შეცდომა'))}
+}
+
+async function joinRoom(){
+  if(!firebaseReady)return setMsg('Firebase ჯერ არ არის მზად');
+  const code=($('dgJoinCode')?.value||'').replace(/\D/g,'').slice(0,4);if(code.length!==4)return setMsg('შეიყვანე 4-ნიშნა ოთახის კოდი');
+  setMsg('ოთახში შესვლა...');
+  try{
+    await runTransaction(db,async tx=>{
+      const ref=roomRef(code),snap=await tx.get(ref);if(!snap.exists())throw new Error('ასეთი ოთახი ვერ მოიძებნა');
+      const room=snap.data(),players=[...(room.players||[])];let me=players.find(p=>p.uid===uid);
+      if(!me){if(players.length>=4)throw new Error('ოთახი უკვე სავსეა');if(room.status==='playing')throw new Error('თამაში უკვე დაწყებულია');const used=new Set(players.map(p=>p.seat));const seat=[0,1,3,2].find(s=>!used.has(s));players.push({uid,name:nickname(),country:country(),seat,joinedAt:Date.now()})}
+      else{me.name=nickname();me.country=country()}
+      tx.update(ref,{players,updatedAt:serverTimestamp()});
+    });
+    listenRoom(code);setMsg('ოთახში შეხვედი');
+  }catch(e){console.error(e);setMsg(e?.message||'ოთახში შესვლა ვერ მოხერხდა')}
+}
+
+async function leaveRoom(){
+  const code=currentCode;if(!code||!firebaseReady){listenRoom('');return}
+  try{
+    await runTransaction(db,async tx=>{
+      const ref=roomRef(code),snap=await tx.get(ref);if(!snap.exists())return;
+      const room=snap.data(),players=(room.players||[]).filter(p=>p.uid!==uid);
+      if(!players.length){tx.delete(ref);return}
+      const hostUid=room.hostUid===uid?players[0].uid:room.hostUid;tx.update(ref,{players,hostUid,updatedAt:serverTimestamp()});
+    });
+  }catch(e){console.error(e)}
+  listenRoom('');setMsg('ოთახიდან გამოხვედი');
+}
+
+async function startRoom(){
+  if(!currentCode||!firebaseReady)return;
+  try{
+    await runTransaction(db,async tx=>{
+      const ref=roomRef(currentCode),snap=await tx.get(ref);if(!snap.exists())throw new Error('ოთახი აღარ არსებობს');
+      const room=snap.data();if(room.hostUid!==uid)throw new Error('თამაშს იწყებს HOST');if((room.players||[]).length<4)throw new Error('დასაწყებად საჭიროა 4 მოთამაშე');
+      tx.update(ref,{status:'playing',startedAt:serverTimestamp(),updatedAt:serverTimestamp()});
+    });
+  }catch(e){setMsg(e?.message||'თამაში ვერ დაიწყო')}
+}
+
+function interceptClicks(){
+  document.addEventListener('click',e=>{
+    const btn=e.target?.closest?.('#dgCreateRoom,#dgJoinRoom,#dgOnlineLeave,#dgOnlineStart');if(!btn)return;
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+    if(!firebaseReady){setMsg('Firebase ჯერ ერთდება — მოიცადე რამდენიმე წამი');return;}
+    if(btn.id==='dgCreateRoom')createRoom();else if(btn.id==='dgJoinRoom')joinRoom();else if(btn.id==='dgOnlineLeave')leaveRoom();else if(btn.id==='dgOnlineStart')startRoom();
+  },true);
+}
+
+async function boot(){
+  addBadge();addRoomNote();setState('● Firebase ერთდება','wait');interceptClicks();
+  try{
+    const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
+    await signInAnonymously(auth);
+    await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){uid=u.uid;stop();resolve()}})});
+    firebaseReady=true;window.DG_FIREBASE_READY=true;setState('● Firebase ონლაინ','ok');
+    if(currentCode)listenRoom(currentCode);else renderRoom(null);
+  }catch(e){
+    console.error('DG Firebase init',e);firebaseReady=false;window.DG_FIREBASE_READY=false;
+    const code=e?.code||'';const hint=code.includes('operation-not-allowed')?' — Firebase Authentication-ში Anonymous ჩართე':code.includes('permission-denied')?' — Firestore Rules შეამოწმე':'';
+    setState('● Firebase არ არის მზად','err');setMsg('Firebase ვერ ჩაირთო'+hint);
+  }
+}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));else setTimeout(boot,0);
+</script>
+<!-- DG V29 FIREBASE REAL ONLINE ROOMS END -->
+
+
+<!-- DG V29 SINGLE-FILE BOOT GUARD + CACHE CLEANUP START -->
+<style id="dg-v29-single-file-guard-css">
+/* Lobby is portrait-friendly. Rotate warning is allowed only after an explicit match start. */
+body:not(.dg-game-active) .rotate{display:none!important}
+@media (orientation:portrait) and (max-width:900px){
+  body.dg-game-active .rotate{
+    display:flex!important;
+    z-index:70000!important;
+    background:radial-gradient(circle at 50% 35%,rgba(18,73,50,.97),rgba(2,14,10,.995) 72%)!important;
+  }
+}
+body.dg-lobby-mode #dgEntryOverlay{display:flex}
+</style>
+<script id="dg-v29-single-file-guard-js">
+(()=>{
+  window.DG_MATCH_ALLOWED=false;
+
+  function lobbyMode(){
+    window.DG_MATCH_ALLOWED=false;
+    document.body.classList.remove('dg-match-mode','dg-game-active');
+    document.body.classList.add('dg-lobby-mode');
+  }
+  function activeMode(){
+    document.body.classList.remove('dg-lobby-mode');
+    document.body.classList.add('dg-match-mode','dg-game-active');
+    document.getElementById('dgEntryOverlay')?.classList.add('hidden');
+    document.getElementById('dgOnlineOverlay')?.classList.remove('show');
+  }
+
+  function guardStarter(){
+    const fn=window.dgStartDominoMatch;
+    if(typeof fn!=='function' || fn.__dgV29Guarded)return false;
+    const guarded=function(...args){
+      if(!window.DG_MATCH_ALLOWED){
+        lobbyMode();
+        return false;
+      }
+      activeMode();
+      return fn.apply(this,args);
+    };
+    guarded.__dgV29Guarded=true;
+    window.dgStartDominoMatch=guarded;
+    return true;
+  }
+
+  async function purgeLegacyCache(){
+    try{
+      if('caches' in window){
+        const keys=await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+      }
+      if('serviceWorker' in navigator){
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.unregister()));
+      }
+    }catch(e){}
+  }
+
+  function init(){
+    lobbyMode();
+    purgeLegacyCache();
+    if(!guardStarter()){
+      const t=setInterval(()=>{if(guardStarter())clearInterval(t)},20);
+      setTimeout(()=>clearInterval(t),5000);
+    }
+
+    /* Only these actions are allowed to enter the landscape game. */
+    document.addEventListener('click',e=>{
+      const quick=e.target?.closest?.('#dgEntryQuick');
+      if(quick){window.DG_MATCH_ALLOWED=true;return;}
+      const back=e.target?.closest?.('#dgChangeProfile,#dgChangeLanguage,#dgOnlineRoomBtn');
+      if(back)lobbyMode();
+    },true);
+
+    /* Keep lobby portrait-safe on initial load/orientation changes until a match starts. */
+    window.addEventListener('orientationchange',()=>{if(!window.DG_MATCH_ALLOWED)lobbyMode()});
+    window.addEventListener('pageshow',()=>{if(!window.DG_MATCH_ALLOWED)lobbyMode()});
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
+<!-- DG V29 SINGLE-FILE BOOT GUARD + CACHE CLEANUP END -->
 
 </body>
 </html>
