@@ -4686,7 +4686,19 @@ async function aiTurn(){
 function humanPlay(i){
   if(G.current!==HUMAN||G.handOver||G.matchOver)return;const t=G.hands[HUMAN][i];if(!t)return;clearChoices();
   if(!G.placements.length){openingTile(HUMAN,i);if(!G.hands[HUMAN].length){finishNormal(HUMAN);return;}nextTurn();return;}
-  const legal=legalPorts(t);if(!legal.length){message('ეს ქვა აქ ვერ მიდის');return;}if(legal.length===1){playToPort(HUMAN,i,legal[0].id);return;}G.selectedIndex=i;renderHand();showChoices(legal,i);message('აირჩიე მხარე');
+  const legal=legalPorts(t);
+  if(!legal.length){message('ეს ქვა აქ ვერ მიდის');return;}
+  if(legal.length===1){playToPort(HUMAN,i,legal[0].id);return;}
+
+  /* V36: on the very first play onto the opening 6-6 stake,
+     left/right are equivalent, so do not ask the player to choose a side. */
+  const first66=legal.every(port=>{
+    const parent=getPlacement(port.sourceTileId);
+    return parent&&parent.opening&&parent.isDouble&&parent.a===6&&parent.b===6&&Number(parent.normalConnections||0)===0&&port.kind==='normal';
+  });
+  if(first66){playToPort(HUMAN,i,legal[0].id);return;}
+
+  G.selectedIndex=i;renderHand();showChoices(legal,i);message('აირჩიე მხარე');
 }
 
 function clearChoices(){
@@ -7296,6 +7308,18 @@ body.dg-game-active #dgLobbyHome{display:block}
 })();
 </script>
 <!-- DG V35 LOBBY RETURN + ONE-TIME LANGUAGE + LOCAL BOT TEST FIX END -->
+
+
+<!-- DG V36 OPENING 6-6 NO SIDE CHOICE START -->
+<style id="dg-v36-opening66-css">
+#dgV35Badge{display:none!important}
+#dgV36Badge{position:fixed;right:10px;top:10px;z-index:81000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV36Badge{display:none}
+</style>
+<script id="dg-v36-opening66-js">
+(()=>{const add=()=>{if(document.getElementById('dgV36Badge'))return;const b=document.createElement('div');b.id='dgV36Badge';b.textContent='V36';document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();})();
+</script>
+<!-- DG V36 OPENING 6-6 NO SIDE CHOICE END -->
 
 </body>
 </html>
