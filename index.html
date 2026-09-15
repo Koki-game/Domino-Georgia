@@ -5126,7 +5126,15 @@ function showWinCelebration(winnerTeam,special35=false){
 
 function boot(){
   const table=document.querySelector('.table-area'),board=$('dominoBoard');if(table&&board)table.appendChild(board);
-  setTargetTexts();wireButtons();updateScores();startRound();
+  setTargetTexts();wireButtons();updateScores();
+  let dgEntryMatchStarted=false;
+  window.dgStartDominoMatch=()=>{
+    if(dgEntryMatchStarted)return;
+    dgEntryMatchStarted=true;
+    window.DG_ENTRY_READY=true;
+    startRound();
+  };
+  if(window.DG_ENTRY_READY===true)window.dgStartDominoMatch();
   if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
@@ -5969,6 +5977,140 @@ else setTimeout(initBottomTools,0);
 })();
 </script>
 <!-- DG V24 ONLINE ROOMS FOUNDATION END -->
+
+
+
+<!-- DG V25 REGISTRATION + ENTRY LOBBY START -->
+<style id="dg-v25-entry-css">
+#dgEntryOverlay{
+  position:absolute;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 30%,rgba(34,89,56,.45),rgba(2,9,7,.94) 62%);
+  backdrop-filter:blur(6px);padding:14px;pointer-events:auto;
+}
+#dgEntryOverlay.hidden{display:none!important;}
+.dg-entry-card{
+  width:min(620px,95vw);max-height:91vh;overflow:auto;border:2px solid #9b6736;border-radius:18px;
+  background:linear-gradient(155deg,#3a1b0d,#160a05 68%,#241107);color:#f8e8c3;
+  box-shadow:0 22px 70px rgba(0,0,0,.85),inset 0 0 0 1px rgba(255,226,169,.12);padding:20px;
+}
+.dg-entry-brand{text-align:center;margin-bottom:16px}.dg-entry-brand b{display:block;font-size:clamp(25px,4vw,40px);letter-spacing:1px;color:#ffd479;text-shadow:0 2px 0 #000}.dg-entry-brand span{font-size:12px;color:#c8b38d}
+.dg-entry-step{display:none}.dg-entry-step.active{display:block;animation:dgEntryIn .22s ease-out both}@keyframes dgEntryIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.dg-entry-title{font-size:clamp(19px,2.3vw,27px);font-weight:1000;color:#ffe2a4;margin-bottom:5px}.dg-entry-sub{font-size:12px;line-height:1.5;color:#c7b79b;margin-bottom:14px}
+.dg-entry-label{display:block;font-size:11px;font-weight:900;color:#e5cda3;margin:10px 0 5px}
+.dg-entry-input{width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #75502f;background:#0e0a07;color:#fff2d2;font-size:14px;font-weight:800;outline:none}.dg-entry-input:focus{border-color:#c88a43;box-shadow:0 0 0 2px rgba(214,144,65,.16)}
+.dg-rules-box{margin-top:12px;padding:11px;border-radius:10px;border:1px solid #583d27;background:rgba(0,0,0,.2);font-size:11px;line-height:1.5;color:#d5c5aa}.dg-rules-box summary{cursor:pointer;font-weight:1000;color:#ffd98b;margin-bottom:6px}.dg-rules-box ul{margin:8px 0 4px;padding-left:20px}.dg-rules-box li{margin:4px 0}
+.dg-agree{display:flex;align-items:flex-start;gap:9px;margin:13px 0;font-size:12px;line-height:1.4;color:#ead7b3}.dg-agree input{margin-top:2px;transform:scale(1.15)}
+.dg-entry-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.dg-entry-btn{flex:1 1 150px;padding:11px 12px;border-radius:10px;border:1px solid #865b33;background:#4a2613;color:#ffeac0;font-weight:1000;cursor:pointer}.dg-entry-btn.primary{background:linear-gradient(#b96b25,#754014);border-color:#d08c3c;color:#fff8df}.dg-entry-btn:disabled{opacity:.43;cursor:not-allowed}
+.dg-entry-options{display:grid;grid-template-columns:1fr;gap:9px;margin-top:12px}.dg-entry-option{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:13px;border-radius:12px;border:1px solid #644126;background:linear-gradient(145deg,rgba(90,47,22,.95),rgba(35,17,9,.97));color:#f7e7c2;cursor:pointer}.dg-entry-option:hover{border-color:#b47636;transform:translateY(-1px)}.dg-entry-icon{font-size:25px;min-width:34px;text-align:center}.dg-entry-option b{display:block;font-size:14px;color:#ffe2a1}.dg-entry-option small{display:block;margin-top:2px;color:#bda98a;font-size:10px;line-height:1.4}
+.dg-friend-panel{display:none;margin-top:10px;padding:11px;border-radius:10px;background:rgba(0,0,0,.2);border:1px solid #53371f}.dg-friend-panel.show{display:block}.dg-friend-row{display:flex;gap:8px}.dg-friend-row input{flex:1}.dg-entry-msg{min-height:18px;margin-top:8px;color:#ffd47f;font-size:11px;font-weight:900}.dg-entry-profile{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:5px 0 10px;padding:8px 10px;border-radius:9px;background:rgba(16,55,32,.34);border:1px solid #315f40}.dg-entry-profile b{color:#6ff298}.dg-entry-link{border:0;background:transparent;color:#d6ba8a;font-size:10px;text-decoration:underline;cursor:pointer;padding:4px}
+.dg-entry-note{margin-top:12px;font-size:10px;line-height:1.45;color:#a99578;text-align:center}
+@media(max-height:560px){.dg-entry-card{padding:12px}.dg-entry-brand{margin-bottom:8px}.dg-entry-option{padding:9px}.dg-rules-box{max-height:100px;overflow:auto}.dg-entry-sub{margin-bottom:8px}}
+</style>
+<script id="dg-v25-entry-js">
+window.DG_ENTRY_READY=false;
+(()=>{
+  const PROFILE_KEY='dg_domino_v25_profile';
+  const $=id=>document.getElementById(id);
+  let overlay=null;
+
+  function getProfile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')}catch(e){return null}}
+  function saveProfile(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p));}
+  function validProfile(p){return !!(p&&p.nickname&&p.acceptedRules===true);}
+  function applyNickname(name){
+    const nick=(name||'მოთამაშე').trim().slice(0,18);
+    const my=$('myNickname');if(my)my.textContent=nick;
+    const bottom=document.querySelector('.player-bottom .player-name');if(bottom)bottom.textContent=nick;
+    const onlineNick=$('dgOnlineNick');if(onlineNick)onlineNick.value=nick;
+  }
+  function showStep(id){
+    document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));
+    $(id)?.classList.add('active');
+  }
+  function refreshRegister(){
+    const nick=($('dgRegNick')?.value||'').trim();
+    const ok=nick.length>=2 && $('dgRulesAgree')?.checked;
+    if($('dgRegisterContinue'))$('dgRegisterContinue').disabled=!ok;
+  }
+  function register(){
+    const nickname=($('dgRegNick')?.value||'').trim().slice(0,18);
+    if(nickname.length<2){setMsg('მეტსახელი მინიმუმ 2 სიმბოლო უნდა იყოს');return;}
+    if(!$('dgRulesAgree')?.checked){setMsg('გასაგრძელებლად წესებს უნდა დაეთანხმო');return;}
+    const p={nickname,acceptedRules:true,acceptedAt:Date.now()};saveProfile(p);applyNickname(nickname);openChoice();
+  }
+  function openChoice(){
+    const p=getProfile();if(!validProfile(p)){showStep('dgRegisterStep');return;}
+    applyNickname(p.nickname);
+    if($('dgLobbyNick'))$('dgLobbyNick').textContent=p.nickname;
+    showStep('dgChoiceStep');setMsg('');
+  }
+  function changeProfile(){localStorage.removeItem(PROFILE_KEY);if($('dgRegNick'))$('dgRegNick').value='';if($('dgRulesAgree'))$('dgRulesAgree').checked=false;refreshRegister();showStep('dgRegisterStep');}
+  function setMsg(t){const e=$('dgEntryMsg');if(e)e.textContent=t||'';}
+  function hideEntry(){overlay?.classList.add('hidden');}
+  function showOnlineOverlay(){
+    const p=getProfile();applyNickname(p?.nickname);
+    hideEntry();
+    const o=$('dgOnlineOverlay');if(o)o.classList.add('show');
+  }
+  function createTable(){
+    showOnlineOverlay();
+    setTimeout(()=>{$('dgCreateRoom')?.click();},0);
+  }
+  function toggleFriend(){
+    $('dgFriendPanel')?.classList.toggle('show');
+    if($('dgFriendPanel')?.classList.contains('show'))setTimeout(()=>$('dgFriendCode')?.focus(),30);
+  }
+  function joinFriend(){
+    const code=($('dgFriendCode')?.value||'').replace(/\D/g,'').slice(0,4);
+    if(code.length!==4){setMsg('შეიყვანე მეგობრის 4-ნიშნა მაგიდის კოდი');return;}
+    showOnlineOverlay();
+    setTimeout(()=>{const j=$('dgJoinCode');if(j)j.value=code;$('dgJoinRoom')?.click();},0);
+  }
+  function quickOnline(){
+    const rn=$('roomName'),rc=$('roomCode');if(rn)rn.textContent='ონლაინ თამაში';if(rc)rc.textContent='სწრაფი მატჩი';
+    hideEntry();
+    window.dgStartDominoMatch?.();
+  }
+  function build(){
+    const game=$('game');if(!game||$('dgEntryOverlay'))return;
+    overlay=document.createElement('div');overlay.id='dgEntryOverlay';
+    overlay.innerHTML=`<div class="dg-entry-card">
+      <div class="dg-entry-brand"><b>DOMINO GEORGIA</b><span>ქართული დომინო · ონლაინ ოთახები</span></div>
+      <section class="dg-entry-step" id="dgRegisterStep">
+        <div class="dg-entry-title">რეგისტრაცია</div>
+        <div class="dg-entry-sub">პირველი შესვლისას შექმენი შენი სათამაშო პროფილი და დაეთანხმე თამაშის წესებს.</div>
+        <label class="dg-entry-label" for="dgRegNick">მეტსახელი</label>
+        <input class="dg-entry-input" id="dgRegNick" maxlength="18" autocomplete="nickname" placeholder="მაგ: Giorgi77">
+        <details class="dg-rules-box"><summary>თამაშის წესების ნახვა</summary><ul><li>პირველი ხელი იწყება 6-6-ით.</li><li>ქულა ითვლება ღია ბოლოების 5-ის ჯერადზე.</li><li>ზუსტად 35 — მყისიერი გამარჯვებაა.</li><li>მატჩის მიზანია 355 ქულა მოქმედი ხელის დასრულების წესით.</li><li>რიბისას მოქმედებს დარჩენილი ქვების ნაკლები ჯამის წესი.</li><li>მოთამაშემ უნდა ითამაშოს სამართლიანად და არ გამოიყენოს შეცდომები უპირატესობისთვის.</li></ul></details>
+        <label class="dg-agree"><input type="checkbox" id="dgRulesAgree"><span>წავიკითხე და ვეთანხმები თამაშის წესებს და სამართლიანი თამაშის პირობებს.</span></label>
+        <div class="dg-entry-actions"><button class="dg-entry-btn primary" id="dgRegisterContinue" disabled>რეგისტრაცია და გაგრძელება</button></div>
+      </section>
+      <section class="dg-entry-step" id="dgChoiceStep">
+        <div class="dg-entry-title">ოთახის არჩევა</div>
+        <div class="dg-entry-profile"><span>მოთამაშე: <b id="dgLobbyNick">—</b></span><button class="dg-entry-link" id="dgChangeProfile">პროფილის შეცვლა</button></div>
+        <div class="dg-entry-sub">აირჩიე როგორ გინდა თამაშში შესვლა.</div>
+        <div class="dg-entry-options">
+          <button class="dg-entry-option" id="dgEntryCreate"><span class="dg-entry-icon">➕</span><span><b>ახალი მაგიდის შექმნა</b><small>შექმენი პირადი მაგიდა და გაუგზავნე 4-ნიშნა კოდი მეგობრებს.</small></span></button>
+          <button class="dg-entry-option" id="dgEntryFriend"><span class="dg-entry-icon">🔑</span><span><b>მეგობრის მაგიდაზე შესვლა</b><small>თუ მეგობარმა უკვე შექმნა მაგიდა, მოძებნე მისი კოდით.</small></span></button>
+          <div class="dg-friend-panel" id="dgFriendPanel"><div class="dg-friend-row"><input class="dg-entry-input" id="dgFriendCode" inputmode="numeric" maxlength="4" placeholder="4-ნიშნა კოდი"><button class="dg-entry-btn primary" id="dgFriendJoin">შესვლა</button></div></div>
+          <button class="dg-entry-option" id="dgEntryQuick"><span class="dg-entry-icon">🌐</span><span><b>ონლაინ თამაშის გაგრძელება</b><small>თუ მეგობრის მაგიდა არ გჭირდება, გადადი ჩვეულებრივ ონლაინ მატჩში.</small></span></button>
+        </div>
+        <div class="dg-entry-msg" id="dgEntryMsg"></div>
+        <div class="dg-entry-note">V25-ში შესვლისა და ოთახების არჩევის სრული ფანჯარა მზადაა. რეალური სხვადასხვა ტელეფონის სინქრონიზაცია Firebase-ზე შემდეგ ეტაპზე ჩაირთვება.</div>
+      </section>
+    </div>`;
+    game.appendChild(overlay);
+    $('dgRegNick')?.addEventListener('input',refreshRegister);$('dgRulesAgree')?.addEventListener('change',refreshRegister);$('dgRegisterContinue')?.addEventListener('click',register);
+    $('dgEntryCreate')?.addEventListener('click',createTable);$('dgEntryFriend')?.addEventListener('click',toggleFriend);$('dgFriendJoin')?.addEventListener('click',joinFriend);$('dgEntryQuick')?.addEventListener('click',quickOnline);$('dgChangeProfile')?.addEventListener('click',changeProfile);
+    $('dgFriendCode')?.addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,4)});$('dgFriendCode')?.addEventListener('keydown',e=>{if(e.key==='Enter')joinFriend();});
+    const p=getProfile();if(validProfile(p)){applyNickname(p.nickname);openChoice();}else showStep('dgRegisterStep');
+    // When a 4-player room is started by the host, begin the local match too.
+    setTimeout(()=>{$('dgOnlineStart')?.addEventListener('click',()=>{if(!$('dgOnlineStart')?.disabled)setTimeout(()=>window.dgStartDominoMatch?.(),40);});},0);
+    window.addEventListener('storage',e=>{if(!e.key?.startsWith('dg_domino_v24_room_')||!e.newValue)return;try{const room=JSON.parse(e.newValue);const cid=sessionStorage.getItem('dg_domino_v24_client');if(room?.status==='playing'&&room.players?.some(p=>p.id===cid)){hideEntry();$('dgOnlineOverlay')?.classList.remove('show');window.dgStartDominoMatch?.();}}catch(err){}});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build);else build();
+})();
+</script>
+<!-- DG V25 REGISTRATION + ENTRY LOBBY END -->
 
 </body>
 </html>
