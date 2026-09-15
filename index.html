@@ -6261,5 +6261,123 @@ window.DG_ENTRY_READY=false;
 </script>
 <!-- DG V26 LANGUAGE + COUNTRY FLAGS + LOBBY SKIN END -->
 
+
+
+<!-- DG V27 PORTRAIT LOBBY + LANDSCAPE GAME START -->
+<style id="dg-v27-orientation-css">
+/* V27: The entry/lobby flow is intentionally portrait-friendly.
+   The rotate warning is only active after a real match begins. */
+.rotate{display:none!important;z-index:50000!important;}
+body.dg-match-mode .rotate{display:none!important;}
+
+@media (orientation:portrait) and (max-width:900px){
+  body.dg-match-mode .rotate{
+    display:flex!important;
+    background:
+      radial-gradient(circle at 50% 35%,rgba(18,73,50,.96),rgba(2,14,10,.99) 72%)!important;
+    padding:max(28px,env(safe-area-inset-top)) 24px max(28px,env(safe-area-inset-bottom))!important;
+  }
+  body.dg-match-mode .rotate div{font-size:72px!important;line-height:1!important;}
+  body.dg-match-mode .rotate h2{
+    max-width:330px;margin-top:18px!important;font-size:22px!important;line-height:1.35!important;color:#fff4d3!important;
+  }
+
+  #dgEntryOverlay{
+    position:fixed!important;
+    inset:0!important;
+    align-items:flex-start!important;
+    overflow:auto!important;
+    padding:max(20px,env(safe-area-inset-top)) 14px max(20px,env(safe-area-inset-bottom))!important;
+  }
+  #dgEntryOverlay .dg-entry-card{
+    width:min(430px,100%)!important;
+    max-height:none!important;
+    margin:auto!important;
+    border-radius:24px!important;
+    padding:20px 16px!important;
+  }
+  #dgEntryOverlay .dg-entry-brand{margin:4px 0 18px!important;}
+  #dgEntryOverlay .dg-entry-brand b{font-size:34px!important;}
+  #dgEntryOverlay .dg-entry-brand span{font-size:12px!important;}
+  #dgEntryOverlay .dg-entry-title{font-size:25px!important;}
+  #dgEntryOverlay .dg-entry-sub{font-size:13px!important;line-height:1.45!important;}
+  #dgEntryOverlay .dg-language-grid{gap:9px!important;}
+  #dgEntryOverlay .dg-language-btn{min-height:54px!important;padding:10px 13px!important;}
+  #dgEntryOverlay .dg-entry-option{min-height:68px!important;padding:13px!important;}
+  #dgEntryOverlay .dg-entry-option b{font-size:15px!important;}
+  #dgEntryOverlay .dg-entry-option small{font-size:11px!important;}
+  #dgEntryOverlay .dg-entry-profile{flex-wrap:wrap!important;}
+  #dgEntryOverlay .dg-entry-actions{display:block!important;}
+  #dgEntryOverlay .dg-entry-btn{width:100%!important;min-height:46px!important;}
+  #dgEntryOverlay .dg-friend-row{flex-direction:column!important;}
+
+  #dgOnlineOverlay{
+    position:fixed!important;
+    inset:0!important;
+    align-items:flex-start!important;
+    overflow:auto!important;
+    padding:max(18px,env(safe-area-inset-top)) 12px max(18px,env(safe-area-inset-bottom))!important;
+  }
+  #dgOnlineOverlay .dg-online-card{
+    width:min(430px,100%)!important;
+    max-height:none!important;
+    margin:auto!important;
+    border-radius:22px!important;
+    padding:16px!important;
+  }
+  #dgOnlineOverlay .dg-seat-grid{grid-template-columns:1fr!important;}
+  #dgOnlineOverlay .dg-online-row{flex-direction:column!important;}
+  #dgOnlineOverlay .dg-online-input,#dgOnlineOverlay .dg-online-btn{width:100%!important;}
+}
+</style>
+<script id="dg-v27-orientation-js">
+(()=>{
+  const setLobbyMode=()=>{
+    document.body.classList.remove('dg-match-mode');
+    document.body.classList.add('dg-lobby-mode');
+  };
+  const setMatchMode=()=>{
+    document.body.classList.remove('dg-lobby-mode');
+    document.body.classList.add('dg-match-mode');
+    document.getElementById('dgEntryOverlay')?.classList.add('hidden');
+    document.getElementById('dgOnlineOverlay')?.classList.remove('show');
+  };
+
+  function wrapMatchStarter(){
+    const fn=window.dgStartDominoMatch;
+    if(typeof fn!=='function' || fn.__dgV27Wrapped)return false;
+    const wrapped=function(...args){
+      setMatchMode();
+      return fn.apply(this,args);
+    };
+    wrapped.__dgV27Wrapped=true;
+    window.dgStartDominoMatch=wrapped;
+    return true;
+  }
+
+  function init(){
+    setLobbyMode();
+    if(!wrapMatchStarter()){
+      const timer=setInterval(()=>{if(wrapMatchStarter())clearInterval(timer)},25);
+      setTimeout(()=>clearInterval(timer),5000);
+    }
+
+    /* Opening the entry flow or online waiting room always belongs to lobby mode. */
+    const entry=document.getElementById('dgEntryOverlay');
+    if(entry && !entry.classList.contains('hidden'))setLobbyMode();
+    document.getElementById('dgOnlineRoomBtn')?.addEventListener('click',setLobbyMode);
+
+    /* If the player returns to profile/language selection, restore portrait lobby mode. */
+    ['dgChangeProfile','dgChangeLanguage'].forEach(id=>
+      document.getElementById(id)?.addEventListener('click',setLobbyMode)
+    );
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+</script>
+<!-- DG V27 PORTRAIT LOBBY + LANDSCAPE GAME END -->
+
 </body>
 </html>
