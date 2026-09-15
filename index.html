@@ -5023,19 +5023,41 @@ choosePlacement=function(port,tile){
   const parentDouble=sourceWasDouble(port);
 
   let mode='auto';
+  let forcedTurnDir=null;
 
-  /* Doubles never bend. Also, the domino immediately AFTER a double
-     must continue straight, regardless of the scheduled bend point. */
-  if(isDouble(tile)||parentDouble){
+  /* V48 routing:
+     - Main LEFT/RIGHT stake branches stay exactly as before.
+     - Extra TOP/BOTTOM branches: tile 1 straight, tile 2 straight, tile 3 bends.
+     - If tile 3 is a DOUBLE, it stays straight; tile 4 also stays straight;
+       then tile 5 bends.
+     - If another DOUBLE lands on the delayed bend point, the same rule repeats.
+     - TOP/N bends to screen-right (E). BOTTOM/S bends to screen-left (W).
+       RIGHT[] gives exactly N->E and S->W. */
+  if(type==='extra'&&!turned){
+    const state=port.branchTurnState||'normal';
+    if(state==='afterDouble'){
+      mode='straight';
+    }else if(state==='turnNext'){
+      if(isDouble(tile)) mode='straight';
+      else{
+        mode='turn';
+        forcedTurnDir=RIGHT[port.dir];
+      }
+    }else if(depth<2){
+      mode='straight';
+    }else if(isDouble(tile)){
+      mode='straight';
+    }else{
+      mode='turn';
+      forcedTurnDir=RIGHT[port.dir];
+    }
+  }else if(isDouble(tile)||parentDouble){
+    /* Keep the older double rule on the main branches only. */
     mode='straight';
   }else if(type==='main'&&!turned){
     /* LEFT/RIGHT sides from the stake: dominoes 1..8 are straight.
        Domino 9 may make the first bend. */
     mode=depth<8?'straight':'turn';
-  }else if(type==='extra'&&!turned){
-    /* TOP/BOTTOM sides from the stake: dominoes 1..3 are straight.
-       Domino 4 may make the first bend. */
-    mode=depth<3?'straight':'turn';
   }else if(turned){
     /* Once a branch has bent, keep the new lane straight. */
     mode='straight';
@@ -5043,6 +5065,7 @@ choosePlacement=function(port,tile){
 
   let dirs;
   if(mode==='straight')dirs=[port.dir];
+  else if(mode==='turn'&&forcedTurnDir)dirs=[forcedTurnDir];
   else if(mode==='turn')dirs=[RIGHT[port.dir],LEFT[port.dir]];
   else dirs=[port.dir,RIGHT[port.dir],LEFT[port.dir]];
 
@@ -7748,7 +7771,7 @@ body.dg-game-active #dgV45Badge{display:none}
 body.dg-game-active #dgV46Badge{display:none}
 .player-top,.player-top .player-card{overflow:visible!important}
 .player-top{z-index:620!important}
-.player-top .avatar{z-index:12!important;opacity:1!important;filter:none!important;background-position:center center!important;background-size:cover!important}
+.player-top .avatar{z-index:12!important;opacity:1!important;filter:none!important;background-position:center center!important;background-size:contain!important;background-repeat:no-repeat!important;background-color:#102018!important}
 .player .avatar.dg-v46-clock{--dg-v46-p:100%;--dg-v46-c:#39d86b;overflow:visible!important}
 .player .avatar.dg-v46-clock::after{content:"";position:absolute;inset:-6px;border-radius:50%;pointer-events:none;z-index:30;background:conic-gradient(var(--dg-v46-c) var(--dg-v46-p),rgba(20,24,25,.33) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 0);mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 0)}
 .dg-v46-seconds{position:absolute;left:50%;top:-18px;transform:translateX(-50%);z-index:35;min-width:25px;height:17px;padding:0 4px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(5,12,10,.9);border:1px solid var(--dg-v46-c,#39d86b);color:#fff;font:900 10px/1 Arial,sans-serif;box-sizing:border-box;pointer-events:none}
@@ -7794,5 +7817,19 @@ async function boot(){badge();ensureSelfClock();ensureOverlay();try{app=getApps(
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 </script>
 <!-- DG V46 TURN CLOCK + TIMEOUT BOT + ONE REJOIN END -->
+
+
+<!-- DG V48 EXTRA-BRANCH THIRD-TILE TURN + DOUBLE DELAY + AVATAR FIX START -->
+<style id="dg-v48-extra-route-css">
+#dgV46Badge{display:none!important}
+#dgV47Badge{display:none!important}
+#dgV48Badge{position:fixed;right:10px;top:10px;z-index:90000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV48Badge{display:none}
+</style>
+<script id="dg-v48-badge-js">
+(()=>{function add(){if(document.getElementById('dgV48Badge'))return;const b=document.createElement('div');b.id='dgV48Badge';b.textContent='V48';document.body.appendChild(b)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add()})();
+</script>
+<!-- DG V48 EXTRA-BRANCH THIRD-TILE TURN + DOUBLE DELAY + AVATAR FIX END -->
+
 </body>
 </html>
