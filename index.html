@@ -4683,6 +4683,25 @@ async function aiTurn(){
   const moves=[];G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>moves.push({p,i,t,port})));if(!moves.length){G.aiBusy=false;pass(p);return;}moves.sort((a,b)=>aiMoveScore(b)-aiMoveScore(a));const m=moves[0];G.aiBusy=false;playToPort(p,m.i,m.port.id);
 }
 
+function dgEquivalentStakeSides(legal){
+  if(!Array.isArray(legal)||legal.length<2)return false;
+  const source=legal[0]?.sourceTileId;
+  if(!source||!legal.every(p=>p.sourceTileId===source))return false;
+  const parent=getPlacement(source);
+  if(!parent||!parent.isDouble||!parent.isStake)return false;
+
+  // Opening double: before either main side has been used, both directions are identical.
+  const openingMain=parent.opening&&Number(parent.normalConnections||0)===0&&
+    legal.every(p=>p.kind==='normal'&&p.branchType==='main');
+  if(openingMain)return true;
+
+  // Once a stake opens its two side arms (including the original 6-6 after both
+  // main ends are closed), those two fresh side arms are equivalent as well.
+  const freshStakeSides=legal.every(p=>p.kind==='stake'&&p.branchType==='extra'&&
+    Number(p.branchDepth||0)===0&&!p.branchTurned);
+  return freshStakeSides;
+}
+
 function humanPlay(i){
   if(G.current!==HUMAN||G.handOver||G.matchOver)return;const t=G.hands[HUMAN][i];if(!t)return;clearChoices();
   if(!G.placements.length){openingTile(HUMAN,i);if(!G.hands[HUMAN].length){finishNormal(HUMAN);return;}nextTurn();return;}
@@ -4690,13 +4709,10 @@ function humanPlay(i){
   if(!legal.length){message('ეს ქვა აქ ვერ მიდის');return;}
   if(legal.length===1){playToPort(HUMAN,i,legal[0].id);return;}
 
-  /* V36: on the very first play onto the opening 6-6 stake,
-     left/right are equivalent, so do not ask the player to choose a side. */
-  const first66=legal.every(port=>{
-    const parent=getPlacement(port.sourceTileId);
-    return parent&&parent.opening&&parent.isDouble&&parent.a===6&&parent.b===6&&Number(parent.normalConnections||0)===0&&port.kind==='normal';
-  });
-  if(first66){playToPort(HUMAN,i,legal[0].id);return;}
+  /* V37: never ask for a side when the available sides of the same stake
+     are geometrically/rule-equivalent. Meaningful choices between different
+     chain ends still stay manual. */
+  if(dgEquivalentStakeSides(legal)){playToPort(HUMAN,i,legal[0].id);return;}
 
   G.selectedIndex=i;renderHand();showChoices(legal,i);message('აირჩიე მხარე');
 }
@@ -7320,6 +7336,65 @@ body.dg-game-active #dgV36Badge{display:none}
 (()=>{const add=()=>{if(document.getElementById('dgV36Badge'))return;const b=document.createElement('div');b.id='dgV36Badge';b.textContent='V36';document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();})();
 </script>
 <!-- DG V36 OPENING 6-6 NO SIDE CHOICE END -->
+
+
+<!-- DG V37 COMPACT MENU + LEFT CHAT + STAKE AUTO SIDE START -->
+<style id="dg-v37-ui-css">
+#dgV36Badge{display:none!important}
+#dgV37Badge{position:fixed;right:10px;top:10px;z-index:82000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV37Badge{display:none}
+
+/* Standalone emoji/chat button in the lower-left wooden corner. */
+#chatBtn.dg-v37-chat{
+  display:flex!important;position:absolute!important;left:.75%!important;bottom:.55%!important;z-index:21000!important;
+  width:48px!important;height:42px!important;min-width:48px!important;padding:0!important;margin:0!important;
+  align-items:center!important;justify-content:center!important;border:2px solid #9a552c!important;border-radius:10px!important;
+  background:linear-gradient(145deg,#6a3216,#2b1007 72%)!important;color:#ffe6b6!important;
+  box-shadow:inset 0 1px 0 rgba(255,225,170,.18),0 3px 8px rgba(0,0,0,.75)!important;
+  font-size:0!important;line-height:1!important;cursor:pointer!important;
+}
+#chatBtn.dg-v37-chat .action-icon{font-size:24px!important;line-height:1!important;margin:0!important}
+#chatBtn.dg-v37-chat .action-icon::after{content:'🙂';font-size:15px;margin-left:-5px;vertical-align:-4px}
+
+/* Emoji panel opens directly above the new lower-left button. */
+#emojiPanel{left:.75%!important;bottom:47px!important;z-index:22000!important;width:220px!important;padding:9px!important}
+
+/* The hamburger now contains only Full screen + Settings. */
+#dgV15MenuPanel{width:165px!important}
+
+@media(max-height:560px){
+  #chatBtn.dg-v37-chat{width:42px!important;height:36px!important;min-width:42px!important}
+  #chatBtn.dg-v37-chat .action-icon{font-size:21px!important}
+  #emojiPanel{bottom:41px!important;width:205px!important}
+}
+</style>
+<script id="dg-v37-ui-js">
+(()=>{
+  const $=id=>document.getElementById(id);
+  function addBadge(){if($('dgV37Badge'))return;const b=document.createElement('div');b.id='dgV37Badge';b.textContent='V37';document.body.appendChild(b)}
+  function moveChat(){
+    const game=$('game'),chat=$('chatBtn');if(!game||!chat)return;
+    if(chat.parentElement!==game)game.appendChild(chat);
+    chat.classList.add('dg-v37-chat');
+    chat.setAttribute('aria-label','ჩატი და სმაილები');
+    chat.innerHTML='<span class="action-icon">💬</span>';
+  }
+  function trimMenu(){
+    const panel=$('dgV15MenuPanel');if(!panel)return;
+    panel.querySelectorAll('[data-act]').forEach(btn=>{
+      if(!['full','settings'].includes(btn.dataset.act))btn.remove();
+    });
+  }
+  function init(){
+    addBadge();moveChat();trimMenu();
+    // In case an older UI initializer runs late, enforce the requested layout once more.
+    setTimeout(()=>{moveChat();trimMenu()},120);
+    setTimeout(()=>{moveChat();trimMenu()},700);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V37 COMPACT MENU + LEFT CHAT + STAKE AUTO SIDE END -->
 
 </body>
 </html>
