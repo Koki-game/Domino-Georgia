@@ -7831,5 +7831,93 @@ body.dg-game-active #dgV48Badge{display:none}
 </script>
 <!-- DG V48 EXTRA-BRANCH THIRD-TILE TURN + DOUBLE DELAY + AVATAR FIX END -->
 
+<!-- DG V49 FRIEND MATCH HYDRATION FIX START -->
+<style id="dg-v49-sync-fix-css">
+#dgV48Badge{display:none!important}
+#dgV49Badge{position:fixed;right:10px;top:10px;z-index:91000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV49Badge{display:none}
+</style>
+<script type="module" id="dg-v49-sync-fix-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,onSnapshot,runTransaction,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const SESSION='dg_domino_v29_room',ROOMS='dominoRooms';
+let app,auth,db,uid='',code='',unsub=null,lastApplied='',writingFallback=false;
+const $=id=>document.getElementById(id);
+function badge(){if($('dgV49Badge'))return;const b=document.createElement('div');b.id='dgV49Badge';b.textContent='V49';document.body.appendChild(b)}
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function waitEngine(){return new Promise((resolve,reject)=>{let n=0;const t=setInterval(()=>{if(window.DG_ENGINE){clearInterval(t);resolve(window.DG_ENGINE)}else if(++n>240){clearInterval(t);reject(new Error('engine timeout'))}},25)})}
+function enterMatch(){
+  window.DG_MATCH_ALLOWED=true;
+  window.DG_ONLINE_MULTIPLAYER=true;
+  window.DG_ENTRY_READY=true;
+  document.body.classList.remove('dg-lobby-mode');
+  document.body.classList.add('dg-match-mode','dg-game-active');
+  $('dgEntryOverlay')?.classList.add('hidden');
+  $('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
+}
+function hasFullHands(gs){return Array.isArray(gs?.hands)&&gs.hands.length===4&&gs.hands.every(Array.isArray)}
+async function hostFallback(room,eng){
+  if(writingFallback||room.hostUid!==uid||room.status!=='playing'||hasFullHands(room.gameState))return;
+  const st=eng.getState?.();if(!hasFullHands(st))return;
+  writingFallback=true;
+  try{
+    await runTransaction(db,async tx=>{
+      const ref=doc(db,ROOMS,room.code),snap=await tx.get(ref);if(!snap.exists())return;
+      const r=snap.data();if(r.status!=='playing'||hasFullHands(r.gameState))return;
+      tx.update(ref,{gameState:clone(st),gameVersion:Math.max(1,Number(r.gameVersion||0)),gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()});
+    });
+  }catch(e){console.warn('V49 host fallback',e)}finally{writingFallback=false}
+}
+async function hydrate(room){
+  const me=(room.players||[]).find(p=>p.uid===uid);if(!me)return;
+  if(room.status!=='playing')return;
+  const eng=await waitEngine();
+  enterMatch();
+  eng.setHumanSeat?.(Number(me.seat));
+  if(!hasFullHands(room.gameState)){await hostFallback(room,eng);return}
+  const ver=Number(room.gameVersion||0);
+  const key=`${room.code}:${room.matchId||''}:${ver}`;
+  const handEl=$('playerHand');
+  const ownCount=Array.isArray(room.gameState.hands?.[Number(me.seat)])?room.gameState.hands[Number(me.seat)].length:-1;
+  const domCount=handEl?.children?.length??-1;
+  if(key===lastApplied && (ownCount===domCount || ownCount<0)){eng.rerender?.();return}
+  window.DG_ONLINE_MULTIPLAYER=true;
+  try{
+    eng.loadState?.(clone(room.gameState));
+    eng.setHumanSeat?.(Number(me.seat));
+    eng.rerender?.();
+    requestAnimationFrame(()=>{eng.setHumanSeat?.(Number(me.seat));eng.rerender?.()});
+    setTimeout(()=>{eng.setHumanSeat?.(Number(me.seat));eng.rerender?.()},180);
+    lastApplied=key;
+  }catch(e){console.error('V49 hydrate',e)}
+}
+function attach(c){
+  if(c===code&&unsub)return;
+  unsub?.();unsub=null;code=c||'';lastApplied='';
+  if(!/^\d{4}$/.test(code))return;
+  unsub=onSnapshot(doc(db,ROOMS,code),snap=>{
+    if(!snap.exists())return;
+    const room={code:snap.id,...snap.data()};
+    window.DG_V30_ROOM=room;
+    hydrate(room).catch(e=>console.warn('V49 room hydrate',e));
+  },e=>console.warn('V49 room listener',e));
+}
+function watch(){const c=sessionStorage.getItem(SESSION)||'';if(c!==code)attach(c)}
+async function boot(){
+  badge();
+  try{
+    app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
+    uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});
+    watch();setInterval(watch,300);
+    window.addEventListener('pageshow',()=>setTimeout(watch,100));
+    window.addEventListener('online',()=>setTimeout(watch,120));
+  }catch(e){console.error('V49 boot',e)}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V49 FRIEND MATCH HYDRATION FIX END -->
+
 </body>
 </html>
