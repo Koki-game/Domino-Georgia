@@ -4355,7 +4355,9 @@ button:active{
 
 const $=id=>document.getElementById(id);
 let HUMAN=2; // V30: local online player seat is dynamic; default bottom=2
-const TARGET=355;
+let GAME_MODE=4; // V61: 4-player legacy mode or 2-player draw mode
+const TARGET4=355,TARGET2=215;
+const targetScore=()=>GAME_MODE===2?TARGET2:TARGET4;
 const W=76,H=44;
 const HW=W/2, HH=H/2;
 const DIR={E:[1,0],W:[-1,0],N:[0,-1],S:[0,1]};
@@ -4365,7 +4367,7 @@ const names=['მოთამაშე 1','მოთამაშე 2','მო�
 const ratings=[1250,1020,1100,980];
 
 const G={
-  hands:[[],[],[],[]], placements:[], ports:[], scores:[0,0], carry:0,
+  hands:[[],[],[],[]], stock:[], mode:4, placements:[], ports:[], scores:[0,0], carry:0,
   current:0, round:1, nextStarter:null, lastPlayer:null, pendingCloser:null,
   passStreak:0, stakeId:null, threshold:false, handOver:false, matchOver:false,
   aiBusy:false, tileSeq:1, portSeq:1, selectedIndex:null, pendingTransition:null,
@@ -4385,8 +4387,10 @@ function dgNotifyState(){
   });
 }
 
-const team=p=>(p===0||p===2)?0:1;
-const teamName=t=>t===0?'გუნდი A':'გუნდი B';
+const activeSeats=()=>GAME_MODE===2?[2,0]:[0,1,2,3];
+const nextSeat=p=>GAME_MODE===2?(Number(p)===2?0:2):((Number(p)+1)%4);
+const team=p=>GAME_MODE===2?(Number(p)===2?0:1):((p===0||p===2)?0:1);
+const teamName=t=>GAME_MODE===2?(t===0?'მოთამაშე A':'მოთამაშე B'):(t===0?'გუნდი A':'გუნდი B');
 const isDouble=t=>t.a===t.b;
 const round5=n=>n<=0?0:Math.ceil(n/5)*5;
 const tilePips=t=>t.a+t.b;
@@ -4397,8 +4401,23 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 function set28(){const a=[];for(let x=0;x<=6;x++)for(let y=x;y<=6;y++)a.push({id:`T${G.tileSeq++}`,a:x,b:y});return a;}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function deal(){const d=shuffle(set28());G.hands=[[],[],[],[]];for(let i=0;i<28;i++)G.hands[i%4].push(d[i]);}
-function find66(){for(let p=0;p<4;p++){const i=G.hands[p].findIndex(t=>t.a===6&&t.b===6);if(i>=0)return {p,i};}return null;}
+function deal(force66=false){
+  const d=shuffle(set28());G.hands=[[],[],[],[]];G.stock=[];G.mode=GAME_MODE;
+  if(GAME_MODE===2){
+    /* Two-player mode: 7 tiles each, 14 in the stock. On the first hand only,
+       guarantee that the real 6-6 is dealt to one of the two players. */
+    if(force66){
+      const six=d.findIndex(t=>t.a===6&&t.b===6);
+      if(six>=14){const j=Math.floor(Math.random()*14);[d[six],d[j]]=[d[j],d[six]];}
+    }
+    const seats=[2,0];
+    for(let i=0;i<14;i++)G.hands[seats[i%2]].push(d[i]);
+    G.stock=d.slice(14);
+    return;
+  }
+  for(let i=0;i<28;i++)G.hands[i%4].push(d[i]);
+}
+function find66(){for(const p of activeSeats()){const i=G.hands[p].findIndex(t=>t.a===6&&t.b===6);if(i>=0)return {p,i};}return null;}
 
 let msgTimer=null;
 function message(text,ms=1500){const el=$('turnMessage');if(!el)return;clearTimeout(msgTimer);el.textContent=text;el.classList.add('show');msgTimer=setTimeout(()=>el.classList.remove('show'),ms);}
@@ -4660,16 +4679,16 @@ function playToPort(player,index,portId){
   return true;
 }
 
-function allMoves(){const out=[];if(!G.placements.length)return out;for(let p=0;p<4;p++)G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>out.push({p,i,t,port})));return out;}
+function allMoves(){const out=[];if(!G.placements.length)return out;for(const p of activeSeats())G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>out.push({p,i,t,port})));return out;}
 function updatePotentialCloser(mover,placed){
   const m=allMoves();
   if(!m.length){if(!(isDouble(placed)&&G.pendingCloser!=null))G.pendingCloser=mover;return;}
   if(m.every(x=>isDouble(x.t))){if(G.pendingCloser==null||!isDouble(placed))G.pendingCloser=mover;} else G.pendingCloser=null;
 }
 
-function addScore(t,pts,msg){G.scores[t]+=pts;if(G.scores[t]>=TARGET)G.threshold=true;updateScores();if(msg)message(msg);}
+function addScore(t,pts,msg){G.scores[t]+=pts;if(G.scores[t]>=targetScore())G.threshold=true;updateScores();if(msg)message(msg);}
 function handPips(p){return G.hands[p].reduce((s,t)=>s+t.a+t.b,0);}
-function teamRemain(t){return t===0?handPips(0)+handPips(2):handPips(1)+handPips(3);}
+function teamRemain(t){if(GAME_MODE===2)return t===0?handPips(2):handPips(0);return t===0?handPips(0)+handPips(2):handPips(1)+handPips(3);}
 function finishNormal(player){
   if(G.handOver)return;G.handOver=true;const wt=team(player),lt=1-wt;let earned=round5(teamRemain(lt))+G.carry;G.carry=0;if(earned)addScore(wt,earned);G.nextStarter=player;G.pendingTransition=G.threshold?'resolveMatch':'nextRound';message(`${teamName(wt)} — ხელი +${earned}`,2300);dgNotifyState();
   if(G.threshold)setTimeout(resolveMatch,1900);else setTimeout(nextRound,2200);
@@ -4680,29 +4699,50 @@ function finishRiba(){
   if(a===b){const c=round5(a);G.carry+=c;message(`რიბა ${a}:${b} — გადადის +${c}`,2600);dgNotifyState();setTimeout(nextRound,2600);return;}
   const wt=a<b?0:1, loser=wt===0?b:a;let earned=round5(loser)+G.carry;G.carry=0;addScore(wt,earned);message(`რიბა — ${teamName(wt)} +${earned}`,2600);dgNotifyState();setTimeout(nextRound,2600);
 }
+function drawUntilPlayable(p){
+  if(GAME_MODE!==2||G.handOver||G.matchOver||!G.placements.length)return 0;
+  let drawn=0;
+  while(!hasMove(p)&&G.stock.length>2){
+    const tile=G.stock.pop();if(!tile)break;G.hands[p].push(tile);drawn++;
+  }
+  if(drawn){
+    const reserve=G.stock.length<=2?' · ბოლო 2 ქვა დაცულია':'';
+    message(`${names[p]} — მარაგიდან აიღო ${drawn}${reserve}`,1300);
+    renderAll();
+  }
+  return drawn;
+}
 function pass(p){
   if(G.handOver||G.matchOver||hasMove(p))return;
+  if(GAME_MODE===2&&G.placements.length&&G.stock.length>2){drawUntilPlayable(p);if(hasMove(p))return;}
   G.passStreak++;
   G.lastPass={seat:Number(p),id:`pass_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,at:Date.now()};
   message(`${names[p]} — გაიარა`,900);
-  if(G.passStreak>=4){finishRiba();return;}G.current=(p+1)%4;renderAll();scheduleTurn();
+  if(G.passStreak>=activeSeats().length){finishRiba();return;}G.current=nextSeat(p);renderAll();scheduleTurn();
+}
+function noMoveAction(p){
+  if(G.handOver||G.matchOver||G.current!==p||hasMove(p)||!G.placements.length)return;
+  if(GAME_MODE===2)drawUntilPlayable(p);
+  if(!hasMove(p))pass(p);
 }
 function scheduleTurn(){
   if(G.handOver||G.matchOver)return;
   if(window.DG_ONLINE_MULTIPLAYER){
-    if(G.current===HUMAN){setTimeout(()=>{if(G.current===HUMAN&&!G.handOver&&!hasMove(HUMAN)&&G.placements.length)pass(HUMAN);},450);}
+    if(G.current===HUMAN){setTimeout(()=>{if(G.current===HUMAN&&!G.handOver)noMoveAction(HUMAN);},450);}
     return;
   }
-  if(G.current===HUMAN){setTimeout(()=>{if(G.current===HUMAN&&!G.handOver&&!hasMove(HUMAN)&&G.placements.length)pass(HUMAN);},450);}else setTimeout(aiTurn,520);
+  if(G.current===HUMAN){setTimeout(()=>{if(G.current===HUMAN&&!G.handOver)noMoveAction(HUMAN);},450);}else setTimeout(aiTurn,520);
 }
-function nextTurn(){if(G.handOver||G.matchOver)return;G.current=(G.current+1)%4;G.aiBusy=false;renderAll();scheduleTurn();}
+function nextTurn(){if(G.handOver||G.matchOver)return;G.current=nextSeat(G.current);G.aiBusy=false;renderAll();scheduleTurn();}
 
 function aiOpening(p){let best=0,score=-1;G.hands[p].forEach((t,i)=>{let s=tilePips(t)+(isDouble(t)?10:0)+(t.a===5&&t.b===5?50:0);if(s>score){score=s;best=i;}});return best;}
 function aiMoveScore(m){let s=tilePips(m.t)+(isDouble(m.t)?6:0);const outer=m.t.a===m.port.value?m.t.b:m.t.a;const approx=openTotal()-m.port.contribution+(isDouble(m.t)?outer*2:outer);if(approx===35)s+=10000;else if(approx>0&&approx%5===0)s+=approx*5;return s;}
 async function aiTurn(){
   if(G.aiBusy||G.handOver||G.matchOver||G.current===HUMAN)return;const p=G.current;G.aiBusy=true;await sleep(250);if(G.current!==p||G.handOver){G.aiBusy=false;return;}
   if(!G.placements.length){const i=aiOpening(p);openingTile(p,i);G.aiBusy=false;if(!G.hands[p].length){finishNormal(p);return;}nextTurn();return;}
-  const moves=[];G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>moves.push({p,i,t,port})));if(!moves.length){G.aiBusy=false;pass(p);return;}moves.sort((a,b)=>aiMoveScore(b)-aiMoveScore(a));const m=moves[0];G.aiBusy=false;playToPort(p,m.i,m.port.id);
+  let moves=[];G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>moves.push({p,i,t,port})));
+  if(!moves.length&&GAME_MODE===2){drawUntilPlayable(p);moves=[];G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>moves.push({p,i,t,port})));}
+  if(!moves.length){G.aiBusy=false;pass(p);return;}moves.sort((a,b)=>aiMoveScore(b)-aiMoveScore(a));const m=moves[0];G.aiBusy=false;playToPort(p,m.i,m.port.id);
 }
 
 function dgEquivalentStakeSides(legal){
@@ -4794,7 +4834,8 @@ function showChoices(ports,index){
 }
 
 function updateScores(){
-  if($('teamAScore'))$('teamAScore').textContent=`${G.scores[0]} / 355`;if($('teamBScore'))$('teamBScore').textContent=`${G.scores[1]} / 355`;
+  const target=targetScore();
+  if($('teamAScore'))$('teamAScore').textContent=`${G.scores[0]} / ${target}`;if($('teamBScore'))$('teamBScore').textContent=`${G.scores[1]} / ${target}`;
   updateAbacus(document.querySelectorAll('.team-score')[0],G.scores[0]);updateAbacus(document.querySelectorAll('.team-score')[1],G.scores[1]);
 }
 function updateAbacus(box,score){
@@ -4831,15 +4872,23 @@ function updateTurn(){
   const roots=['.player-top','.player-right','.player-bottom','.player-left'];
   const card=document.querySelector(`${roots[rel]} .player-card`);
   if(card&&!G.handOver&&!G.matchOver)card.style.filter='drop-shadow(0 0 8px rgba(255,205,72,.95))';
-  const p=$('passBtn');if(p){p.disabled=!(G.current===HUMAN&&!G.handOver&&!hasMove(HUMAN));}
+  const p=$('passBtn');if(p){p.disabled=!(G.current===HUMAN&&!G.handOver&&!hasMove(HUMAN)&&(GAME_MODE!==2||G.stock.length<=2));}
   const r=$('ribaBtn');if(r)r.disabled=true;
 }
-function renderAll(){updateScores();renderHidden();renderHand();renderBoard();updateTurn();dgNotifyState();}
+function updateModeUI(){
+  const two=GAME_MODE===2;document.body.classList.toggle('dg-v61-two',two);
+  let e=$('dgV61StockStatus');
+  if(two){
+    if(!e){e=document.createElement('div');e.id='dgV61StockStatus';document.querySelector('.table-area')?.appendChild(e);}
+    if(e)e.textContent=`მარაგი: ${G.stock.length} · ბოლო 2 ქვა დაცულია`;
+  }else e?.remove();
+}
+function renderAll(){updateScores();updateModeUI();renderHidden();renderHand();renderBoard();updateTurn();dgNotifyState();}
 
-function resetRound(){G.placements=[];G.ports=[];G.portSeq=1;G.passStreak=0;G.stakeId=null;G.pendingCloser=null;G.lastPlayer=null;G.selectedIndex=null;G.handOver=false;G.aiBusy=false;clearChoices();}
+function resetRound(){G.placements=[];G.ports=[];G.stock=[];G.portSeq=1;G.passStreak=0;G.stakeId=null;G.pendingCloser=null;G.lastPlayer=null;G.selectedIndex=null;G.handOver=false;G.aiBusy=false;clearChoices();}
 function startRound(){
-  if(G.matchOver)return;resetRound();deal();
-  if(G.round===1){const s=find66();if(!s)return;G.current=s.p;renderAll();message(`${names[s.p]} იწყებს 6-6`);setTimeout(()=>{openingTile(s.p,s.i);G.current=(s.p+1)%4;renderAll();scheduleTurn();},550);return;}
+  if(G.matchOver)return;resetRound();deal(G.round===1);
+  if(G.round===1){const s=find66();if(!s)return;G.current=s.p;renderAll();message(`${names[s.p]} იწყებს 6-6`);setTimeout(()=>{openingTile(s.p,s.i);G.current=nextSeat(s.p);renderAll();scheduleTurn();},550);return;}
   G.current=G.nextStarter??0;renderAll();message(`${names[G.current]} იწყებს`);scheduleTurn();
 }
 function nextRound(){G.pendingTransition=null;G.round++;startRound();}
@@ -4851,7 +4900,7 @@ function wireButtons(){
   $('soundBtn')?.addEventListener('click',e=>{e.currentTarget.textContent=e.currentTarget.textContent.includes('🔊')?'🔇':'🔊';});
   $('settingsBtn')?.addEventListener('click',()=>message('პარამეტრები'));
   $('ribaBtn')?.addEventListener('click',()=>message('რიბა ავტომატურად ფიქსირდება'));
-  $('surrenderBtn')?.addEventListener('click',()=>{if(confirm('ნამდვილად დანებდე?')){G.matchOver=G.handOver=true;message('თამაში დასრულდა',3000);setTimeout(()=>showWinCelebration(1,false),350);}});
+  $('surrenderBtn')?.addEventListener('click',()=>{if(confirm('ნამდვილად დანებდე?')){G.matchOver=G.handOver=true;const winner=GAME_MODE===2?(1-team(HUMAN)):1;message('თამაში დასრულდა',3000);setTimeout(()=>showWinCelebration(winner,false),350);}});
   document.addEventListener('click',e=>{if(!e.target.closest('#emojiPanel')&&!e.target.closest('#chatBtn')&&!e.target.closest('#topChatBtn'))panel?.classList.remove('show');});
   window.addEventListener('resize',()=>requestAnimationFrame(fitBoard));
 }
@@ -4860,7 +4909,7 @@ function setTargetTexts(){
   const d3=info[3]?.querySelector('div'), d4=info[4]?.querySelector('div'), d5=info[5]?.querySelector('div');
   if(d3)d3.innerHTML='<strong>ქულები:</strong> ღია ბოლოების ჯამი,<br>5-ის ჯერადი';
   if(d4)d4.innerHTML='<strong>რიბა:</strong> ნაკლები გუნდის ჯამი,<br>თანაბარი გადადის';
-  if(d5)d5.innerHTML='<strong>მატჩი:</strong> 355-ის შემდეგ<br>არარიბა ხელი წყვეტს';
+  if(d5)d5.innerHTML=`<strong>მატჩი:</strong> ${targetScore()}-ის შემდეგ<br>არარიბა ხელი წყვეტს`;
 }
 
 /* =========================================================
@@ -4915,7 +4964,7 @@ startRound=function(){
   if(G.matchOver)return;
 
   resetRound();
-  deal();
+  deal(G.round===1);
 
   if(G.round===1){
     const starter=find66();
@@ -4945,7 +4994,7 @@ startRound=function(){
       }
 
       openingTile(s.p,liveIndex);
-      G.current=(s.p+1)%4;
+      G.current=nextSeat(s.p);
       renderAll();
       scheduleTurn();
     },320);
@@ -5165,7 +5214,7 @@ function dgFireworksHTML(){
   }).join('');
 }
 function dgWinnerPersonsHTML(winnerTeam){
-  const players=winnerTeam===0?[0,2]:[1,3];
+  const players=GAME_MODE===2?(winnerTeam===0?[2]:[0]):(winnerTeam===0?[0,2]:[1,3]);
   return players.map(p=>{
     const d=dgAvatarData(p);
     const style=d.bg&&d.bg!=='none'?`background-image:${d.bg}`:'';
@@ -5228,6 +5277,10 @@ function showWinCelebration(winnerTeam,special35=false){
 }
 
 window.DG_ENGINE={
+  setGameMode(mode){
+    GAME_MODE=Number(mode)===2?2:4;G.mode=GAME_MODE;updateModeUI();updateScores();setTargetTexts();return GAME_MODE;
+  },
+  getGameMode(){return GAME_MODE;},
   setHumanSeat(seat){
     const n=Number(seat);
     if(Number.isInteger(n)&&n>=0&&n<4){
@@ -5244,21 +5297,23 @@ window.DG_ENGINE={
     window.DG_ENGINE_APPLYING_REMOTE=true;
     try{
       const copy=JSON.parse(JSON.stringify(state));
+      GAME_MODE=Number(copy.mode)===2?2:4;copy.mode=GAME_MODE;if(!Array.isArray(copy.stock))copy.stock=[];
       Object.keys(G).forEach(k=>{if(Object.prototype.hasOwnProperty.call(copy,k))G[k]=copy[k];});
       G.selectedIndex=null;G.aiBusy=false;clearChoices();renderAll();
     }finally{window.DG_ENGINE_APPLYING_REMOTE=false;}
     scheduleTurn();return true;
   },
-  createOnlineMatch(){
+  createOnlineMatch(mode=4){
     window.DG_ENGINE_SUPPRESS_SYNC=true;
     try{
+      GAME_MODE=Number(mode)===2?2:4;
       hideWinCelebration();
-      G.hands=[[],[],[],[]];G.placements=[];G.ports=[];G.scores=[0,0];G.carry=0;
+      G.hands=[[],[],[],[]];G.stock=[];G.mode=GAME_MODE;G.placements=[];G.ports=[];G.scores=[0,0];G.carry=0;
       G.current=0;G.round=1;G.nextStarter=null;G.lastPlayer=null;G.pendingCloser=null;
       G.passStreak=0;G.stakeId=null;G.threshold=false;G.handOver=false;G.matchOver=false;
       G.aiBusy=false;G.tileSeq=1;G.portSeq=1;G.selectedIndex=null;G.pendingTransition=null;G.lastPass=null;
-      deal();const st=find66();if(!st)throw new Error('6-6 ვერ მოიძებნა');
-      G.current=st.p;openingTile(st.p,st.i);G.current=(st.p+1)%4;renderAll();
+      deal(true);const st=find66();if(!st)throw new Error('6-6 ვერ მოიძებნა');
+      G.current=st.p;openingTile(st.p,st.i);G.current=nextSeat(st.p);renderAll();
     }finally{window.DG_ENGINE_SUPPRESS_SYNC=false;}
     const snap=dgStateSnapshot();scheduleTurn();return snap;
   },
@@ -5272,8 +5327,9 @@ window.DG_ENGINE={
       nextTurn();
       return true;
     }
-    const moves=[];
+    let moves=[];
     G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>moves.push({p,i,t,port})));
+    if(!moves.length&&GAME_MODE===2){drawUntilPlayable(p);moves=[];G.hands[p].forEach((t,i)=>legalPorts(t).forEach(port=>moves.push({p,i,t,port})));}
     if(!moves.length){pass(p);return true;}
     moves.sort((a,b)=>aiMoveScore(b)-aiMoveScore(a));
     const m=moves[0];
@@ -6257,7 +6313,7 @@ window.DG_ENTRY_READY=false;
         <div class="dg-entry-sub">პირველი შესვლისას შექმენი შენი სათამაშო პროფილი და დაეთანხმე თამაშის წესებს.</div>
         <label class="dg-entry-label" for="dgRegNick">მეტსახელი</label>
         <input class="dg-entry-input" id="dgRegNick" maxlength="18" autocomplete="nickname" placeholder="მაგ: Giorgi77">
-        <details class="dg-rules-box"><summary>თამაშის წესების ნახვა</summary><ul><li>პირველი ხელი იწყება 6-6-ით.</li><li>ქულა ითვლება ღია ბოლოების 5-ის ჯერადზე.</li><li>ზუსტად 35 — მყისიერი გამარჯვებაა.</li><li>მატჩის მიზანია 355 ქულა მოქმედი ხელის დასრულების წესით.</li><li>რიბისას მოქმედებს დარჩენილი ქვების ნაკლები ჯამის წესი.</li><li>მოთამაშემ უნდა ითამაშოს სამართლიანად და არ გამოიყენოს შეცდომები უპირატესობისთვის.</li></ul></details>
+        <details class="dg-rules-box"><summary>თამაშის წესების ნახვა</summary><ul><li>პირველი ხელი იწყება 6-6-ით.</li><li>ქულა ითვლება ღია ბოლოების 5-ის ჯერადზე.</li><li>ზუსტად 35 — მყისიერი გამარჯვებაა.</li><li>4-კაციანში მატჩის მიზანია 355 ქულა, 2-კაციანში — 215 ქულა.</li><li>რიბისას მოქმედებს დარჩენილი ქვების ნაკლები ჯამის წესი.</li><li>მოთამაშემ უნდა ითამაშოს სამართლიანად და არ გამოიყენოს შეცდომები უპირატესობისთვის.</li></ul></details>
         <label class="dg-agree"><input type="checkbox" id="dgRulesAgree"><span>წავიკითხე და ვეთანხმები თამაშის წესებს და სამართლიანი თამაშის პირობებს.</span></label>
         <div class="dg-entry-actions"><button class="dg-entry-btn primary" id="dgRegisterContinue" disabled>რეგისტრაცია და გაგრძელება</button></div>
       </section>
@@ -6701,16 +6757,20 @@ function applyPlayers(room){
 function renderRoom(room){
   const title=$('dgRoomCodeBig'),seats=$('dgSeatGrid'),start=$('dgOnlineStart'),leave=$('dgOnlineLeave');if(!title||!seats)return;
   if(!room){
+    document.body.classList.toggle('dg-v61-two',window.DG_SELECTED_GAME_MODE===2);
     title.textContent='----';seats.innerHTML='<div class="dg-seat"><b>ოთახში ჯერ არ ხარ</b><small>შექმენი ახალი ან შედი კოდით</small></div>';
     if(start)start.disabled=true;if(leave)leave.disabled=true;return;
   }
+  const gameMode=Number(room.gameMode)===2?2:4;const required=gameMode===2?2:4;
+  window.DG_SELECTED_GAME_MODE=gameMode;document.body.classList.toggle('dg-v61-two',gameMode===2);
   title.textContent=room.code;
-  const labels=['ადგილი 1','ადგილი 2','ადგილი 3','ადგილი 4'];
-  seats.innerHTML=[0,1,2,3].map(s=>{const p=(room.players||[]).find(x=>x.seat===s);const me=p?.uid===uid;const host=p?.uid===room.hostUid;return `<div class="dg-seat${me?' me':''}"><b>${p?`${p.botActive?'🤖 ':''}${flag(p.country||'')} ${p.name}`:'ველოდებით მოთამაშეს...'}</b><small>${labels[s]}${me?' · შენ':''}${host?' · HOST':''}${p?.botActive?' · BOT':''}</small></div>`}).join('');
+  const labels=['მოთამაშე 2','ადგილი 2','HOST','ადგილი 4'];
+  const visibleSeats=gameMode===2?[2,0]:[0,1,2,3];
+  seats.innerHTML=visibleSeats.map(s=>{const p=(room.players||[]).find(x=>x.seat===s);const me=p?.uid===uid;const host=p?.uid===room.hostUid;return `<div class="dg-seat${me?' me':''}"><b>${p?`${p.botActive?'🤖 ':''}${flag(p.country||'')} ${p.name}`:'ველოდებით მოთამაშეს...'}</b><small>${gameMode===2?(host?'მოთამაშე 1':'მოთამაშე 2'):labels[s]}${me?' · შენ':''}${host?' · HOST':''}${p?.botActive?' · BOT':''}</small></div>`}).join('');
   const count=(room.players||[]).length;
-  if(start){start.disabled=!(room.hostUid===uid&&count===4&&room.status!=='playing');start.textContent=room.status==='playing'?'თამაში დაწყებულია':'თამაშის დაწყება'}
+  if(start){start.disabled=!(room.hostUid===uid&&count===required&&room.status!=='playing');start.textContent=room.status==='playing'?'თამაში დაწყებულია':'თამაშის დაწყება'}
   if(leave)leave.disabled=false;
-  setMsg(`${count}/4 მოთამაშე · ${room.status==='playing'?'თამაში დაწყებულია':'ველოდებით'}`);
+  setMsg(`${count}/${required} მოთამაშე · ${gameMode===2?'2-კაციანი · 215 ქულა':'4-კაციანი · 355 ქულა'} · ${room.status==='playing'?'თამაში დაწყებულია':'ველოდებით'}`);
   applyPlayers(room);
   if(room.status==='playing'&&lastStatus!=='playing'&&(room.players||[]).some(p=>p.uid===uid)&&!window.DG_V30_ACTIVE){
     window.DG_MATCH_ALLOWED=true;
@@ -6743,7 +6803,8 @@ async function createRoom(){
   setMsg('ოთახი იქმნება...');
   try{
     const code=await uniqueCode();
-    const room={code,hostUid:uid,status:'waiting',createdAt:serverTimestamp(),updatedAt:serverTimestamp(),players:[{uid,name:nickname(),country:country(),seat:2,joinedAt:Date.now()}]};
+    const gameMode=window.DG_SELECTED_GAME_MODE===2?2:4;
+    const room={code,gameMode,hostUid:uid,status:'waiting',createdAt:serverTimestamp(),updatedAt:serverTimestamp(),players:[{uid,name:nickname(),country:country(),seat:2,joinedAt:Date.now()}]};
     await setDoc(roomRef(code),room);listenRoom(code);if($('dgJoinCode'))$('dgJoinCode').value=code;setMsg('ოთახი შექმნილია — გაუგზავნე კოდი მეგობრებს');
   }catch(e){console.error(e);setMsg('ოთახის შექმნა ვერ მოხერხდა: '+(e?.code||e?.message||'შეცდომა'))}
 }
@@ -6755,8 +6816,8 @@ async function joinRoom(){
   try{
     await runTransaction(db,async tx=>{
       const ref=roomRef(code),snap=await tx.get(ref);if(!snap.exists())throw new Error('ასეთი ოთახი ვერ მოიძებნა');
-      const room=snap.data(),players=[...(room.players||[])];let me=players.find(p=>p.uid===uid);
-      if(!me){if(players.length>=4)throw new Error('ოთახი უკვე სავსეა');if(room.status==='playing')throw new Error('თამაში უკვე დაწყებულია');const used=new Set(players.map(p=>p.seat));const seat=[0,1,3,2].find(s=>!used.has(s));players.push({uid,name:nickname(),country:country(),seat,joinedAt:Date.now()})}
+      const room=snap.data(),players=[...(room.players||[])],gameMode=Number(room.gameMode)===2?2:4,required=gameMode===2?2:4;let me=players.find(p=>p.uid===uid);
+      if(!me){if(players.length>=required)throw new Error('ოთახი უკვე სავსეა');if(room.status==='playing')throw new Error('თამაში უკვე დაწყებულია');const used=new Set(players.map(p=>p.seat));const order=gameMode===2?[0,2]:[0,1,3,2];const seat=order.find(s=>!used.has(s));players.push({uid,name:nickname(),country:country(),seat,joinedAt:Date.now()})}
       else{me.name=nickname();me.country=country()}
       tx.update(ref,{players,updatedAt:serverTimestamp()});
     });
@@ -6782,7 +6843,7 @@ async function startRoom(){
   try{
     await runTransaction(db,async tx=>{
       const ref=roomRef(currentCode),snap=await tx.get(ref);if(!snap.exists())throw new Error('ოთახი აღარ არსებობს');
-      const room=snap.data();if(room.hostUid!==uid)throw new Error('თამაშს იწყებს HOST');if((room.players||[]).length<4)throw new Error('დასაწყებად საჭიროა 4 მოთამაშე');
+      const room=snap.data(),gameMode=Number(room.gameMode)===2?2:4,required=gameMode===2?2:4;if(room.hostUid!==uid)throw new Error('თამაშს იწყებს HOST');if((room.players||[]).length<required)throw new Error(`დასაწყებად საჭიროა ${required} მოთამაშე`);
       tx.update(ref,{status:'playing',startedAt:serverTimestamp(),updatedAt:serverTimestamp()});
     });
   }catch(e){setMsg(e?.message||'თამაში ვერ დაიწყო')}
@@ -6954,14 +7015,14 @@ function roomRef(code){return doc(db,COLLECTION,code)}
 function waitEngine(){return new Promise((resolve,reject)=>{let n=0;const t=setInterval(()=>{if(window.DG_ENGINE){clearInterval(t);resolve(window.DG_ENGINE)}else if(++n>200){clearInterval(t);reject(new Error('game engine timeout'))}},25)})}
 async function applyRoom(room){
   currentRoom=room;window.DG_V30_ROOM=room;window.dispatchEvent(new CustomEvent('dg-v30-room',{detail:room}));const me=(room.players||[]).find(p=>p.uid===uid);if(!me)return;
-  localSeat=Number(me.seat);window.DG_ONLINE_MULTIPLAYER=true;const eng=await waitEngine();eng.setHumanSeat(localSeat);
+  localSeat=Number(me.seat);window.DG_ONLINE_MULTIPLAYER=true;const eng=await waitEngine();eng.setGameMode?.(Number(room.gameMode)===2?2:4);eng.setHumanSeat(localSeat);
   if(room.status!=='playing'){statePill('● მატჩი ელოდება','wait');return}
   activeMode();const version=Number(room.gameVersion||0);
   if(room.gameState&&version>lastAppliedVersion){lastAppliedVersion=version;eng.loadState(decodeState(room.gameState));eng.setHumanSeat(localSeat);statePill('● თამაში სინქრონში','');return}
   if(!room.gameState&&room.hostUid===uid&&!initializing){
     initializing=true;statePill('● პარტია იქმნება','wait');
     try{
-      const state=eng.createOnlineMatch();
+      const state=eng.createOnlineMatch(Number(room.gameMode)===2?2:4);
       await runTransaction(db,async tx=>{const ref=roomRef(room.code),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const data=snap.data();if(data.gameState)return;tx.update(ref,{gameState:encodeState(state),gameVersion:1,gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()})});
       lastAppliedVersion=Math.max(lastAppliedVersion,1);statePill('● თამაში სინქრონში','');
     }catch(e){console.error('V30 init',e);statePill('● სინქრონიზაციის შეცდომა','err')}finally{initializing=false}
@@ -8877,6 +8938,64 @@ function init(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 </script>
 <!-- DG V60 GOOGLE EXISTING-ACCOUNT LOGIN FIX END -->
+
+
+<!-- DG V61 TWO-PLAYER MODE + 215 TARGET + RESERVED STOCK START -->
+<style id="dg-v61-two-player-css">
+#dgV60Badge{display:none!important}
+#dgV61Badge{position:fixed;right:10px;top:10px;z-index:104000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV61Badge{display:none}
+#dgV61ModeSelector{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 12px;padding:8px;border:1px solid #2e4855;border-radius:12px;background:#061117}
+.dg-v61-mode{min-height:44px;border-radius:10px;border:1px solid #35505d;background:#0a1921;color:#d9e4e9;font:900 12px/1.25 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer}
+.dg-v61-mode.active{border-color:#d4aa49;background:linear-gradient(#3b2a0c,#201704);color:#f7d36f;box-shadow:0 0 0 1px rgba(240,200,92,.18) inset}
+#dgV61ModeNote{grid-column:1/-1;text-align:center;color:#97aab3;font:800 10px/1.4 Arial,"Noto Sans Georgian",sans-serif;padding:2px 4px 0}
+body.dg-v61-two #dgEntryQuick{display:none!important}
+body.dg-v61-two.dg-game-active .player-left,
+body.dg-v61-two.dg-game-active .player-right,
+body.dg-v61-two.dg-game-active #leftHiddenHand,
+body.dg-v61-two.dg-game-active #rightHiddenHand{display:none!important}
+#dgV61StockStatus{position:absolute;left:50%;top:14.5%;transform:translateX(-50%);z-index:23000;padding:5px 9px;border-radius:999px;border:1px solid rgba(224,185,79,.55);background:rgba(4,15,11,.86);color:#e7cf79;font:900 9px/1 Arial,"Noto Sans Georgian",sans-serif;pointer-events:none;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.32)}
+@media(max-width:540px){#dgV61ModeSelector{grid-template-columns:1fr}.dg-v61-mode{min-height:42px}#dgV61StockStatus{top:13.8%;font-size:8px}}
+</style>
+<script id="dg-v61-two-player-ui-js">
+(()=>{
+  const KEY='dg_domino_v61_mode', $=id=>document.getElementById(id);
+  const saved=Number(localStorage.getItem(KEY));
+  window.DG_SELECTED_GAME_MODE=saved===2?2:4;
+  const TXT={
+    ka:{two:'👥 2 მოთამაშე',four:'👥👥 4 მოთამაშე',note2:'2-კაციანი: 7-7 ქვა · მიზანი 215 · მარაგიდან იღებ სვლის პოვნამდე · ბოლო 2 ქვა არ აიღება.',note4:'4-კაციანი: არსებული კლასიკური რეჟიმი უცვლელია · მიზანი 355.',create2:'შექმენი 2-კაციანი პირადი მაგიდა და გაუგზავნე კოდი მეგობარს.',create4:'შექმენი პირადი 4-კაციანი მაგიდა და გაუგზავნე კოდი მეგობრებს.'},
+    en:{two:'👥 2 players',four:'👥👥 4 players',note2:'2-player: 7 tiles each · target 215 · draw until a move is found · the final 2 stock tiles are reserved.',note4:'4-player: the existing classic mode stays unchanged · target 355.',create2:'Create a private 2-player table and send the code to a friend.',create4:'Create a private 4-player table and send the code to friends.'},
+    ru:{two:'👥 2 игрока',four:'👥👥 4 игрока',note2:'2 игрока: по 7 костей · цель 215 · добор до возможного хода · последние 2 кости запаса не берутся.',note4:'4 игрока: существующий классический режим без изменений · цель 355.',create2:'Создайте приватный стол на 2 игроков и отправьте код другу.',create4:'Создайте приватный стол на 4 игроков и отправьте код друзьям.'}
+  };
+  function lang(){return localStorage.getItem('dg_domino_v26_language')||'en'}
+  function tr(){return TXT[lang()]||TXT.en}
+  function setMode(mode){
+    mode=Number(mode)===2?2:4;window.DG_SELECTED_GAME_MODE=mode;localStorage.setItem(KEY,String(mode));
+    document.body.classList.toggle('dg-v61-two',mode===2);
+    document.querySelectorAll('.dg-v61-mode').forEach(b=>b.classList.toggle('active',Number(b.dataset.mode)===mode));
+    const n=$('dgV61ModeNote');if(n)n.textContent=mode===2?tr().note2:tr().note4;
+    const small=$('dgEntryCreate')?.querySelector('small');if(small)small.textContent=mode===2?tr().create2:tr().create4;
+  }
+  function build(){
+    const choice=$('dgChoiceStep');if(!choice)return;
+    if(!$('dgV61ModeSelector')){
+      const box=document.createElement('div');box.id='dgV61ModeSelector';
+      box.innerHTML=`<button type="button" class="dg-v61-mode" data-mode="2"></button><button type="button" class="dg-v61-mode" data-mode="4"></button><div id="dgV61ModeNote"></div>`;
+      const sub=choice.querySelector('.dg-entry-sub');sub?.insertAdjacentElement('afterend',box);
+      box.addEventListener('click',e=>{const b=e.target.closest('.dg-v61-mode');if(b)setMode(Number(b.dataset.mode))});
+    }
+    const a=document.querySelector('.dg-v61-mode[data-mode="2"]'),b=document.querySelector('.dg-v61-mode[data-mode="4"]');if(a)a.textContent=tr().two;if(b)b.textContent=tr().four;
+    setMode(window.DG_SELECTED_GAME_MODE);
+  }
+  function badge(){if($('dgV61Badge'))return;const b=document.createElement('div');b.id='dgV61Badge';b.textContent='V61';document.body.appendChild(b)}
+  window.addEventListener('dg-v30-room',e=>{const m=Number(e.detail?.gameMode)===2?2:4;window.DG_SELECTED_GAME_MODE=m;document.body.classList.toggle('dg-v61-two',m===2);});
+  window.addEventListener('dg-v30-room-closed',()=>{document.body.classList.toggle('dg-v61-two',window.DG_SELECTED_GAME_MODE===2)});
+  document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-language-btn,#dgChangeLanguage'))setTimeout(build,100)},true);
+  function init(){badge();build();setTimeout(build,300);setTimeout(build,900)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V61 TWO-PLAYER MODE + 215 TARGET + RESERVED STOCK END -->
 
 </body>
 </html>
