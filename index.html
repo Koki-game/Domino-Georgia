@@ -8129,5 +8129,184 @@ body.dg-game-active #dgV54Badge{display:none}
 </script>
 <!-- DG V54 MOBILE FULLSCREEN + IOS HOME SCREEN END -->
 
+
+
+<!-- DG V55 UNLIMITED RETURN + BOT STATUS + STABLE FLAGS START -->
+<style id="dg-v55-return-bot-flags-css">
+#dgV54Badge{display:none!important}
+#dgV55Badge{
+  position:fixed;right:10px;top:10px;z-index:99000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;
+  box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV55Badge{display:none}
+
+/* V26's old flag updater reads the obsolete local-room cache and can overwrite
+   Firebase flags with a globe. Hide that legacy badge only while a real online
+   room is active; V55 renders a stable Firebase-backed badge instead. */
+body.dg-v55-online-flags .dg-country-flag-badge{display:none!important}
+.dg-v55-stable-flag{
+  position:absolute!important;right:-7px!important;bottom:-5px!important;z-index:40!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  min-width:24px!important;height:20px!important;padding:0 3px!important;border-radius:7px!important;
+  border:2px solid #111!important;background:#f7f7f7!important;box-shadow:0 2px 7px rgba(0,0,0,.75)!important;
+  font-size:15px!important;line-height:1!important;box-sizing:border-box!important;pointer-events:none!important;
+}
+.dg-v55-stable-flag.unknown{font-size:12px!important;background:#13212a!important;color:#d7e2e8!important}
+
+.dg-v55-bot-label{
+  position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);z-index:96000;
+  white-space:nowrap;pointer-events:none;padding:4px 7px;border-radius:8px;
+  border:1px solid rgba(240,185,74,.8);background:rgba(30,18,7,.96);color:#ffd976;
+  box-shadow:0 3px 10px rgba(0,0,0,.55);font:1000 9px/1 Arial,"Noto Sans Georgian",sans-serif;
+}
+@media(max-height:560px){.dg-v55-bot-label{font-size:8px;top:calc(100% + 5px);padding:3px 6px}}
+
+/* Return is unlimited in V55. The old V46 code may try to hide this button
+   after its former one-chance flag; !important keeps it available. */
+#dgV46TimeoutOverlay.show #dgV46ReturnBtn{display:block!important}
+</style>
+
+<script type="module" id="dg-v55-return-bot-flags-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,getDoc,runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const ROOMS='dominoRooms',LANG_KEY='dg_domino_v26_language';
+const roots=['.player-top','.player-right','.player-bottom','.player-left'];
+const $=id=>document.getElementById(id);
+let app,auth,db,uid='',room=window.DG_V30_ROOM||null,returnBusy=false,repairBusy=false,botBusy=false,lastBotKey='';
+
+const TXT={
+  ka:{title:'ბოტი თამაშობს შენს ადგილას',body:'დრო ამოიწურა და შენს ადგილას ბოტი აგრძელებს თამაშს. დაბრუნება შეგიძლია ნებისმიერ დროს.',back:'თამაშში დაბრუნება',returning:'ვბრუნდებით თამაშში…',bot:'🤖 ბოტი თამაშობს'},
+  en:{title:'BOT is playing in your seat',body:'Your time expired and a BOT is continuing in your seat. You can return at any time.',back:'Return to game',returning:'Returning to game…',bot:'🤖 BOT playing'},
+  ru:{title:'BOT играет вместо вас',body:'Время вышло, и BOT продолжает играть вместо вас. Вернуться можно в любое время.',back:'Вернуться в игру',returning:'Возвращаемся…',bot:'🤖 BOT играет'},
+  tr:{title:'Yerine BOT oynuyor',body:'Süren doldu ve yerine BOT oynuyor. İstediğin zaman oyuna dönebilirsin.',back:'Oyuna dön',returning:'Oyuna dönülüyor…',bot:'🤖 BOT oynuyor'},
+  de:{title:'BOT spielt für dich',body:'Deine Zeit ist abgelaufen. Ein BOT spielt weiter; du kannst jederzeit zurückkehren.',back:'Zurück ins Spiel',returning:'Rückkehr…',bot:'🤖 BOT spielt'},
+  ar:{title:'الروبوت يلعب مكانك',body:'انتهى الوقت والروبوت يواصل اللعب مكانك. يمكنك العودة في أي وقت.',back:'العودة للعبة',returning:'جارٍ العودة…',bot:'🤖 الروبوت يلعب'}
+};
+function tr(){return TXT[localStorage.getItem(LANG_KEY)||'en']||TXT.en}
+function flag(code){const c=String(code||'').toUpperCase();if(c.length!==2)return '🌐';return String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt()))}
+function me(){return (room?.players||[]).find(p=>p.uid===uid)}
+function playerForSeat(seat){return (room?.players||[]).find(p=>Number(p.seat)===Number(seat))}
+function rootForSeat(seat){
+  let root=document.querySelector(`.player[data-online-seat="${Number(seat)}"]`);
+  if(root)return root;
+  const mine=me(),mySeat=Number(mine?.seat??2),visual=(Number(seat)-mySeat+2+4)%4;
+  return document.querySelector(roots[visual]);
+}
+function addBadge(){if($('dgV55Badge'))return;const b=document.createElement('div');b.id='dgV55Badge';b.textContent='V55';document.body.appendChild(b)}
+
+function renderStableFlagsAndBots(){
+  if(!room?.players?.length){
+    document.body.classList.remove('dg-v55-online-flags');
+    document.querySelectorAll('.dg-v55-stable-flag,.dg-v55-bot-label').forEach(e=>e.remove());
+    return;
+  }
+  document.body.classList.add('dg-v55-online-flags');
+  for(let seat=0;seat<4;seat++){
+    const root=rootForSeat(seat);if(!root)continue;
+    const p=playerForSeat(seat),av=root.querySelector('.avatar');
+    if(av){
+      let f=av.querySelector('.dg-v55-stable-flag');
+      if(!f){f=document.createElement('span');f.className='dg-v55-stable-flag';av.appendChild(f)}
+      const c=String(p?.country||'').toUpperCase();f.textContent=c?flag(c):'🌐';f.classList.toggle('unknown',!c);
+      f.title=c||'Country not set';
+    }
+    let lab=root.querySelector('.dg-v55-bot-label');
+    const bot=!!p&&(p.botActive===true||p.timedOut===true);
+    if(bot){if(!lab){lab=document.createElement('span');lab.className='dg-v55-bot-label';root.appendChild(lab)}lab.textContent=tr().bot;}
+    else lab?.remove();
+  }
+}
+
+function syncTimeoutOverlay(){
+  const mine=me(),o=$('dgV46TimeoutOverlay');if(!o||!mine?.timedOut)return;
+  o.classList.add('show');
+  const tt=tr(),h=o.querySelector('h3'),p=o.querySelector('p'),b=$('dgV46ReturnBtn');
+  if(h&&h.textContent!==tt.title)h.textContent=tt.title;
+  if(p&&p.textContent!==tt.body)p.textContent=tt.body;
+  if(b){b.style.setProperty('display','block','important');b.textContent=returnBusy?tt.returning:tt.back;b.disabled=returnBusy;}
+}
+
+async function returnAlways(){
+  if(returnBusy||!db||!room?.code||!uid)return;
+  returnBusy=true;syncTimeoutOverlay();
+  try{
+    await runTransaction(db,async tx=>{
+      const ref=doc(db,ROOMS,room.code),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');
+      const r=snap.data(),players=[...(r.players||[])],i=players.findIndex(p=>p.uid===uid);if(i<0)throw new Error('player missing');
+      const seat=Number(players[i].seat);
+      players[i]={...players[i],botActive:false,timedOut:false,returnChanceUsed:false,lastSeen:Date.now(),returnedAt:Date.now()};
+      const patch={players};
+      if(Number(r.gameState?.current)===seat&&Number(r.turnTimer?.seat)===seat&&r.turnTimer?.expired===true)patch.turnTimer=null;
+      tx.update(ref,patch);
+    });
+  }catch(e){console.warn('V55 return',e)}finally{returnBusy=false;setTimeout(syncTimeoutOverlay,80)}
+}
+
+/* Capture before V46's old one-chance click handler. */
+document.addEventListener('click',e=>{
+  const b=e.target?.closest?.('#dgV46ReturnBtn');if(!b)return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();returnAlways();
+},true);
+
+/* V32's old heartbeat can clear botActive even while timedOut=true.
+   Reassert the intended state so the BOT label and controller remain stable. */
+async function repairTimedOutBots(){
+  if(repairBusy||!db||!room?.code||!uid||!navigator.onLine)return;
+  if(!(room.players||[]).some(p=>p.timedOut===true&&p.botActive!==true))return;
+  repairBusy=true;
+  try{
+    await runTransaction(db,async tx=>{
+      const ref=doc(db,ROOMS,room.code),snap=await tx.get(ref);if(!snap.exists())return;
+      const r=snap.data(),players=[...(r.players||[])];let changed=false;
+      for(let i=0;i<players.length;i++)if(players[i]?.timedOut===true&&players[i]?.botActive!==true){players[i]={...players[i],botActive:true};changed=true}
+      if(changed)tx.update(ref,{players});
+    });
+  }catch(e){console.warn('V55 bot repair',e)}finally{repairBusy=false}
+}
+
+function controllerForTimedOut(targetSeat){
+  const now=Date.now();
+  const active=(room?.players||[]).filter(p=>p.uid&&p.uid!==playerForSeat(targetSeat)?.uid&&p.timedOut!==true&&p.botActive!==true&&now-Number(p.lastSeen||p.joinedAt||0)<60000);
+  active.sort((a,b)=>Number(a.seat)-Number(b.seat)||String(a.uid).localeCompare(String(b.uid)));
+  return active[0]?.uid===uid;
+}
+async function timedOutBotController(){
+  if(botBusy||!db||!uid||!navigator.onLine||window.DG_V35_LOCAL_TEST||!room||room.status!=='playing'||!room.gameState)return;
+  const seat=Number(room.gameState.current),ver=Number(room.gameVersion||0),target=playerForSeat(seat);
+  if(!target?.timedOut||!target?.botActive||!controllerForTimedOut(seat))return;
+  const key=`${room.code}:${ver}:${seat}:${(room.gameState.placements||[]).length}`;if(key===lastBotKey)return;
+  botBusy=true;lastBotKey=key;
+  try{
+    await new Promise(r=>setTimeout(r,500));
+    const snap=await getDoc(doc(db,ROOMS,room.code));if(!snap.exists())return;
+    const fresh=snap.data(),fp=(fresh.players||[]).find(p=>Number(p.seat)===seat);
+    if(fresh.status!=='playing'||Number(fresh.gameVersion||0)!==ver||Number(fresh.gameState?.current)!==seat||!fp?.timedOut||!fp?.botActive)return;
+    window.DG_ENGINE?.message?.(tr().bot,900);
+    window.DG_ENGINE?.botTakeTurn?.(seat);
+  }catch(e){console.warn('V55 timed-out bot',e)}finally{botBusy=false}
+}
+
+function onRoom(r){room=r||null;renderStableFlagsAndBots();syncTimeoutOverlay();setTimeout(repairTimedOutBots,20)}
+window.addEventListener('dg-v30-room',e=>onRoom(e.detail));
+window.addEventListener('dg-v30-room-closed',()=>{room=null;document.body.classList.remove('dg-v55-online-flags');document.querySelectorAll('.dg-v55-stable-flag,.dg-v55-bot-label').forEach(e=>e.remove())});
+
+async function boot(){
+  addBadge();
+  try{
+    app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
+    uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});
+    if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);
+    setInterval(()=>{renderStableFlagsAndBots();syncTimeoutOverlay();timedOutBotController()},220);
+  }catch(e){console.warn('V55 boot',e)}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V55 UNLIMITED RETURN + BOT STATUS + STABLE FLAGS END -->
+
 </body>
 </html>
