@@ -6211,7 +6211,8 @@ window.DG_ENTRY_READY=false;
     const nickname=($('dgRegNick')?.value||'').trim().slice(0,18);
     if(nickname.length<2){setMsg('მეტსახელი მინიმუმ 2 სიმბოლო უნდა იყოს');return;}
     if(!$('dgRulesAgree')?.checked){setMsg('გასაგრძელებლად წესებს უნდა დაეთანხმო');return;}
-    const p={nickname,acceptedRules:true,acceptedAt:Date.now()};saveProfile(p);applyNickname(nickname);openChoice();
+    const previous=getProfile()||{};
+    const p={...previous,nickname,acceptedRules:true,acceptedAt:previous.acceptedAt||Date.now()};saveProfile(p);applyNickname(nickname);openChoice();
   }
   function openChoice(){
     const p=getProfile();if(!validProfile(p)){showStep('dgRegisterStep');return;}
@@ -6800,8 +6801,12 @@ async function boot(){
   addBadge();addRoomNote();setState('● Firebase ერთდება','wait');interceptClicks();
   try{
     const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
-    await signInAnonymously(auth);
-    await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){uid=u.uid;stop();resolve()}})});
+    let initialUser=await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{stop();resolve(u||null)})});
+    if(!initialUser){
+      await signInAnonymously(auth);
+      initialUser=auth.currentUser||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u)}})});
+    }
+    uid=initialUser.uid;
     firebaseReady=true;window.DG_FIREBASE_READY=true;setState('● Firebase ონლაინ','ok');
     if(currentCode)listenRoom(currentCode);else renderRoom(null);
   }catch(e){
@@ -7317,7 +7322,7 @@ body.dg-game-active #dgLobbyHome{display:block}
 
   function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
   function lang(){return localStorage.getItem(LANG_KEY)||profile().language||'en'}
-  function lobbyText(){return ({ka:'← ლობი',en:'← Lobby',ru:'← Лобби',tr:'← Lobi',de:'← Lobby',ar:'الردهة ←'})[lang()]||'← Lobby'}
+  function lobbyText(){return ({ka:'← ლობიში გასვლა',en:'← Exit to Lobby',ru:'← Выйти в лобби',tr:'← Lobiye çık',de:'← Zur Lobby',ar:'الخروج إلى الردهة ←'})[lang()]||'← Exit to Lobby'}
   function toast(text){let e=$('dgV35Toast');if(!e){e=document.createElement('div');e.id='dgV35Toast';document.body.appendChild(e)}e.textContent=text;e.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),3600)}
   function addBadge(){if(!$('dgV35Badge')){const b=document.createElement('div');b.id='dgV35Badge';b.textContent='V35';document.body.appendChild(b)}}
   function addLobbyButton(){
@@ -7391,7 +7396,16 @@ body.dg-game-active #dgLobbyHome{display:block}
       const test=e.target?.closest?.('#dgTestBots');
       if(test){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();startLocalBotTest();return}
       const lobby=e.target?.closest?.('#dgLobbyHome');
-      if(lobby){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();forceLobby();return}
+      if(lobby){
+        e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+        const hasOnlineRoom=/^\d{4}$/.test(sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||'');
+        if(hasOnlineRoom&&!window.DG_V35_LOCAL_TEST){
+          window.DG_V31_LEAVING=true;
+          document.getElementById('dgOnlineLeave')?.click();
+          setTimeout(forceLobby,380);
+        }else forceLobby();
+        return
+      }
       if(e.target?.closest?.('#dgChangeLanguage'))setTimeout(addLobbyButton,40);
     },true);
   }
@@ -8307,6 +8321,318 @@ async function boot(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 </script>
 <!-- DG V55 UNLIMITED RETURN + BOT STATUS + STABLE FLAGS END -->
+
+
+<!-- DG V56 SOCIAL LOGIN + LOBBY LOGOUT START -->
+<style id="dg-v56-social-auth-css">
+#dgV55Badge{display:none!important}
+#dgV56Badge{
+  position:fixed;right:10px;top:10px;z-index:100000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV56Badge{display:none}
+.dg-v56-social-wrap{margin-top:12px;padding-top:11px;border-top:1px solid rgba(117,145,158,.25)}
+.dg-v56-or{margin-bottom:8px;color:#81949e;font:800 10px/1.2 Arial,"Noto Sans Georgian",sans-serif;text-align:center}
+.dg-v56-social-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dg-v56-auth-btn{min-height:44px;border-radius:11px;border:1px solid #344b56;background:#fff;color:#152027;font:900 12px/1 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.22)}
+.dg-v56-auth-btn:disabled{opacity:.55;cursor:wait}
+.dg-v56-auth-btn.google::before{content:'G';display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-right:8px;border-radius:50%;background:#fff;border:1px solid #d6d6d6;color:#4285f4;font-weight:1000}
+.dg-v56-auth-btn.facebook{background:#1877f2;color:#fff;border-color:#4d91ec}
+.dg-v56-auth-btn.facebook::before{content:'f';display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-right:8px;border-radius:50%;background:#fff;color:#1877f2;font:1000 17px/20px Arial}
+#dgV56AuthMsg{min-height:16px;margin-top:7px;color:#9db0ba;font:800 10px/1.35 Arial,"Noto Sans Georgian",sans-serif;text-align:center}
+#dgV56LobbyAccount{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 0 10px;padding:8px 9px;border:1px solid #2d4652;border-radius:10px;background:#07131a;color:#c9d5db;font:800 10px/1.25 Arial,"Noto Sans Georgian",sans-serif}
+#dgV56LobbyAccount .dg-v56-account-label{flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dgV56LobbyAccount .dg-v56-mini{min-height:31px;padding:0 9px;border-radius:8px;border:1px solid #3c5663;background:#0b1a22;color:#e9f0f3;font-weight:900;cursor:pointer}
+#dgV56LobbyAccount .dg-v56-mini.google{background:#fff;color:#172126}
+#dgV56LobbyAccount .dg-v56-mini.facebook{background:#1877f2;color:#fff;border-color:#4d91ec}
+#dgV56Logout{border-color:#844840!important;background:#361512!important;color:#ffb5aa!important}
+@media(max-width:430px){.dg-v56-social-grid{grid-template-columns:1fr}.dg-v56-auth-btn{min-height:46px}}
+</style>
+<script type="module" id="dg-v56-social-auth-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import {
+  getAuth,onAuthStateChanged,GoogleAuthProvider,FacebookAuthProvider,
+  linkWithPopup,signInWithPopup,signOut
+} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const PROFILE_KEY='dg_domino_v25_profile',LANG_KEY='dg_domino_v26_language',SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup';
+const $=id=>document.getElementById(id);
+let app,auth,busy=false;
+
+const TXT={
+  ka:{or:'ან დაიცავი პროფილი სოციალური ანგარიშით',google:'Google-ით რეგისტრაცია',facebook:'Facebook-ით რეგისტრაცია',ready:'Firebase ანგარიში მზადაა',guest:'სტუმრის პროფილი',connected:'დაკავშირებულია',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 გამოსვლა',working:'მიმდინარეობს ავტორიზაცია…',ok:'ანგარიში წარმატებით დაუკავშირდა',rules:'ანგარიში დაკავშირებულია — მონიშნე წესები და გააგრძელე რეგისტრაცია.',disabled:'ეს ავტორიზაციის მეთოდი ჯერ Firebase-ში ჩართული არ არის.',popup:'ავტორიზაციის ფანჯარა დაიხურა ან დაიბლოკა.',logoutAsk:'ანგარიშიდან გამოხვიდე და დაბრუნდე რეგისტრაციის გვერდზე?'},
+  en:{or:'or secure your profile with a social account',google:'Register with Google',facebook:'Register with Facebook',ready:'Firebase account ready',guest:'Guest profile',connected:'connected',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Log out',working:'Signing in…',ok:'Account connected successfully',rules:'Account connected — accept the rules and continue registration.',disabled:'This sign-in provider is not enabled in Firebase yet.',popup:'The sign-in window was closed or blocked.',logoutAsk:'Log out and return to the registration screen?'},
+  ru:{or:'или сохраните профиль через соцсеть',google:'Регистрация через Google',facebook:'Регистрация через Facebook',ready:'Аккаунт Firebase готов',guest:'Гостевой профиль',connected:'подключено',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Выйти',working:'Авторизация…',ok:'Аккаунт успешно подключён',rules:'Аккаунт подключён — примите правила и продолжите регистрацию.',disabled:'Этот способ входа ещё не включён в Firebase.',popup:'Окно авторизации закрыто или заблокировано.',logoutAsk:'Выйти из аккаунта и вернуться к регистрации?'},
+  tr:{or:'veya sosyal hesapla profilini koru',google:'Google ile kayıt ol',facebook:'Facebook ile kayıt ol',ready:'Firebase hesabı hazır',guest:'Misafir profil',connected:'bağlı',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Çıkış',working:'Giriş yapılıyor…',ok:'Hesap başarıyla bağlandı',rules:'Hesap bağlandı — kuralları kabul edip kaydı tamamla.',disabled:'Bu giriş yöntemi Firebase içinde henüz etkin değil.',popup:'Giriş penceresi kapatıldı veya engellendi.',logoutAsk:'Hesaptan çıkıp kayıt ekranına dönülsün mü?'},
+  de:{or:'oder Profil mit einem sozialen Konto sichern',google:'Mit Google registrieren',facebook:'Mit Facebook registrieren',ready:'Firebase-Konto bereit',guest:'Gastprofil',connected:'verbunden',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Abmelden',working:'Anmeldung läuft…',ok:'Konto erfolgreich verbunden',rules:'Konto verbunden — Regeln akzeptieren und Registrierung fortsetzen.',disabled:'Diese Anmeldemethode ist in Firebase noch nicht aktiviert.',popup:'Das Anmeldefenster wurde geschlossen oder blockiert.',logoutAsk:'Abmelden und zur Registrierung zurückkehren?'},
+  ar:{or:'أو احفظ ملفك بحساب اجتماعي',google:'التسجيل عبر Google',facebook:'التسجيل عبر Facebook',ready:'حساب Firebase جاهز',guest:'حساب ضيف',connected:'متصل',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 تسجيل الخروج',working:'جارٍ تسجيل الدخول…',ok:'تم ربط الحساب بنجاح',rules:'تم ربط الحساب — وافق على القواعد وأكمل التسجيل.',disabled:'طريقة تسجيل الدخول هذه غير مفعّلة في Firebase بعد.',popup:'تم إغلاق نافذة تسجيل الدخول أو حظرها.',logoutAsk:'تسجيل الخروج والعودة إلى شاشة التسجيل؟'}
+};
+function lang(){try{return localStorage.getItem(LANG_KEY)||JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}').language||'en'}catch(e){return 'en'}}
+function t(){return TXT[lang()]||TXT.en}
+function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
+function saveProfile(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p||{}))}
+function providerName(id){return id==='google.com'?'Google':id==='facebook.com'?'Facebook':''}
+function setMsg(text){const e=$('dgV56AuthMsg');if(e)e.textContent=text||''}
+function displayNameFromUser(u){return String(u?.displayName||u?.email?.split('@')[0]||'').trim().slice(0,18)}
+function syncLocalProfile(u,providerId){
+  const p=profile(),typed=String($('dgRegNick')?.value||'').trim().slice(0,18),suggested=displayNameFromUser(u);
+  if(!p.nickname)p.nickname=typed||suggested||'Player';
+  p.authUid=u?.uid||p.authUid||'';p.authProvider=providerId||p.authProvider||'';
+  if(u?.email)p.email=u.email;
+  saveProfile(p);
+  if($('dgRegNick')&&!$('dgRegNick').value)$('dgRegNick').value=p.nickname;
+  if($('dgLobbyNick'))$('dgLobbyNick').textContent=p.nickname;
+  document.getElementById('myNickname')&&(document.getElementById('myNickname').textContent=p.nickname);
+}
+function providers(u){return new Set((u?.providerData||[]).map(x=>x.providerId))}
+function authLabel(){
+  const u=auth?.currentUser;if(!u)return t().guest;
+  const ps=[...providers(u)].map(providerName).filter(Boolean);
+  if(ps.length)return `${ps.join(' + ')} · ${u.email||u.displayName||t().connected}`;
+  return u.isAnonymous?t().guest:t().ready;
+}
+function updateUI(){
+  const tr=t(),u=auth?.currentUser,ps=providers(u);
+  document.querySelectorAll('[data-v56-google]').forEach(b=>{b.textContent=ps.has('google.com')?`✓ ${tr.googleShort} ${tr.connected}`:tr.google;b.disabled=busy||ps.has('google.com')});
+  document.querySelectorAll('[data-v56-facebook]').forEach(b=>{b.textContent=ps.has('facebook.com')?`✓ ${tr.facebookShort} ${tr.connected}`:tr.facebook;b.disabled=busy||ps.has('facebook.com')});
+  const label=$('dgV56AccountLabel');if(label)label.textContent=authLabel();
+  const lo=$('dgV56Logout');if(lo)lo.textContent=tr.logout;
+  const or=$('dgV56Or');if(or)or.textContent=tr.or;
+}
+function buildUI(){
+  const reg=$('dgRegisterStep');
+  if(reg&&!$('dgV56SocialWrap')){
+    const wrap=document.createElement('div');wrap.id='dgV56SocialWrap';wrap.className='dg-v56-social-wrap';
+    wrap.innerHTML=`<div class="dg-v56-or" id="dgV56Or"></div><div class="dg-v56-social-grid"><button type="button" class="dg-v56-auth-btn google" data-v56-google></button><button type="button" class="dg-v56-auth-btn facebook" data-v56-facebook></button></div><div id="dgV56AuthMsg"></div>`;
+    const actions=reg.querySelector('.dg-entry-actions');(actions||reg.lastElementChild)?.insertAdjacentElement('afterend',wrap);
+  }
+  const choice=$('dgChoiceStep');
+  if(choice&&!$('dgV56LobbyAccount')){
+    const bar=document.createElement('div');bar.id='dgV56LobbyAccount';
+    bar.innerHTML=`<span class="dg-v56-account-label" id="dgV56AccountLabel"></span><button type="button" class="dg-v56-mini google" data-v56-google>Google</button><button type="button" class="dg-v56-mini facebook" data-v56-facebook>Facebook</button><button type="button" class="dg-v56-mini" id="dgV56Logout"></button>`;
+    const rank=$('dgRankLine');if(rank)rank.insertAdjacentElement('afterend',bar);else choice.querySelector('.dg-entry-profile')?.insertAdjacentElement('afterend',bar);
+  }
+  updateUI();
+}
+async function connect(providerId){
+  if(busy||!auth)return;busy=true;setMsg(t().working);updateUI();
+  const provider=providerId==='google.com'?new GoogleAuthProvider():new FacebookAuthProvider();
+  if(providerId==='google.com')provider.setCustomParameters({prompt:'select_account'});
+  let result=null,switchedAccount=false;
+  try{
+    const current=auth.currentUser;
+    if(current){
+      if(providers(current).has(providerId)){setMsg(t().ok);return}
+      try{result=await linkWithPopup(current,provider)}
+      catch(e){
+        const c=String(e?.code||'');
+        if(c.includes('credential-already-in-use')||c.includes('email-already-in-use')){result=await signInWithPopup(auth,provider);switchedAccount=true}
+        else if(c.includes('provider-already-linked'))result={user:auth.currentUser};
+        else throw e;
+      }
+    }else{result=await signInWithPopup(auth,provider);switchedAccount=true}
+    const u=result?.user||auth.currentUser;syncLocalProfile(u,providerId);
+    setMsg($('dgRulesAgree')?.checked?t().ok:t().rules);updateUI();
+    if(switchedAccount)setTimeout(()=>location.reload(),450);
+  }catch(e){
+    console.warn('V56 social auth',e);
+    const c=String(e?.code||'');
+    setMsg(c.includes('operation-not-allowed')?t().disabled:(c.includes('popup')||c.includes('cancelled'))?t().popup:(e?.message||'Authentication error'));
+  }finally{busy=false;updateUI()}
+}
+async function logout(){
+  if(busy||!auth)return;if(!confirm(t().logoutAsk))return;busy=true;updateUI();
+  try{
+    window.DG_V31_LEAVING=true;
+    const code=sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||'';
+    if(/^\d{4}$/.test(code)){document.getElementById('dgOnlineLeave')?.click();await new Promise(r=>setTimeout(r,420))}
+    await signOut(auth);
+    sessionStorage.removeItem(SESSION);localStorage.removeItem(BACKUP);localStorage.removeItem(PROFILE_KEY);
+    location.reload();
+  }catch(e){console.warn('V56 logout',e);busy=false;updateUI()}
+}
+function wire(){
+  document.addEventListener('click',e=>{
+    const g=e.target?.closest?.('[data-v56-google]');if(g){e.preventDefault();connect('google.com');return}
+    const f=e.target?.closest?.('[data-v56-facebook]');if(f){e.preventDefault();connect('facebook.com');return}
+    if(e.target?.closest?.('#dgV56Logout')){e.preventDefault();logout();return}
+    if(e.target?.closest?.('.dg-language-btn,#dgChangeLanguage'))setTimeout(()=>{buildUI();updateUI()},50);
+  });
+}
+function badge(){if($('dgV56Badge'))return;const b=document.createElement('div');b.id='dgV56Badge';b.textContent='V56';document.body.appendChild(b)}
+async function boot(){
+  badge();buildUI();wire();
+  try{
+    app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);
+    onAuthStateChanged(auth,u=>{if(u)syncLocalProfile(u,[...providers(u)][0]||'');buildUI();updateUI()});
+  }catch(e){console.warn('V56 auth boot',e)}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V56 SOCIAL LOGIN + LOBBY LOGOUT END -->
+
+
+<!-- DG V57 NICKNAME FIRST CHOICE + TWO CHANGES START -->
+<style id="dg-v57-nickname-limit-css">
+#dgV56Badge{display:none!important}
+#dgV57Badge{
+  position:fixed;right:10px;top:10px;z-index:100000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;
+  box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV57Badge{display:none}
+#dgV57NickHint{
+  margin:7px 0 2px;padding:8px 9px;border-radius:9px;border:1px solid #294854;
+  background:#07171e;color:#a9bac3;font:800 10px/1.45 Arial,"Noto Sans Georgian",sans-serif
+}
+#dgV57NickHint b{color:#f0c96b}
+#dgV57NickRemain{display:inline-block;margin-left:5px;color:#f0c96b;font-weight:1000}
+#dgChangeProfile.dg-v57-limit-zero{color:#8a969b!important;text-decoration:none!important;cursor:not-allowed!important}
+</style>
+<script type="module" id="dg-v57-nickname-limit-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,getDoc,setDoc,runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const PROFILE_KEY='dg_domino_v25_profile',LANG_KEY='dg_domino_v26_language',PROFILES='dominoProfiles',MAX_CHANGES=2;
+const $=id=>document.getElementById(id);
+let app,auth,db,uid='',busy=false,bypassRegister=false,editingNickname=false;
+
+const TXT={
+  ka:{hint:'Google/Facebook-ის სახელი მხოლოდ შეთავაზებაა. <b>სათამაშო ნიკნეიმს შენ ირჩევ.</b> პირველი არჩევა ლიმიტში არ ითვლება; შემდეგ შეცვლა მაქსიმუმ 2-ჯერ შეგიძლია.',change:'ნიკნეიმის შეცვლა',left:'დარჩა',limit:'ნიკნეიმის შეცვლის ლიმიტი ამოწურულია.',saving:'ნიკნეიმი ინახება…',short:'ნიკნეიმი მინიმუმ 2 სიმბოლო უნდა იყოს.',rules:'გასაგრძელებლად წესებს უნდა დაეთანხმო.',titleFirst:'აირჩიე სათამაშო ნიკნეიმი',titleChange:'ნიკნეიმის შეცვლა'},
+  en:{hint:'Your Google/Facebook name is only a suggestion. <b>You choose your in-game nickname.</b> The first choice is free; after that you can change it up to 2 times.',change:'Change nickname',left:'left',limit:'Your nickname-change limit has been used.',saving:'Saving nickname…',short:'Nickname must be at least 2 characters.',rules:'Accept the rules to continue.',titleFirst:'Choose your in-game nickname',titleChange:'Change nickname'},
+  ru:{hint:'Имя Google/Facebook — только подсказка. <b>Игровой ник выбираете вы.</b> Первый выбор не считается; после него ник можно изменить максимум 2 раза.',change:'Изменить ник',left:'осталось',limit:'Лимит смены ника исчерпан.',saving:'Сохраняем ник…',short:'Ник должен содержать минимум 2 символа.',rules:'Чтобы продолжить, примите правила.',titleFirst:'Выберите игровой ник',titleChange:'Изменить ник'},
+  tr:{hint:'Google/Facebook adın yalnızca öneridir. <b>Oyun içi takma adını sen seçersin.</b> İlk seçim ücretsizdir; sonrasında en fazla 2 kez değiştirebilirsin.',change:'Takma adı değiştir',left:'kaldı',limit:'Takma ad değiştirme hakkın bitti.',saving:'Takma ad kaydediliyor…',short:'Takma ad en az 2 karakter olmalı.',rules:'Devam etmek için kuralları kabul et.',titleFirst:'Oyun takma adını seç',titleChange:'Takma adı değiştir'},
+  de:{hint:'Dein Google/Facebook-Name ist nur ein Vorschlag. <b>Den Spielnamen wählst du selbst.</b> Die erste Wahl ist frei; danach kannst du ihn höchstens 2-mal ändern.',change:'Nickname ändern',left:'übrig',limit:'Das Limit für Nickname-Änderungen ist erreicht.',saving:'Nickname wird gespeichert…',short:'Der Nickname muss mindestens 2 Zeichen haben.',rules:'Zum Fortfahren die Regeln akzeptieren.',titleFirst:'Spiel-Nickname wählen',titleChange:'Nickname ändern'},
+  ar:{hint:'اسم Google/Facebook مجرد اقتراح. <b>أنت تختار اسمك داخل اللعبة.</b> الاختيار الأول مجاني، وبعده يمكنك تغييره مرتين كحد أقصى.',change:'تغيير الاسم',left:'متبقي',limit:'تم استهلاك حد تغيير الاسم.',saving:'جارٍ حفظ الاسم…',short:'يجب أن يتكون الاسم من حرفين على الأقل.',rules:'وافق على القواعد للمتابعة.',titleFirst:'اختر اسمك داخل اللعبة',titleChange:'تغيير الاسم'}
+};
+function lang(){try{return localStorage.getItem(LANG_KEY)||JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}').language||'en'}catch(e){return 'en'}}
+function t(){return TXT[lang()]||TXT.en}
+function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
+function saveProfile(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p||{}))}
+function used(p=profile()){return Math.max(0,Math.min(MAX_CHANGES,Number(p.nicknameChangesUsed)||0))}
+function remaining(p=profile()){return Math.max(0,MAX_CHANGES-used(p))}
+function setEntryMsg(text){const e=$('dgEntryMsg');if(e)e.textContent=text||''}
+function applyNickname(name){
+  const n=String(name||'').trim().slice(0,18);if(!n)return;
+  if($('dgLobbyNick'))$('dgLobbyNick').textContent=n;
+  if($('myNickname'))$('myNickname').textContent=n;
+  const bottom=document.querySelector('.player-bottom .player-name');if(bottom)bottom.textContent=n;
+  if($('dgOnlineNick'))$('dgOnlineNick').value=n;
+}
+function showStep(id){document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));$(id)?.classList.add('active')}
+function ensureHint(){
+  const nick=$('dgRegNick');if(!nick)return;
+  let h=$('dgV57NickHint');
+  if(!h){h=document.createElement('div');h.id='dgV57NickHint';nick.insertAdjacentElement('afterend',h)}
+  h.innerHTML=t().hint;
+}
+function updateLobbyButton(){
+  const p=profile(),b=$('dgChangeProfile');if(!b)return;
+  if(p.nicknameChosen===true){
+    const left=remaining(p);b.textContent=`${t().change} · ${t().left} ${left}`;b.classList.toggle('dg-v57-limit-zero',left<=0);b.title=left<=0?t().limit:'';
+  }
+}
+function updateRegisterTitle(){
+  const title=document.querySelector('#dgRegisterStep .dg-entry-title');if(!title)return;
+  title.textContent=(editingNickname||profile().nicknameChosen===true)?t().titleChange:t().titleFirst;
+}
+function refreshUI(){ensureHint();updateLobbyButton();updateRegisterTitle()}
+function migrateExistingLocal(){
+  const p=profile();
+  if(p.nickname&&p.acceptedRules===true&&p.nicknameChosen!==true){
+    p.nicknameChosen=true;p.nicknameChangesUsed=Number.isFinite(Number(p.nicknameChangesUsed))?used(p):0;saveProfile(p);
+  }
+}
+function openChoiceIfValid(){
+  const p=profile();if(!(p.nickname&&p.acceptedRules===true&&p.nicknameChosen===true))return;
+  applyNickname(p.nickname);showStep('dgChoiceStep');setEntryMsg('');editingNickname=false;refreshUI();
+}
+async function syncRemote(){
+  if(!db||!uid)return;
+  try{
+    const ref=doc(db,PROFILES,uid),snap=await getDoc(ref),local=profile();
+    if(snap.exists()){
+      const r=snap.data()||{};
+      if(r.nicknameChosen===true&&r.nickname){
+        const p={...local,nickname:String(r.nickname).slice(0,18),nicknameChosen:true,nicknameChangesUsed:Math.max(0,Math.min(MAX_CHANGES,Number(r.nicknameChangesUsed)||0)),acceptedRules:r.acceptedRules===true||local.acceptedRules===true,acceptedAt:r.acceptedAt||local.acceptedAt||Date.now()};
+        saveProfile(p);applyNickname(p.nickname);if(p.acceptedRules)openChoiceIfValid();
+      }else if(local.nicknameChosen===true&&local.nickname){
+        await setDoc(ref,{nickname:local.nickname,nicknameChosen:true,nicknameChangesUsed:used(local),acceptedRules:local.acceptedRules===true,acceptedAt:local.acceptedAt||Date.now(),nicknameUpdatedAt:Date.now()},{merge:true});
+      }
+    }else if(local.nicknameChosen===true&&local.nickname){
+      await setDoc(ref,{nickname:local.nickname,nicknameChosen:true,nicknameChangesUsed:used(local),acceptedRules:local.acceptedRules===true,acceptedAt:local.acceptedAt||Date.now(),nicknameUpdatedAt:Date.now()},{merge:true});
+    }
+  }catch(e){console.warn('V57 profile sync',e)}finally{refreshUI()}
+}
+function openNicknameEditor(){
+  const p=profile();
+  if(p.nicknameChosen===true&&remaining(p)<=0){setEntryMsg(t().limit);return}
+  editingNickname=p.nicknameChosen===true;
+  showStep('dgRegisterStep');
+  if($('dgRegNick'))$('dgRegNick').value=p.nickname||'';
+  if($('dgRulesAgree'))$('dgRulesAgree').checked=p.acceptedRules===true;
+  const b=$('dgRegisterContinue');if(b)b.disabled=!(String($('dgRegNick')?.value||'').trim().length>=2&&$('dgRulesAgree')?.checked);
+  setEntryMsg('');refreshUI();setTimeout(()=>$('dgRegNick')?.focus(),30);
+}
+async function saveNicknameThenContinue(button){
+  if(busy)return;
+  const nickname=String($('dgRegNick')?.value||'').trim().slice(0,18);
+  if(nickname.length<2){setEntryMsg(t().short);return}
+  if(!$('dgRulesAgree')?.checked){setEntryMsg(t().rules);return}
+  busy=true;button.disabled=true;setEntryMsg(t().saving);
+  try{
+    const local=profile();let chosen=local.nicknameChosen===true,current=String(local.nickname||''),count=used(local);
+    if(db&&uid){
+      await runTransaction(db,async tx=>{
+        const ref=doc(db,PROFILES,uid),snap=await tx.get(ref),r=snap.exists()?(snap.data()||{}):{};
+        const remoteChosen=r.nicknameChosen===true;
+        const remoteName=String(r.nickname||'');
+        let remoteCount=Math.max(0,Math.min(MAX_CHANGES,Number(r.nicknameChangesUsed)||0));
+        const baseChosen=remoteChosen||chosen;
+        const baseName=remoteChosen?remoteName:current;
+        if(baseChosen&&nickname!==baseName){if(remoteCount>=MAX_CHANGES)throw new Error('NICK_LIMIT');remoteCount+=1}
+        if(!baseChosen)remoteCount=0;
+        count=remoteCount;chosen=true;
+        tx.set(ref,{nickname,nicknameChosen:true,nicknameChangesUsed:remoteCount,acceptedRules:true,acceptedAt:r.acceptedAt||local.acceptedAt||Date.now(),nicknameUpdatedAt:Date.now()},{merge:true});
+      });
+    }else{
+      if(chosen&&nickname!==current){if(count>=MAX_CHANGES)throw new Error('NICK_LIMIT');count+=1}
+      if(!chosen)count=0;chosen=true;
+    }
+    const p={...profile(),nickname,nicknameChosen:true,nicknameChangesUsed:count,acceptedRules:true,acceptedAt:profile().acceptedAt||Date.now()};saveProfile(p);applyNickname(nickname);
+    editingNickname=false;setEntryMsg('');refreshUI();
+    bypassRegister=true;button.disabled=false;button.click();bypassRegister=false;
+    setTimeout(()=>{migrateExistingLocal();openChoiceIfValid();refreshUI()},0);
+  }catch(e){
+    console.warn('V57 nickname save',e);setEntryMsg(String(e?.message||'').includes('NICK_LIMIT')?t().limit:(e?.message||'Nickname save error'));
+  }finally{busy=false;button.disabled=false;refreshUI()}
+}
+function wire(){
+  document.addEventListener('click',e=>{
+    const change=e.target?.closest?.('#dgChangeProfile');
+    if(change){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();openNicknameEditor();return}
+    const reg=e.target?.closest?.('#dgRegisterContinue');
+    if(reg&&!bypassRegister){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();saveNicknameThenContinue(reg);return}
+    if(e.target?.closest?.('.dg-language-btn,#dgChangeLanguage'))setTimeout(refreshUI,70);
+  },true);
+  document.addEventListener('input',e=>{if(e.target?.id==='dgRegNick')setTimeout(refreshUI,0)},true);
+}
+function badge(){if($('dgV57Badge'))return;const b=document.createElement('div');b.id='dgV57Badge';b.textContent='V57';document.body.appendChild(b)}
+async function boot(){
+  badge();migrateExistingLocal();refreshUI();wire();
+  try{
+    app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
+    onAuthStateChanged(auth,u=>{uid=u?.uid||'';if(uid)setTimeout(syncRemote,60)});
+  }catch(e){console.warn('V57 boot',e)}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V57 NICKNAME FIRST CHOICE + TWO CHANGES END -->
 
 </body>
 </html>
