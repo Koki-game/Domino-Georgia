@@ -8691,5 +8691,109 @@ body.dg-game-active #dgV58Badge{display:none}
 </script>
 <!-- DG V58 GOOGLE ONLY + PRIVACY POLICY END -->
 
+
+
+<!-- DG V59 DEDICATED GOOGLE LOGIN GATE START -->
+<style id="dg-v59-google-gate-css">
+#dgV58Badge{display:none!important}
+#dgV59Badge{
+  position:fixed;right:10px;top:10px;z-index:102000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV59Badge{display:none}
+/* V59 uses one clear sign-in screen. Hide the older Google buttons that were embedded in the nickname/lobby forms. */
+#dgRegisterStep #dgV56SocialWrap,[data-v56-google]{display:none!important}
+#dgV59GoogleStep{text-align:center}
+.dg-v59-logo{width:66px;height:66px;margin:8px auto 15px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,#143526,#07150f);border:2px solid #d4aa42;color:#f0c85c;font:1000 30px/1 Arial,sans-serif;
+  box-shadow:0 7px 22px rgba(0,0,0,.45),inset 0 0 18px rgba(233,184,76,.08)}
+#dgV59GoogleBtn{width:100%;min-height:50px;margin-top:15px;border:1px solid #d4d8dc;border-radius:12px;background:#fff;color:#202124;
+  font:900 14px/1 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer;box-shadow:0 4px 13px rgba(0,0,0,.28)}
+#dgV59GoogleBtn:before{content:'G';display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;margin-right:10px;
+  border:1px solid #d7dce1;border-radius:50%;color:#4285f4;background:#fff;font:1000 15px/1 Arial}
+#dgV59GoogleBtn:disabled{opacity:.62;cursor:wait}
+#dgV59LoginMsg{min-height:18px;margin-top:10px;color:#a9bbc4;font:800 11px/1.45 Arial,"Noto Sans Georgian",sans-serif}
+#dgV59Privacy{display:inline-block;margin-top:9px;color:#d8bd72;font:800 10px/1.3 Arial,"Noto Sans Georgian",sans-serif;text-decoration:underline;text-underline-offset:2px}
+#dgV59GoogleStep .dg-entry-sub{max-width:430px;margin-left:auto;margin-right:auto}
+</style>
+<script type="module" id="dg-v59-google-gate-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged,GoogleAuthProvider,linkWithPopup,signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const LANG_KEY='dg_domino_v26_language',PROFILE_KEY='dg_domino_v25_profile';
+const $=id=>document.getElementById(id);
+let app,auth,busy=false,unsub=null;
+const TXT={
+  ka:{title:'Google-ით შესვლა',sub:'თამაშის გასაგრძელებლად შედი Google ანგარიშით. შემდეგ პირველად აირჩევ შენს სათამაშო ნიკნეიმს.',btn:'Google-ით შესვლა',working:'Google ავტორიზაცია მიმდინარეობს…',popup:'Google-ის ფანჯარა დაიხურა ან დაიბლოკა.',error:'Google-ით შესვლა ვერ მოხერხდა.',privacy:'კონფიდენციალურობის პოლიტიკა'},
+  en:{title:'Sign in with Google',sub:'Sign in with your Google account to continue. You will choose your in-game nickname separately the first time.',btn:'Continue with Google',working:'Signing in with Google…',popup:'The Google sign-in window was closed or blocked.',error:'Google sign-in failed.',privacy:'Privacy Policy'},
+  ru:{title:'Войти через Google',sub:'Чтобы продолжить, войдите через Google. Игровой ник вы выберете отдельно при первом входе.',btn:'Войти через Google',working:'Вход через Google…',popup:'Окно Google было закрыто или заблокировано.',error:'Не удалось войти через Google.',privacy:'Политика конфиденциальности'},
+  tr:{title:'Google ile giriş yap',sub:'Devam etmek için Google hesabınla giriş yap. Oyun içi takma adını ilk girişte ayrıca seçersin.',btn:'Google ile devam et',working:'Google ile giriş yapılıyor…',popup:'Google giriş penceresi kapatıldı veya engellendi.',error:'Google girişi başarısız oldu.',privacy:'Gizlilik Politikası'},
+  de:{title:'Mit Google anmelden',sub:'Melde dich mit deinem Google-Konto an. Deinen Spielnamen wählst du beim ersten Mal separat.',btn:'Mit Google fortfahren',working:'Google-Anmeldung läuft…',popup:'Das Google-Fenster wurde geschlossen oder blockiert.',error:'Google-Anmeldung fehlgeschlagen.',privacy:'Datenschutzerklärung'},
+  ar:{title:'تسجيل الدخول عبر Google',sub:'سجّل الدخول بحساب Google للمتابعة. ستختار اسمك داخل اللعبة بشكل منفصل عند الدخول الأول.',btn:'المتابعة عبر Google',working:'جارٍ تسجيل الدخول عبر Google…',popup:'تم إغلاق نافذة Google أو حظرها.',error:'تعذر تسجيل الدخول عبر Google.',privacy:'سياسة الخصوصية'}
+};
+function lang(){try{return localStorage.getItem(LANG_KEY)||JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}').language||'en'}catch(e){return 'en'}}
+function t(){return TXT[lang()]||TXT.en}
+function hasGoogle(u){return !!u&&(u.providerData||[]).some(p=>p.providerId==='google.com')}
+function showOnly(id){document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));$(id)?.classList.add('active')}
+function buildStep(){
+  const card=document.querySelector('#dgEntryOverlay .dg-entry-card');if(!card)return false;
+  let sec=$('dgV59GoogleStep');
+  if(!sec){
+    sec=document.createElement('section');sec.className='dg-entry-step';sec.id='dgV59GoogleStep';
+    sec.innerHTML=`<div class="dg-v59-logo">♦</div><div class="dg-entry-title" id="dgV59LoginTitle"></div><div class="dg-entry-sub" id="dgV59LoginSub"></div><button type="button" id="dgV59GoogleBtn"></button><div id="dgV59LoginMsg"></div><a id="dgV59Privacy" href="./privacy.html" target="_blank" rel="noopener noreferrer"></a>`;
+    const langStep=$('dgLanguageStep');if(langStep?.nextSibling)card.insertBefore(sec,langStep.nextSibling);else card.insertBefore(sec,card.firstChild);
+    $('dgV59GoogleBtn')?.addEventListener('click',googleLogin);
+  }
+  const tr=t();$('dgV59LoginTitle').textContent=tr.title;$('dgV59LoginSub').textContent=tr.sub;$('dgV59GoogleBtn').textContent=busy?tr.working:tr.btn;$('dgV59GoogleBtn').disabled=busy;$('dgV59Privacy').textContent=tr.privacy;
+  return true;
+}
+function setMsg(v){const e=$('dgV59LoginMsg');if(e)e.textContent=v||''}
+function route(){
+  if(!buildStep())return;
+  const chosen=localStorage.getItem('dg_domino_v35_language_selected')==='1'||!!localStorage.getItem(LANG_KEY);
+  if(!chosen){showOnly('dgLanguageStep');return}
+  const u=auth?.currentUser;
+  if(!hasGoogle(u)){
+    document.getElementById('dgEntryOverlay')?.classList.remove('hidden');
+    document.body.classList.remove('dg-game-active','dg-match-mode');document.body.classList.add('dg-lobby-mode');
+    showOnly('dgV59GoogleStep');return;
+  }
+  /* Google user is authenticated. Let V57 decide between first nickname and normal lobby. */
+  const p=(()=>{try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}})();
+  if(p.nicknameChosen===true&&p.nickname&&p.acceptedRules===true)showOnly('dgChoiceStep');else showOnly('dgRegisterStep');
+}
+async function googleLogin(){
+  if(busy||!auth)return;busy=true;buildStep();setMsg(t().working);
+  const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
+  try{
+    const current=auth.currentUser;
+    if(current&&!hasGoogle(current)){
+      try{await linkWithPopup(current,provider)}catch(e){
+        const c=String(e?.code||'');
+        if(c.includes('credential-already-in-use')||c.includes('email-already-in-use'))await signInWithPopup(auth,provider);else throw e;
+      }
+    }else if(!current)await signInWithPopup(auth,provider);
+    if(!hasGoogle(auth.currentUser))throw new Error('GOOGLE_NOT_LINKED');
+    setMsg('');
+    /* Reload so every older Firebase module starts with the final Google UID instead of the temporary anonymous UID. */
+    setTimeout(()=>location.reload(),180);
+  }catch(e){
+    console.warn('V59 Google login',e);const c=String(e?.code||'');setMsg((c.includes('popup')||c.includes('cancelled'))?t().popup:(e?.message||t().error));
+  }finally{busy=false;buildStep()}
+}
+function badge(){if($('dgV59Badge'))return;const b=document.createElement('div');b.id='dgV59Badge';b.textContent='V59';document.body.appendChild(b)}
+async function boot(){
+  badge();buildStep();
+  try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);unsub=onAuthStateChanged(auth,()=>setTimeout(route,40));}
+  catch(e){console.warn('V59 auth boot',e);setMsg(t().error)}
+  document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-language-btn,#dgChangeLanguage'))setTimeout(()=>{buildStep();route()},120)},true);
+  setTimeout(route,100);setTimeout(route,700);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V59 DEDICATED GOOGLE LOGIN GATE END -->
+
 </body>
 </html>
