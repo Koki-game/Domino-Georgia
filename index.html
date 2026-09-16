@@ -2504,6 +2504,7 @@ html.dg-v65-auth-boot body::after{
     <button class="emoji-choice">👍</button>
     <button class="emoji-choice">👏</button>
     <button class="emoji-choice">😄</button>
+    <button class="emoji-choice">😂</button>
     <button class="emoji-choice">😎</button>
 
     <button class="emoji-choice">🤝</button>
@@ -9549,6 +9550,139 @@ body.dg-v61-two #dgV67TwoActions{display:grid}
 })();
 </script>
 <!-- DG V67 TWO-PLAYER ONLINE + BOT + AUTO MARKET + NAMES + STAKE STAR END -->
+
+
+
+<!-- DG V68 UI POSITION + LANGUAGE + RETURN-ONLY FIXES START -->
+<style id="dg-v68-ui-fixes-css">
+#dgV67Badge{display:none!important}
+#dgV68Badge{
+  position:fixed;right:10px;top:10px;z-index:111000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV68Badge{display:none}
+
+/* Stake star: move it from the outer top corner to the red-marked centre/divider area. */
+.dg-board-tile.stake-domino::before{
+  left:50%!important;top:50%!important;right:auto!important;
+  transform:translate(-50%,-50%)!important;
+  width:15px!important;height:15px!important;
+  font-size:13px!important;
+}
+
+/* 2-player market: lift it into the empty upper-left wooden rail so it no longer covers emojis. */
+body.dg-v61-two #game > #dgV61StockStatus.dg-v62-market{
+  top:22.5%!important;
+}
+@media(max-width:760px){
+  body.dg-v61-two #game > #dgV61StockStatus.dg-v62-market{top:22%!important}
+}
+
+/* Lobby-return button: lower it so it does not sit on the player's name. */
+#dgLobbyHome{
+  top:calc(env(safe-area-inset-top, 0px) + 38px)!important;
+}
+@media(max-height:560px){
+  #dgLobbyHome{top:calc(env(safe-area-inset-top, 0px) + 34px)!important}
+}
+
+/* When time expires, show only the return button — no flickering BOT/title/body text. */
+#dgV46TimeoutCard h3,
+#dgV46TimeoutCard p{display:none!important}
+#dgV46TimeoutCard{padding:16px!important}
+body.dg-v68-return-only .dg-v55-bot-label,
+body.dg-v68-return-only #turnMessage{display:none!important}
+</style>
+
+<script id="dg-v68-ui-fixes-js">
+(()=>{
+  const $=id=>document.getElementById(id);
+  const LANG_KEY='dg_domino_v26_language';
+  const LOBBY={
+    ka:'← ლობიში დაბრუნება',en:'← Return to lobby',ru:'← Вернуться в лобби',
+    tr:'← Lobiye dön',de:'← Zurück zur Lobby',ar:'العودة إلى الردهة ←'
+  };
+  const RETURN={
+    ka:'თამაშში დაბრუნება',en:'Return to game',ru:'Вернуться в игру',
+    tr:'Oyuna dön',de:'Zurück ins Spiel',ar:'العودة للعبة'
+  };
+  function lang(){return localStorage.getItem(LANG_KEY)||'ka'}
+  function lobbyLabel(){return LOBBY[lang()]||LOBBY.ka}
+  function returnLabel(){return RETURN[lang()]||RETURN.ka}
+
+  function addBadge(){
+    if($('dgV68Badge'))return;
+    const b=document.createElement('div');b.id='dgV68Badge';b.textContent='V68';document.body.appendChild(b);
+  }
+
+  function syncLobbyButton(){
+    const b=$('dgLobbyHome');if(!b)return;
+    const wanted=lobbyLabel();if(b.textContent!==wanted)b.textContent=wanted;
+  }
+
+  /* Older V59 routing re-opens the lobby after ~120 ms. Re-open the language
+     picker after that route so the Change language button works reliably. */
+  function showLanguagePicker(){
+    const overlay=$('dgEntryOverlay'),step=$('dgLanguageStep');if(!overlay||!step)return;
+    overlay.classList.remove('hidden');
+    document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));
+    step.classList.add('active');
+  }
+
+  function syncReturnOnly(){
+    const o=$('dgV46TimeoutOverlay'),b=$('dgV46ReturnBtn');
+    const active=!!o?.classList.contains('show');
+    document.body.classList.toggle('dg-v68-return-only',active);
+    if(b){
+      const wanted=returnLabel();
+      if(b.textContent!==wanted)b.textContent=wanted;
+      b.setAttribute('aria-label',wanted);
+    }
+  }
+
+  function watchDynamicUI(){
+    const lobby=$('dgLobbyHome');
+    if(lobby&&!lobby.dataset.v68watch){
+      lobby.dataset.v68watch='1';
+      new MutationObserver(syncLobbyButton).observe(lobby,{childList:true,subtree:true,characterData:true});
+    }
+    const o=$('dgV46TimeoutOverlay');
+    if(o&&!o.dataset.v68watch){
+      o.dataset.v68watch='1';
+      new MutationObserver(syncReturnOnly).observe(o,{attributes:true,attributeFilter:['class'],childList:true,subtree:true,characterData:true});
+    }
+    const b=$('dgV46ReturnBtn');
+    if(b&&!b.dataset.v68watch){
+      b.dataset.v68watch='1';
+      new MutationObserver(syncReturnOnly).observe(b,{childList:true,subtree:true,characterData:true});
+    }
+    syncLobbyButton();syncReturnOnly();
+  }
+
+  document.addEventListener('click',e=>{
+    if(e.target?.closest?.('#dgChangeLanguage')){
+      e.preventDefault();
+      setTimeout(showLanguagePicker,0);
+      setTimeout(showLanguagePicker,180);
+      setTimeout(showLanguagePicker,420);
+      return;
+    }
+    if(e.target?.closest?.('.dg-language-btn')){
+      setTimeout(()=>{syncLobbyButton();syncReturnOnly();},30);
+      setTimeout(()=>{syncLobbyButton();syncReturnOnly();},180);
+    }
+  },true);
+
+  function init(){
+    addBadge();watchDynamicUI();
+    setTimeout(watchDynamicUI,100);setTimeout(watchDynamicUI,450);setTimeout(watchDynamicUI,1200);
+    setInterval(watchDynamicUI,700);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V68 UI POSITION + LANGUAGE + RETURN-ONLY FIXES END -->
 
 </body>
 </html>
