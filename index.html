@@ -9092,5 +9092,160 @@ body.dg-v61-two #dgV61StockStatus.dg-v62-market:before{
 </script>
 <!-- DG V63 MARKET INSIDE WOOD FRAME END -->
 
+
+<!-- DG V64 MARKET MOVED TO OUTER WOOD RAIL START -->
+<style id="dg-v64-market-rail-css">
+#dgV63Badge{display:none!important}
+#dgV64Badge{
+  position:fixed;right:10px;top:10px;z-index:106000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV64Badge{display:none}
+
+/* V64: restore V62 market colors and place the market OUTSIDE the green felt,
+   on the left wooden rail. Four-player mode is untouched. */
+body.dg-v61-two #game > #dgV61StockStatus.dg-v62-market{
+  position:absolute!important;
+  left:1.15%!important;
+  top:39.5%!important;
+  transform:none!important;
+  z-index:23500!important;
+
+  width:clamp(78px,11.2vw,112px)!important;
+  min-height:142px!important;
+  padding:7px 6px 6px!important;
+  border-radius:14px!important;
+
+  border:1px solid rgba(224,185,79,.6)!important;
+  background:rgba(4,15,11,.88)!important;
+  color:#ead27d!important;
+
+  pointer-events:auto!important;
+  white-space:normal!important;
+  box-shadow:0 5px 18px rgba(0,0,0,.38)!important;
+  text-align:center!important;
+}
+body.dg-v61-two #game > #dgV61StockStatus.dg-v62-market::before{
+  content:none!important;
+  display:none!important;
+}
+
+body.dg-v61-two .dg-v62-market-title{
+  position:static!important;
+  font:1000 11px/1.1 Arial,"Noto Sans Georgian",sans-serif!important;
+  color:#f1d574!important;
+  letter-spacing:.03em!important;
+  text-transform:none!important;
+  text-shadow:none!important;
+}
+body.dg-v61-two .dg-v62-market-pile{
+  position:relative!important;
+  width:98px!important;
+  height:106px!important;
+  margin:5px auto 1px!important;
+  overflow:visible!important;
+}
+body.dg-v61-two .dg-v62-market-tile{
+  position:absolute!important;
+  width:22px!important;
+  height:34px!important;
+  border-radius:4px!important;
+  border:2px solid #e6e0cc!important;
+  background:linear-gradient(145deg,#1e2a31,#071015)!important;
+  box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)!important;
+}
+body.dg-v61-two .dg-v62-market-tile:after{
+  content:'◆'!important;
+  position:absolute!important;
+  inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  color:#cba94f!important;
+  font:900 8px/1 Arial!important;
+  opacity:.78!important;
+}
+body.dg-v61-two .dg-v62-market-count{
+  position:static!important;
+  margin-top:0!important;
+  color:#d8e1dc!important;
+  font:900 9px/1.2 Arial,"Noto Sans Georgian",sans-serif!important;
+  text-shadow:none!important;
+}
+body.dg-v61-two #dgV62MarketDraw{
+  position:static!important;
+  width:100%!important;
+  min-height:30px!important;
+  margin-top:5px!important;
+  padding:5px 4px!important;
+  border-radius:9px!important;
+  border:1px solid #d2a842!important;
+  background:linear-gradient(#745013,#3c2707)!important;
+  color:#fff1b2!important;
+  font:1000 9px/1.2 Arial,"Noto Sans Georgian",sans-serif!important;
+  cursor:pointer!important;
+  box-shadow:0 2px 7px rgba(0,0,0,.32)!important;
+}
+body.dg-v61-two #dgV62MarketDraw:active{transform:translateY(1px)!important}
+body.dg-v61-two #dgV62MarketDraw[hidden]{display:none!important}
+body.dg-v61-two .dg-v62-market-lock{
+  position:static!important;
+  min-height:12px!important;
+  margin-top:4px!important;
+  color:#efb0a4!important;
+  font:800 7.5px/1.25 Arial,"Noto Sans Georgian",sans-serif!important;
+  text-shadow:none!important;
+}
+
+/* Narrow landscape phones: keep the whole market inside the wooden rail. */
+@media(max-width:760px){
+  body.dg-v61-two #game > #dgV61StockStatus.dg-v62-market{
+    left:.8%!important;
+    top:38.5%!important;
+    width:clamp(72px,11.8vw,90px)!important;
+    min-height:124px!important;
+    padding:5px 4px!important;
+  }
+  body.dg-v61-two .dg-v62-market-pile{
+    width:76px!important;
+    height:86px!important;
+    transform:scale(.84)!important;
+    transform-origin:top center!important;
+    margin-bottom:-12px!important;
+  }
+  body.dg-v61-two .dg-v62-market-title{font-size:9px!important}
+  body.dg-v61-two #dgV62MarketDraw{font-size:8px!important;min-height:27px!important}
+  body.dg-v61-two .dg-v62-market-count{font-size:8px!important}
+}
+</style>
+
+<script id="dg-v64-market-rail-js">
+(()=>{
+  const moveMarket=()=>{
+    const e=document.getElementById('dgV61StockStatus');
+    const game=document.getElementById('game');
+    if(e&&game&&e.parentElement!==game) game.appendChild(e);
+  };
+  const badge=()=>{
+    if(document.getElementById('dgV64Badge'))return;
+    const b=document.createElement('div');
+    b.id='dgV64Badge'; b.textContent='V64';
+    document.body.appendChild(b);
+  };
+  const init=()=>{
+    badge();
+    moveMarket();
+    const obs=new MutationObserver(moveMarket);
+    const game=document.getElementById('game');
+    if(game)obs.observe(game,{childList:true,subtree:true});
+    setInterval(moveMarket,350);
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
+<!-- DG V64 MARKET MOVED TO OUTER WOOD RAIL END -->
+
 </body>
 </html>
