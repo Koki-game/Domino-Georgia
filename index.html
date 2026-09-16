@@ -1960,6 +1960,23 @@ button:active{
 </style>
 <!-- DG V23 WINNER CELEBRATION END -->
 
+
+<!-- DG V65 AUTH BOOT FLASH GUARD START -->
+<style id="dg-v65-auth-boot-guard-css">
+html.dg-v65-auth-boot #dgEntryOverlay{
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+html.dg-v65-auth-boot body{
+  background:#06110d!important;
+}
+</style>
+<script id="dg-v65-auth-boot-guard-js">
+document.documentElement.classList.add('dg-v65-auth-boot');
+</script>
+<!-- DG V65 AUTH BOOT FLASH GUARD END -->
+
 </head>
 
 <body>
@@ -9246,6 +9263,122 @@ body.dg-v61-two .dg-v62-market-lock{
 })();
 </script>
 <!-- DG V64 MARKET MOVED TO OUTER WOOD RAIL END -->
+
+
+<!-- DG V65 NO LOGIN FLASH ON APP START START -->
+<style id="dg-v65-no-login-flash-css">
+#dgV64Badge{display:none!important}
+#dgV65Badge{
+  position:fixed;right:10px;top:10px;z-index:107000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV65Badge{display:none}
+</style>
+
+<script type="module" id="dg-v65-no-login-flash-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,getDoc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const PROFILE_KEY='dg_domino_v25_profile',LANG_KEY='dg_domino_v26_language';
+const $=id=>document.getElementById(id);
+
+function hasGoogle(u){return !!u&&(u.providerData||[]).some(p=>p.providerId==='google.com')}
+function localProfile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
+function saveProfile(p){try{localStorage.setItem(PROFILE_KEY,JSON.stringify(p||{}))}catch(e){}}
+function showOnly(id){
+  document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));
+  $(id)?.classList.add('active');
+}
+function languageChosen(){
+  return localStorage.getItem('dg_domino_v35_language_selected')==='1'||!!localStorage.getItem(LANG_KEY);
+}
+function reveal(){
+  requestAnimationFrame(()=>{
+    document.documentElement.classList.remove('dg-v65-auth-boot');
+    document.documentElement.classList.add('dg-v65-auth-ready');
+  });
+}
+function badge(){
+  if($('dgV65Badge'))return;
+  const b=document.createElement('div');b.id='dgV65Badge';b.textContent='V65';document.body.appendChild(b);
+}
+async function hydrateRemoteProfile(db,u){
+  if(!u?.uid)return;
+  try{
+    const snap=await Promise.race([
+      getDoc(doc(db,'dominoProfiles',u.uid)),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('PROFILE_TIMEOUT')),1400))
+    ]);
+    if(!snap?.exists?.())return;
+    const r=snap.data()||{},p=localProfile();
+    const merged={...p};
+    if(r.nickname)merged.nickname=String(r.nickname).slice(0,18);
+    if(r.nicknameChosen===true)merged.nicknameChosen=true;
+    if(Number.isFinite(Number(r.nicknameChangesUsed)))merged.nicknameChangesUsed=Math.max(0,Math.min(2,Number(r.nicknameChangesUsed)||0));
+    if(r.acceptedRules===true)merged.acceptedRules=true;
+    if(r.acceptedAt)merged.acceptedAt=r.acceptedAt;
+    saveProfile(merged);
+  }catch(e){}
+}
+function routeResolved(u){
+  /* If reconnect logic has already restored an active match, do not interrupt it. */
+  if(document.body.classList.contains('dg-game-active')){reveal();return}
+
+  const overlay=$('dgEntryOverlay');
+  if(overlay)overlay.classList.remove('hidden');
+  document.body.classList.remove('dg-game-active','dg-match-mode');
+  document.body.classList.add('dg-lobby-mode');
+
+  if(!languageChosen()){
+    showOnly('dgLanguageStep');
+    reveal();
+    return;
+  }
+  if(!hasGoogle(u)){
+    showOnly('dgV59GoogleStep');
+    reveal();
+    return;
+  }
+
+  const p=localProfile();
+  if(p.nicknameChosen===true&&p.nickname&&p.acceptedRules===true)showOnly('dgChoiceStep');
+  else showOnly('dgRegisterStep');
+  reveal();
+}
+async function boot(){
+  badge();
+  let settled=false;
+  const failSafe=setTimeout(()=>{
+    if(settled)return;
+    settled=true;
+    document.documentElement.classList.remove('dg-v65-auth-boot');
+  },2600);
+
+  try{
+    const app=getApps().length?getApp():initializeApp(firebaseConfig);
+    const auth=getAuth(app),db=getFirestore(app);
+    const user=await new Promise(resolve=>{
+      const stop=onAuthStateChanged(auth,u=>{stop();resolve(u||null)});
+    });
+    if(user&&hasGoogle(user))await hydrateRemoteProfile(db,user);
+    if(settled)return;
+    settled=true;clearTimeout(failSafe);
+    routeResolved(user);
+  }catch(e){
+    console.warn('V65 auth boot',e);
+    if(!settled){
+      settled=true;clearTimeout(failSafe);
+      document.documentElement.classList.remove('dg-v65-auth-boot');
+    }
+  }
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});
+else setTimeout(boot,0);
+</script>
+<!-- DG V65 NO LOGIN FLASH ON APP START END -->
 
 </body>
 </html>
