@@ -1977,6 +1977,50 @@ document.documentElement.classList.add('dg-v65-auth-boot');
 </script>
 <!-- DG V65 AUTH BOOT FLASH GUARD END -->
 
+<!-- DG V66 CLEAN STARTUP SCREEN START -->
+<style id="dg-v66-clean-startup-css">
+/* While Firebase restores the existing login, hide the whole game/lobby UI.
+   This prevents the game board underneath from flashing for a moment. */
+html.dg-v65-auth-boot body > *{
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+
+/* Neutral startup background shown only during that short auth check. */
+html.dg-v65-auth-boot body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  z-index:2147483645;
+  visibility:visible!important;
+  opacity:1!important;
+  background:
+    radial-gradient(circle at 50% 40%,rgba(18,67,45,.95),rgba(3,14,10,.99) 58%,#020806 100%);
+  pointer-events:none;
+}
+
+/* Simple branded splash instead of exposing the game table. */
+html.dg-v65-auth-boot body::after{
+  content:'DOMINO GEORGIA';
+  position:fixed;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  z-index:2147483646;
+  visibility:visible!important;
+  opacity:1!important;
+  color:#e7c35b;
+  font:900 clamp(20px,5vw,38px)/1.1 Georgia,serif;
+  letter-spacing:.12em;
+  white-space:nowrap;
+  text-shadow:0 3px 18px rgba(0,0,0,.65);
+  pointer-events:none;
+}
+</style>
+<!-- DG V66 CLEAN STARTUP SCREEN END -->
+
+
 </head>
 
 <body>
@@ -9379,6 +9423,31 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else setTimeout(boot,0);
 </script>
 <!-- DG V65 NO LOGIN FLASH ON APP START END -->
+
+
+<!-- DG V66 BADGE START -->
+<style id="dg-v66-badge-css">
+#dgV65Badge{display:none!important}
+#dgV66Badge{
+  position:fixed;right:10px;top:10px;z-index:108000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV66Badge{display:none}
+</style>
+<script id="dg-v66-badge-js">
+(()=>{
+  const add=()=>{
+    if(document.getElementById('dgV66Badge'))return;
+    const b=document.createElement('div');
+    b.id='dgV66Badge'; b.textContent='V66';
+    document.body.appendChild(b);
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});
+  else add();
+})();
+</script>
+<!-- DG V66 BADGE END -->
 
 </body>
 </html>
