@@ -4707,14 +4707,30 @@ function drawUntilPlayable(p){
   }
   if(drawn){
     const reserve=G.stock.length<=2?' · ბოლო 2 ქვა დაცულია':'';
-    message(`${names[p]} — მარაგიდან აიღო ${drawn}${reserve}`,1300);
+    message(`${names[p]} — ბაზრიდან აიღო ${drawn}${reserve}`,1300);
     renderAll();
   }
   return drawn;
 }
+function drawOneFromMarket(p){
+  if(GAME_MODE!==2||p!==HUMAN||G.current!==HUMAN||G.handOver||G.matchOver||!G.placements.length)return false;
+  if(hasMove(HUMAN))return false;
+  if(G.stock.length<=2){message('ბაზარში ბოლო 2 ქვა რჩება — მათი აღება არ შეიძლება',1500);renderAll();return false;}
+  const tile=G.stock.pop();if(!tile)return false;
+  G.hands[HUMAN].push(tile);
+  G.passStreak=0;
+  renderAll();
+  if(hasMove(HUMAN))message('ბაზრიდან სათამაშო ქვა აიღე',1200);
+  else if(G.stock.length>2)message('სვლა ისევ არ გაქვს — ისევ დააჭირე ბაზარს',1400);
+  else message('ბაზარში ბოლო 2 ქვა დარჩა — ახლა შეგიძლია გაიარო',1500);
+  return true;
+}
 function pass(p){
   if(G.handOver||G.matchOver||hasMove(p))return;
-  if(GAME_MODE===2&&G.placements.length&&G.stock.length>2){drawUntilPlayable(p);if(hasMove(p))return;}
+  if(GAME_MODE===2&&G.placements.length&&G.stock.length>2){
+    if(p===HUMAN){message('ბაზარში წასვლა',1200);renderAll();return;}
+    drawUntilPlayable(p);if(hasMove(p))return;
+  }
   G.passStreak++;
   G.lastPass={seat:Number(p),id:`pass_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,at:Date.now()};
   message(`${names[p]} — გაიარა`,900);
@@ -4722,7 +4738,8 @@ function pass(p){
 }
 function noMoveAction(p){
   if(G.handOver||G.matchOver||G.current!==p||hasMove(p)||!G.placements.length)return;
-  if(GAME_MODE===2)drawUntilPlayable(p);
+  if(GAME_MODE===2&&p===HUMAN&&G.stock.length>2){message('ბაზარში წასვლა',1600);renderAll();return;}
+  if(GAME_MODE===2&&p!==HUMAN)drawUntilPlayable(p);
   if(!hasMove(p))pass(p);
 }
 function scheduleTurn(){
@@ -4875,12 +4892,47 @@ function updateTurn(){
   const p=$('passBtn');if(p){p.disabled=!(G.current===HUMAN&&!G.handOver&&!hasMove(HUMAN)&&(GAME_MODE!==2||G.stock.length<=2));}
   const r=$('ribaBtn');if(r)r.disabled=true;
 }
+function marketTxt(){
+  const l=localStorage.getItem('dg_domino_v26_language')||'ka';
+  const x={
+    ka:{title:'ბაზარი',go:'ბაზარში წასვლა',left:'დარჩა',locked:'ბოლო 2 ქვა დაცულია'},
+    en:{title:'Market',go:'Go to market',left:'left',locked:'last 2 tiles are reserved'},
+    ru:{title:'Базар',go:'Идти на базар',left:'осталось',locked:'последние 2 кости закрыты'},
+    tr:{title:'Pazar',go:'Pazara git',left:'kaldı',locked:'son 2 taş ayrıldı'},
+    de:{title:'Markt',go:'Zum Markt',left:'übrig',locked:'letzte 2 Steine gesperrt'},
+    ar:{title:'السوق',go:'اذهب إلى السوق',left:'متبقي',locked:'آخر قطعتين محجوزتان'}
+  };return x[l]||x.ka;
+}
+function renderMarketPile(e){
+  const pile=e.querySelector('.dg-v62-market-pile');if(!pile)return;
+  pile.innerHTML='';
+  const n=Math.max(0,Math.min(14,G.stock.length));
+  const dx=[3,31,58,16,47,72,7,37,65,22,51,79,12,42];
+  const dy=[3,1,7,28,24,31,52,48,54,72,69,75,91,90];
+  const rot=[-13,8,-4,12,-9,5,7,-14,11,-5,13,-7,4,-11];
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');d.className='dg-v62-market-tile';
+    d.style.left=`${dx[i]}px`;d.style.top=`${dy[i]}px`;d.style.transform=`rotate(${rot[i]}deg)`;
+    pile.appendChild(d);
+  }
+}
 function updateModeUI(){
   const two=GAME_MODE===2;document.body.classList.toggle('dg-v61-two',two);
   let e=$('dgV61StockStatus');
   if(two){
-    if(!e){e=document.createElement('div');e.id='dgV61StockStatus';document.querySelector('.table-area')?.appendChild(e);}
-    if(e)e.textContent=`მარაგი: ${G.stock.length} · ბოლო 2 ქვა დაცულია`;
+    if(!e){
+      e=document.createElement('div');e.id='dgV61StockStatus';e.className='dg-v62-market';
+      e.innerHTML='<div class="dg-v62-market-title"></div><div class="dg-v62-market-pile"></div><div class="dg-v62-market-count"></div><button type="button" id="dgV62MarketDraw"></button><div class="dg-v62-market-lock"></div>';
+      e.addEventListener('click',ev=>{const b=ev.target.closest('#dgV62MarketDraw');if(!b)return;ev.preventDefault();ev.stopPropagation();drawOneFromMarket(HUMAN);});
+      document.querySelector('.table-area')?.appendChild(e);
+    }
+    const tt=marketTxt(),canDraw=G.current===HUMAN&&!G.handOver&&!G.matchOver&&G.placements.length>0&&!hasMove(HUMAN)&&G.stock.length>2;
+    const title=e.querySelector('.dg-v62-market-title'),count=e.querySelector('.dg-v62-market-count'),btn=e.querySelector('#dgV62MarketDraw'),lock=e.querySelector('.dg-v62-market-lock');
+    if(title)title.textContent=tt.title;
+    if(count)count.textContent=`${G.stock.length} ${tt.left}`;
+    if(btn){btn.textContent=tt.go;btn.hidden=!canDraw;btn.disabled=!canDraw;}
+    if(lock)lock.textContent=G.stock.length<=2?tt.locked:'';
+    renderMarketPile(e);
   }else e?.remove();
 }
 function renderAll(){updateScores();updateModeUI();renderHidden();renderHand();renderBoard();updateTurn();dgNotifyState();}
@@ -8963,9 +9015,9 @@ body.dg-v61-two.dg-game-active #rightHiddenHand{display:none!important}
   const saved=Number(localStorage.getItem(KEY));
   window.DG_SELECTED_GAME_MODE=saved===2?2:4;
   const TXT={
-    ka:{two:'👥 2 მოთამაშე',four:'👥👥 4 მოთამაშე',note2:'2-კაციანი: 7-7 ქვა · მიზანი 215 · მარაგიდან იღებ სვლის პოვნამდე · ბოლო 2 ქვა არ აიღება.',note4:'4-კაციანი: არსებული კლასიკური რეჟიმი უცვლელია · მიზანი 355.',create2:'შექმენი 2-კაციანი პირადი მაგიდა და გაუგზავნე კოდი მეგობარს.',create4:'შექმენი პირადი 4-კაციანი მაგიდა და გაუგზავნე კოდი მეგობრებს.'},
-    en:{two:'👥 2 players',four:'👥👥 4 players',note2:'2-player: 7 tiles each · target 215 · draw until a move is found · the final 2 stock tiles are reserved.',note4:'4-player: the existing classic mode stays unchanged · target 355.',create2:'Create a private 2-player table and send the code to a friend.',create4:'Create a private 4-player table and send the code to friends.'},
-    ru:{two:'👥 2 игрока',four:'👥👥 4 игрока',note2:'2 игрока: по 7 костей · цель 215 · добор до возможного хода · последние 2 кости запаса не берутся.',note4:'4 игрока: существующий классический режим без изменений · цель 355.',create2:'Создайте приватный стол на 2 игроков и отправьте код другу.',create4:'Создайте приватный стол на 4 игроков и отправьте код друзьям.'}
+    ka:{two:'👥 2 მოთამაშე',four:'👥👥 4 მოთამაშე',note2:'2-კაციანი: 7-7 ქვა · მიზანი 215 · თუ სვლა არ გაქვს, დააჭირე ბაზარს და აიღე თითო ქვა · ბოლო 2 ქვა არ აიღება.',note4:'4-კაციანი: არსებული კლასიკური რეჟიმი უცვლელია · მიზანი 355.',create2:'შექმენი 2-კაციანი პირადი მაგიდა და გაუგზავნე კოდი მეგობარს.',create4:'შექმენი პირადი 4-კაციანი მაგიდა და გაუგზავნე კოდი მეგობრებს.'},
+    en:{two:'👥 2 players',four:'👥👥 4 players',note2:'2-player: 7 tiles each · target 215 · when you have no move, tap the market and draw one tile at a time · the final 2 tiles are reserved.',note4:'4-player: the existing classic mode stays unchanged · target 355.',create2:'Create a private 2-player table and send the code to a friend.',create4:'Create a private 4-player table and send the code to friends.'},
+    ru:{two:'👥 2 игрока',four:'👥👥 4 игрока',note2:'2 игрока: по 7 костей · цель 215 · если хода нет, нажимайте на базар и берите по одной кости · последние 2 кости не берутся.',note4:'4 игрока: существующий классический режим без изменений · цель 355.',create2:'Создайте приватный стол на 2 игроков и отправьте код другу.',create4:'Создайте приватный стол на 4 игроков и отправьте код друзьям.'}
   };
   function lang(){return localStorage.getItem('dg_domino_v26_language')||'en'}
   function tr(){return TXT[lang()]||TXT.en}
@@ -8996,6 +9048,35 @@ body.dg-v61-two.dg-game-active #rightHiddenHand{display:none!important}
 })();
 </script>
 <!-- DG V61 TWO-PLAYER MODE + 215 TARGET + RESERVED STOCK END -->
+
+
+<!-- DG V62 MANUAL MARKET VISUAL START -->
+<style id="dg-v62-market-css">
+#dgV61Badge{display:none!important}
+#dgV62Badge{position:fixed;right:10px;top:10px;z-index:105000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV62Badge{display:none}
+/* V62: only the 2-player market is changed. The 4-player board/rules are untouched. */
+body.dg-v61-two #dgV61StockStatus.dg-v62-market{
+  position:absolute!important;left:1.2%!important;top:13%!important;transform:none!important;z-index:23500!important;
+  width:112px!important;min-height:142px!important;padding:7px 6px 6px!important;border-radius:14px!important;
+  border:1px solid rgba(224,185,79,.6)!important;background:rgba(4,15,11,.88)!important;color:#ead27d!important;
+  pointer-events:auto!important;white-space:normal!important;box-shadow:0 5px 18px rgba(0,0,0,.38)!important;text-align:center!important;
+}
+.dg-v62-market-title{font:1000 11px/1.1 Arial,"Noto Sans Georgian",sans-serif;color:#f1d574;letter-spacing:.03em;text-transform:none}
+.dg-v62-market-pile{position:relative;width:98px;height:106px;margin:5px auto 1px;overflow:visible}
+.dg-v62-market-tile{position:absolute;width:22px;height:34px;border-radius:4px;border:2px solid #e6e0cc;background:linear-gradient(145deg,#1e2a31,#071015);box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)}
+.dg-v62-market-tile:after{content:'◆';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cba94f;font:900 8px/1 Arial;opacity:.78}
+.dg-v62-market-count{margin-top:0;color:#d8e1dc;font:900 9px/1.2 Arial,"Noto Sans Georgian",sans-serif}
+#dgV62MarketDraw{width:100%;min-height:30px;margin-top:5px;padding:5px 4px;border-radius:9px;border:1px solid #d2a842;background:linear-gradient(#745013,#3c2707);color:#fff1b2;font:1000 9px/1.2 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer;box-shadow:0 2px 7px rgba(0,0,0,.32)}
+#dgV62MarketDraw:active{transform:translateY(1px)}
+#dgV62MarketDraw[hidden]{display:none!important}
+.dg-v62-market-lock{min-height:12px;margin-top:4px;color:#efb0a4;font:800 7.5px/1.25 Arial,"Noto Sans Georgian",sans-serif}
+@media(max-width:540px){body.dg-v61-two #dgV61StockStatus.dg-v62-market{left:.8%!important;top:12%!important;width:96px!important;min-height:125px!important;padding:5px 4px!important}.dg-v62-market-pile{width:86px;height:91px;transform:scale(.86);transform-origin:top left;margin-bottom:-11px}.dg-v62-market-title{font-size:9px}#dgV62MarketDraw{font-size:8px;min-height:27px}.dg-v62-market-count{font-size:8px}}
+</style>
+<script id="dg-v62-badge-js">
+(()=>{const b=document.createElement('div');b.id='dgV62Badge';b.textContent='V62';const add=()=>{if(!document.getElementById('dgV62Badge'))document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();})();
+</script>
+<!-- DG V62 MANUAL MARKET VISUAL END -->
 
 </body>
 </html>
