@@ -4789,7 +4789,8 @@ function drawOneFromMarket(p){
 function pass(p){
   if(G.handOver||G.matchOver||hasMove(p))return;
   if(GAME_MODE===2&&G.placements.length&&G.stock.length>2){
-    if(p===HUMAN){message('ბაზარში წასვლა',1200);renderAll();return;}
+    /* V67: the 2-player market is automatic for everyone. Draw until a legal
+       tile is found, while keeping the final two market tiles reserved. */
     drawUntilPlayable(p);if(hasMove(p))return;
   }
   G.passStreak++;
@@ -4799,8 +4800,10 @@ function pass(p){
 }
 function noMoveAction(p){
   if(G.handOver||G.matchOver||G.current!==p||hasMove(p)||!G.placements.length)return;
-  if(GAME_MODE===2&&p===HUMAN&&G.stock.length>2){message('ბაზარში წასვლა',1600);renderAll();return;}
-  if(GAME_MODE===2&&p!==HUMAN)drawUntilPlayable(p);
+  if(GAME_MODE===2){
+    drawUntilPlayable(p);
+    if(hasMove(p))return;
+  }
   if(!hasMove(p))pass(p);
 }
 function scheduleTurn(){
@@ -7349,21 +7352,24 @@ function activeWaitingPlayers(players){const now=Date.now();return (players||[])
 async function uniqueCode(){for(let i=0;i<40;i++){const c=String(Math.floor(1000+Math.random()*9000));if(!(await getDoc(doc(db,ROOMS,c))).exists())return c}throw new Error('No room code available')}
 async function joinCandidate(code,p){
   const matchId='m_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+  const wantedMode=window.DG_SELECTED_GAME_MODE===2?2:4;
   return await runTransaction(db,async tx=>{
     const ref=doc(db,ROOMS,code),snap=await tx.get(ref);if(!snap.exists())return false;const data=snap.data();if(data.mode!=='public'||data.status!=='waiting')return false;
+    const roomMode=Number(data.gameMode)===2?2:4;if(roomMode!==wantedMode)return false;
+    const required=roomMode===2?2:4,seatOrder=roomMode===2?[0,2]:[0,1,3,2];
     let players=activeWaitingPlayers(data.players);let me=players.find(x=>x.uid===uid);
-    if(!me){if(players.length>=4)return false;const used=new Set(players.map(x=>Number(x.seat)));const seat=[0,1,3,2].find(x=>!used.has(x));players.push(makePlayer(p,seat));}else{me.name=nick();me.country=country();me.lastSeen=Date.now();me.hearts=Number(p.hearts||0);me.level=levelFor(p.hearts);}
+    if(!me){if(players.length>=required)return false;const used=new Set(players.map(x=>Number(x.seat)));const seat=seatOrder.find(x=>!used.has(x));players.push(makePlayer(p,seat));}else{me.name=nick();me.country=country();me.lastSeen=Date.now();me.hearts=Number(p.hearts||0);me.level=levelFor(p.hearts);}
     let hostUid=data.hostUid;if(!players.some(x=>x.uid===hostUid))hostUid=players[0]?.uid||uid;
-    const full=players.length===4;tx.update(ref,{players,hostUid,status:full?'playing':'waiting',matchId:full?(data.matchId||matchId):(data.matchId||null),startedAt:full?serverTimestamp():(data.startedAt||null),updatedAt:serverTimestamp()});return true;
+    const full=players.length===required;tx.update(ref,{players,hostUid,gameMode:roomMode,status:full?'playing':'waiting',matchId:full?(data.matchId||matchId):(data.matchId||null),startedAt:full?serverTimestamp():(data.startedAt||null),updatedAt:serverTimestamp()});return true;
   });
 }
 async function createPublicRoom(p){
-  const code=await uniqueCode(),matchId='m_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
-  await setDoc(doc(db,ROOMS,code),{code,mode:'public',ratingMode:'hearts-v1',hostUid:uid,status:'waiting',matchId,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),players:[makePlayer(p,2)],ratingProcessed:[]});return code;
+  const code=await uniqueCode(),matchId='m_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7),gameMode=window.DG_SELECTED_GAME_MODE===2?2:4;
+  await setDoc(doc(db,ROOMS,code),{code,mode:'public',gameMode,ratingMode:'hearts-v1',hostUid:uid,status:'waiting',matchId,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),players:[makePlayer(p,2)],ratingProcessed:[]});return code;
 }
 async function findRoom(p){
-  const snap=await getDocs(query(collection(db,ROOMS),where('mode','==','public'),limit(30)));const mine=levelFor(p.hearts);
-  const rooms=[];snap.forEach(d=>{const r={code:d.id,...d.data()};if(r.status!=='waiting')return;const active=activeWaitingPlayers(r.players);if(active.length>=4)return;rooms.push({r,active,count:active.length,diff:Math.abs(avgLevel(active)-mine)})});
+  const snap=await getDocs(query(collection(db,ROOMS),where('mode','==','public'),limit(30)));const mine=levelFor(p.hearts),wantedMode=window.DG_SELECTED_GAME_MODE===2?2:4,required=wantedMode===2?2:4;
+  const rooms=[];snap.forEach(d=>{const r={code:d.id,...d.data()};if(r.status!=='waiting')return;const roomMode=Number(r.gameMode)===2?2:4;if(roomMode!==wantedMode)return;const active=activeWaitingPlayers(r.players);if(active.length>=required)return;rooms.push({r,active,count:active.length,diff:Math.abs(avgLevel(active)-mine)})});
   rooms.sort((a,b)=>b.count-a.count||a.diff-b.diff||Number(a.r.createdMs||0)-Number(b.r.createdMs||0));
   for(const x of rooms){try{if(await joinCandidate(x.r.code,p))return x.r.code}catch(e){console.warn('V33 candidate',e)}}
   return await createPublicRoom(p);
@@ -7381,8 +7387,8 @@ function renderPlayers(room){
   for(let abs=0;abs<4;abs++){const visual=(abs-mySeat+2+4)%4,root=document.querySelector(visualRoots[visual]);if(!root)continue;const p=bySeat.get(abs),name=root.querySelector('.player-name');root.dataset.onlineSeat=String(abs);if(name&&p)name.textContent=p.name;levelBadge(root,p,room.mode==='public'&&!!p)}
 }
 function renderPublic(room){
-  publicRoom=room;renderPlayers(room);if(room.mode!=='public')return;const o=$('dgOnlineOverlay');
-  if(room.status==='waiting'){o?.classList.add('show','dg-public-mode');$('dgEntryOverlay')?.classList.add('hidden');const title=o?.querySelector('.dg-online-title');if(title)title.textContent='ONLINE';const grid=$('dgSeatGrid');if(grid){const tr=t();grid.innerHTML=[0,1,2,3].map(s=>{const p=(room.players||[]).find(x=>Number(x.seat)===s);return `<div class="dg-seat${p?.uid===uid?' me':''}"><b>${p?`${flag(p.country||'')} ${p.name}`:'…'}</b><small>${p?`<span class="dg-public-rank"><span class="h">♥ ${Number(p.hearts||0)}</span> · L${levelFor(p.hearts)}</span>`:tr.waiting}</small></div>`}).join('')}if($('dgOnlineMsg'))$('dgOnlineMsg').textContent=`${(room.players||[]).length}/4 · ${t().waiting}`;
+  publicRoom=room;renderPlayers(room);if(room.mode!=='public')return;const o=$('dgOnlineOverlay'),gameMode=Number(room.gameMode)===2?2:4,required=gameMode===2?2:4,visibleSeats=gameMode===2?[2,0]:[0,1,2,3];
+  if(room.status==='waiting'){o?.classList.add('show','dg-public-mode');$('dgEntryOverlay')?.classList.add('hidden');const title=o?.querySelector('.dg-online-title');if(title)title.textContent=gameMode===2?'ONLINE · 2 PLAYERS':'ONLINE';const grid=$('dgSeatGrid');if(grid){const tr=t();grid.innerHTML=visibleSeats.map(s=>{const p=(room.players||[]).find(x=>Number(x.seat)===s);return `<div class="dg-seat${p?.uid===uid?' me':''}"><b>${p?`${flag(p.country||'')} ${p.name}`:'…'}</b><small>${p?`<span class="dg-public-rank"><span class="h">♥ ${Number(p.hearts||0)}</span> · L${levelFor(p.hearts)}</span>`:tr.waiting}</small></div>`}).join('')}if($('dgOnlineMsg'))$('dgOnlineMsg').textContent=`${(room.players||[]).length}/${required} · ${t().waiting}`;
   }
   if(room.status==='playing')o?.classList.remove('show');
   maybeAward(room);
@@ -7398,7 +7404,7 @@ async function matchmaking(){
 }
 async function maybeAward(room){
   if(!uid||room.mode!=='public'||room.status!=='playing'||!room.gameState?.matchOver)return;const processed=room.ratingProcessed||[];if(processed.includes(uid))return;
-  const me=(room.players||[]).find(p=>p.uid===uid);if(!me)return;const scores=room.gameState.scores||[0,0];if(Number(scores[0])===Number(scores[1]))return;const winner=Number(scores[0])>Number(scores[1])?0:1,won=Number(me.seat)%2===winner;
+  const me=(room.players||[]).find(p=>p.uid===uid);if(!me)return;const scores=room.gameState.scores||[0,0];if(Number(scores[0])===Number(scores[1]))return;const winner=Number(scores[0])>Number(scores[1])?0:1,myTeam=Number(room.gameMode)===2?(Number(me.seat)===2?0:1):(Number(me.seat)%2),won=myTeam===winner;
   try{const result=await runTransaction(db,async tx=>{const rr=doc(db,ROOMS,room.code),pr=doc(db,PROFILES,uid);const rs=await tx.get(rr),ps=await tx.get(pr);if(!rs.exists())return null;const rd=rs.data(),done=rd.ratingProcessed||[];if(done.includes(uid))return null;const old=ps.exists()?ps.data():{hearts:0,wins:0,games:0};const hearts=Math.max(0,Number(old.hearts||0)+(won?WIN_HEARTS:0)),wins=Number(old.wins||0)+(won?1:0),games=Number(old.games||0)+1,level=levelFor(hearts);const next={uid,name:nick(),country:country(),hearts,wins,games,level,updatedAt:serverTimestamp()};if(ps.exists())tx.update(pr,next);else tx.set(pr,{...next,createdAt:Date.now()});const players=[...(rd.players||[])];const i=players.findIndex(p=>p.uid===uid);if(i>=0)players[i]={...players[i],hearts,wins,games,level};tx.update(rr,{players,ratingProcessed:[...done,uid],ratingUpdatedAt:serverTimestamp()});return {hearts,wins,games,level,won}});if(result){profileData={...(profileData||{}),...result};addRankLine();const key=room.code+':'+uid;if(lastAwardToast!==key){lastAwardToast=key;toast(result.won?t().win:t().loss)}}}catch(e){console.warn('V33 award',e)}
 }
 function onV30Room(room){if(!room)return;if(room.mode==='public'){publicCode=room.code;localStorage.setItem(BACKUP,room.code);renderPublic(room)}else{document.querySelectorAll('.dg-level-badge').forEach(x=>x.style.display='none')}}
@@ -9448,6 +9454,101 @@ body.dg-game-active #dgV66Badge{display:none}
 })();
 </script>
 <!-- DG V66 BADGE END -->
+
+
+
+<!-- DG V67 TWO-PLAYER ONLINE + BOT + AUTO MARKET + NAMES + STAKE STAR START -->
+<style id="dg-v67-two-player-upgrade-css">
+#dgV66Badge{display:none!important}
+#dgV67Badge{position:fixed;right:10px;top:10px;z-index:109000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV67Badge{display:none}
+
+/* Keep scoreboard dimensions exactly as they are; only replace the text. */
+.team-score .team-title{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;padding-left:5px!important;padding-right:5px!important;box-sizing:border-box!important}
+
+/* Small red star = stake marker. It does not change domino dimensions. */
+.dg-board-tile.stake-domino{overflow:visible!important}
+.dg-board-tile.stake-domino::before{
+  content:'★';position:absolute;right:-7px;top:-8px;z-index:8;width:15px;height:15px;display:flex;align-items:center;justify-content:center;
+  color:#ff3030;font:1000 13px/1 Arial,sans-serif;text-shadow:0 1px 2px #3b0000,0 0 4px rgba(255,40,40,.75);pointer-events:none
+}
+
+/* V67 market draws automatically; keep only the visual stock pile/count. */
+body.dg-v61-two #dgV62MarketDraw{display:none!important}
+
+#dgV67TwoActions{display:none;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 11px}
+body.dg-v61-two #dgV67TwoActions{display:grid}
+.dg-v67-two-btn{min-height:45px;border-radius:11px;border:1px solid #35505d;background:#0a1921;color:#e6eef2;font:1000 11px/1.25 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.22)}
+#dgV67Online2{border-color:#5d4da8;background:linear-gradient(145deg,#6d35af,#421876);color:#fff}
+#dgV67Bot2{border-color:#b27b28;background:linear-gradient(145deg,#6e4a12,#3e2808);color:#ffe5a0}
+@media(max-width:430px){#dgV67TwoActions{grid-template-columns:1fr}.dg-v67-two-btn{min-height:43px}}
+</style>
+<script id="dg-v67-two-player-upgrade-js">
+(()=>{
+  const $=id=>document.getElementById(id),PROFILE_KEY='dg_domino_v25_profile',MODE_KEY='dg_domino_v61_mode',SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup';
+  const TXT={
+    ka:{online:'🌐 ონლაინ 2-კაციანი',bot:'🤖 ბოტთან თამაში',botName:'BOT'},
+    en:{online:'🌐 2-player online',bot:'🤖 Play vs BOT',botName:'BOT'},
+    ru:{online:'🌐 Онлайн на 2 игроков',bot:'🤖 Играть с ботом',botName:'БОТ'},
+    tr:{online:'🌐 2 kişilik çevrimiçi',bot:'🤖 BOT ile oyna',botName:'BOT'},
+    de:{online:'🌐 2-Spieler online',bot:'🤖 Gegen BOT',botName:'BOT'},
+    ar:{online:'🌐 لاعبان أونلاين',bot:'🤖 اللعب ضد الروبوت',botName:'BOT'}
+  };
+  function lang(){return localStorage.getItem('dg_domino_v26_language')||'ka'}
+  function tr(){return TXT[lang()]||TXT.ka}
+  function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
+  function myName(){return String(profile().nickname||$('myNickname')?.textContent||'მოთამაშე').trim().slice(0,18)||'მოთამაშე'}
+  function cleanName(s){return String(s||'').trim().slice(0,18)||'—'}
+  function setTitles(a,b){const t=document.querySelectorAll('.team-score .team-title');if(t[0]){t[0].textContent=cleanName(a);t[0].title=cleanName(a)}if(t[1]){t[1].textContent=cleanName(b);t[1].title=cleanName(b)}}
+  function titlesFromRoom(room){
+    if(!room?.players?.length)return;
+    const bySeat=s=>room.players.find(p=>Number(p.seat)===s)?.name||'';
+    if(Number(room.gameMode)===2){setTitles(bySeat(2)||'მოთამაშე 1',bySeat(0)||'მოთამაშე 2');return}
+    const left=[bySeat(0),bySeat(2)].filter(Boolean).join(' • ')||'გუნდი A';
+    const right=[bySeat(1),bySeat(3)].filter(Boolean).join(' • ')||'გუნდი B';
+    setTitles(left,right);
+  }
+  function buildActions(){
+    const selector=$('dgV61ModeSelector'),choice=$('dgChoiceStep');if(!choice||!selector)return;
+    let row=$('dgV67TwoActions');
+    if(!row){row=document.createElement('div');row.id='dgV67TwoActions';row.innerHTML='<button type="button" class="dg-v67-two-btn" id="dgV67Online2"></button><button type="button" class="dg-v67-two-btn" id="dgV67Bot2"></button>';selector.insertAdjacentElement('afterend',row)}
+    $('dgV67Online2').textContent=tr().online;$('dgV67Bot2').textContent=tr().bot;
+  }
+  function startBot(){
+    localStorage.setItem(MODE_KEY,'2');window.DG_SELECTED_GAME_MODE=2;document.body.classList.add('dg-v61-two');
+    window.DG_V35_LOCAL_TEST=false;window.DG_ONLINE_MULTIPLAYER=false;window.DG_MATCH_ALLOWED=true;window.DG_ENTRY_READY=true;window.DG_V31_LEAVING=true;
+    sessionStorage.removeItem(SESSION);localStorage.removeItem(BACKUP);
+    const go=()=>{
+      window.DG_ENGINE?.setGameMode?.(2);window.DG_ENGINE?.setHumanSeat?.(2);
+      const bottom=document.querySelector('.player-bottom .player-name'),top=document.querySelector('.player-top .player-name');if(bottom)bottom.textContent=myName();if(top)top.textContent=tr().botName;
+      setTitles(myName(),tr().botName);
+      $('dgEntryOverlay')?.classList.add('hidden');$('dgOnlineOverlay')?.classList.remove('show');
+      document.body.classList.remove('dg-lobby-mode');document.body.classList.add('dg-match-mode','dg-game-active');
+      window.dgStartDominoMatch?.();
+    };
+    /* Give the old reconnect watcher one cycle to release a previous room first. */
+    setTimeout(go,420);
+  }
+  function online2(){
+    localStorage.setItem(MODE_KEY,'2');window.DG_SELECTED_GAME_MODE=2;document.body.classList.add('dg-v61-two');
+    /* V33's matchmaking button now respects the selected 2-player mode. */
+    $('dgEntryQuick')?.click();
+  }
+  function wire(){
+    document.addEventListener('click',e=>{
+      if(e.target?.closest?.('#dgV67Online2')){e.preventDefault();online2();return}
+      if(e.target?.closest?.('#dgV67Bot2')){e.preventDefault();startBot();return}
+      if(e.target?.closest?.('.dg-language-btn,#dgChangeLanguage'))setTimeout(buildActions,80);
+    },true);
+    window.addEventListener('dg-v30-room',e=>titlesFromRoom(e.detail));
+    window.addEventListener('dg-v30-room-closed',()=>{if(window.DG_SELECTED_GAME_MODE===2&&!window.DG_ONLINE_MULTIPLAYER)setTitles(myName(),tr().botName)});
+  }
+  function badge(){if($('dgV67Badge'))return;const b=document.createElement('div');b.id='dgV67Badge';b.textContent='V67';document.body.appendChild(b)}
+  function init(){badge();buildActions();wire();setTimeout(buildActions,300);setTimeout(buildActions,900);if(window.DG_V30_ROOM)titlesFromRoom(window.DG_V30_ROOM)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V67 TWO-PLAYER ONLINE + BOT + AUTO MARKET + NAMES + STAKE STAR END -->
 
 </body>
 </html>
