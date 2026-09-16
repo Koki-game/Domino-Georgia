@@ -9050,33 +9050,47 @@ body.dg-v61-two.dg-game-active #rightHiddenHand{display:none!important}
 <!-- DG V61 TWO-PLAYER MODE + 215 TARGET + RESERVED STOCK END -->
 
 
-<!-- DG V62 MANUAL MARKET VISUAL START -->
-<style id="dg-v62-market-css">
-#dgV61Badge{display:none!important}
-#dgV62Badge{position:fixed;right:10px;top:10px;z-index:105000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
-body.dg-game-active #dgV62Badge{display:none}
-/* V62: only the 2-player market is changed. The 4-player board/rules are untouched. */
+<!-- DG V63 MARKET INSIDE WOOD FRAME START -->
+<style id="dg-v63-market-css">
+#dgV62Badge{display:none!important}
+#dgV63Badge{position:fixed;right:10px;top:10px;z-index:105000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV63Badge{display:none}
+/* V63: 2-player market moved into the left wooden frame area. 4-player mode stays untouched. */
 body.dg-v61-two #dgV61StockStatus.dg-v62-market{
-  position:absolute!important;left:1.2%!important;top:13%!important;transform:none!important;z-index:23500!important;
-  width:112px!important;min-height:142px!important;padding:7px 6px 6px!important;border-radius:14px!important;
-  border:1px solid rgba(224,185,79,.6)!important;background:rgba(4,15,11,.88)!important;color:#ead27d!important;
-  pointer-events:auto!important;white-space:normal!important;box-shadow:0 5px 18px rgba(0,0,0,.38)!important;text-align:center!important;
+  position:absolute!important;left:2.1%!important;top:18.2%!important;transform:none!important;z-index:23500!important;
+  width:103px!important;min-height:148px!important;padding:8px 7px 7px!important;border-radius:16px!important;
+  border:2px solid #6f4a12!important;
+  background:
+    linear-gradient(180deg,rgba(129,88,26,.96),rgba(81,49,11,.97) 18%,rgba(44,25,6,.98) 100%)!important;
+  color:#f4dda0!important;pointer-events:auto!important;white-space:normal!important;text-align:center!important;
+  box-shadow:0 4px 12px rgba(0,0,0,.42),inset 0 0 0 2px rgba(219,172,92,.38),inset 0 0 0 5px rgba(45,25,7,.72)!important;
 }
-.dg-v62-market-title{font:1000 11px/1.1 Arial,"Noto Sans Georgian",sans-serif;color:#f1d574;letter-spacing:.03em;text-transform:none}
-.dg-v62-market-pile{position:relative;width:98px;height:106px;margin:5px auto 1px;overflow:visible}
-.dg-v62-market-tile{position:absolute;width:22px;height:34px;border-radius:4px;border:2px solid #e6e0cc;background:linear-gradient(145deg,#1e2a31,#071015);box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)}
-.dg-v62-market-tile:after{content:'◆';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cba94f;font:900 8px/1 Arial;opacity:.78}
-.dg-v62-market-count{margin-top:0;color:#d8e1dc;font:900 9px/1.2 Arial,"Noto Sans Georgian",sans-serif}
-#dgV62MarketDraw{width:100%;min-height:30px;margin-top:5px;padding:5px 4px;border-radius:9px;border:1px solid #d2a842;background:linear-gradient(#745013,#3c2707);color:#fff1b2;font:1000 9px/1.2 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer;box-shadow:0 2px 7px rgba(0,0,0,.32)}
+body.dg-v61-two #dgV61StockStatus.dg-v62-market:before{
+  content:'';position:absolute;inset:4px;border-radius:12px;pointer-events:none;
+  border:1px solid rgba(247,218,154,.28);box-shadow:inset 0 0 12px rgba(255,220,130,.08);
+}
+.dg-v62-market-title{position:relative;font:1000 11px/1.05 Arial,"Noto Sans Georgian",sans-serif;color:#ffe29a;letter-spacing:.03em;text-transform:none;text-shadow:0 1px 1px rgba(0,0,0,.45)}
+.dg-v62-market-pile{position:relative;width:84px;height:96px;margin:6px auto 2px;overflow:visible}
+.dg-v62-market-tile{position:absolute;width:22px;height:34px;border-radius:4px;border:2px solid #ece4cf;background:linear-gradient(145deg,#25343c,#091116);box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)}
+.dg-v62-market-tile:after{content:'◆';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#d3ad54;font:900 8px/1 Arial;opacity:.78}
+.dg-v62-market-count{position:relative;margin-top:1px;color:#fff2bf;font:900 9px/1.2 Arial,"Noto Sans Georgian",sans-serif;text-shadow:0 1px 1px rgba(0,0,0,.45)}
+#dgV62MarketDraw{position:relative;width:100%;min-height:30px;margin-top:6px;padding:5px 4px;border-radius:10px;border:1px solid #e0b457;background:linear-gradient(#8b6118,#54340b);color:#fff3bb;font:1000 9px/1.2 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer;box-shadow:0 2px 7px rgba(0,0,0,.34)}
 #dgV62MarketDraw:active{transform:translateY(1px)}
 #dgV62MarketDraw[hidden]{display:none!important}
-.dg-v62-market-lock{min-height:12px;margin-top:4px;color:#efb0a4;font:800 7.5px/1.25 Arial,"Noto Sans Georgian",sans-serif}
-@media(max-width:540px){body.dg-v61-two #dgV61StockStatus.dg-v62-market{left:.8%!important;top:12%!important;width:96px!important;min-height:125px!important;padding:5px 4px!important}.dg-v62-market-pile{width:86px;height:91px;transform:scale(.86);transform-origin:top left;margin-bottom:-11px}.dg-v62-market-title{font-size:9px}#dgV62MarketDraw{font-size:8px;min-height:27px}.dg-v62-market-count{font-size:8px}}
+.dg-v62-market-lock{position:relative;min-height:12px;margin-top:4px;color:#ffd1c2;font:800 7.5px/1.25 Arial,"Noto Sans Georgian",sans-serif;text-shadow:0 1px 1px rgba(0,0,0,.4)}
+@media(max-width:540px){
+  body.dg-v61-two #dgV61StockStatus.dg-v62-market{left:1.4%!important;top:17.2%!important;width:90px!important;min-height:133px!important;padding:7px 5px 5px!important;border-radius:14px!important}
+  .dg-v62-market-pile{width:74px;height:82px;margin-bottom:0}
+  .dg-v62-market-title{font-size:9px}
+  #dgV62MarketDraw{font-size:7.8px;min-height:27px;padding:4px 3px}
+  .dg-v62-market-count{font-size:8px}
+  .dg-v62-market-lock{font-size:7px}
+}
 </style>
-<script id="dg-v62-badge-js">
-(()=>{const b=document.createElement('div');b.id='dgV62Badge';b.textContent='V62';const add=()=>{if(!document.getElementById('dgV62Badge'))document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();})();
+<script id="dg-v63-badge-js">
+(()=>{const b=document.createElement('div');b.id='dgV63Badge';b.textContent='V63';const add=()=>{if(!document.getElementById('dgV63Badge'))document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();})();
 </script>
-<!-- DG V62 MANUAL MARKET VISUAL END -->
+<!-- DG V63 MARKET INSIDE WOOD FRAME END -->
 
 </body>
 </html>
