@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 
 <meta name="viewport"
-content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 
 <link rel="manifest" href="./manifest.json">
 
@@ -12,6 +12,7 @@ content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DOMINO GEORGIA">
 
 <title>DOMINO GEORGIA</title>
 
@@ -4367,7 +4368,8 @@ const G={
   hands:[[],[],[],[]], placements:[], ports:[], scores:[0,0], carry:0,
   current:0, round:1, nextStarter:null, lastPlayer:null, pendingCloser:null,
   passStreak:0, stakeId:null, threshold:false, handOver:false, matchOver:false,
-  aiBusy:false, tileSeq:1, portSeq:1, selectedIndex:null, pendingTransition:null
+  aiBusy:false, tileSeq:1, portSeq:1, selectedIndex:null, pendingTransition:null,
+  lastPass:null
 };
 
 function dgStateSnapshot(){
@@ -4679,7 +4681,10 @@ function finishRiba(){
   const wt=a<b?0:1, loser=wt===0?b:a;let earned=round5(loser)+G.carry;G.carry=0;addScore(wt,earned);message(`რიბა — ${teamName(wt)} +${earned}`,2600);dgNotifyState();setTimeout(nextRound,2600);
 }
 function pass(p){
-  if(G.handOver||G.matchOver||hasMove(p))return;G.passStreak++;message(`${names[p]} — გაიარა`,900);
+  if(G.handOver||G.matchOver||hasMove(p))return;
+  G.passStreak++;
+  G.lastPass={seat:Number(p),id:`pass_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,at:Date.now()};
+  message(`${names[p]} — გაიარა`,900);
   if(G.passStreak>=4){finishRiba();return;}G.current=(p+1)%4;renderAll();scheduleTurn();
 }
 function scheduleTurn(){
@@ -5251,7 +5256,7 @@ window.DG_ENGINE={
       G.hands=[[],[],[],[]];G.placements=[];G.ports=[];G.scores=[0,0];G.carry=0;
       G.current=0;G.round=1;G.nextStarter=null;G.lastPlayer=null;G.pendingCloser=null;
       G.passStreak=0;G.stakeId=null;G.threshold=false;G.handOver=false;G.matchOver=false;
-      G.aiBusy=false;G.tileSeq=1;G.portSeq=1;G.selectedIndex=null;G.pendingTransition=null;
+      G.aiBusy=false;G.tileSeq=1;G.portSeq=1;G.selectedIndex=null;G.pendingTransition=null;G.lastPass=null;
       deal();const st=find66();if(!st)throw new Error('6-6 ვერ მოიძებნა');
       G.current=st.p;openingTile(st.p,st.i);G.current=(st.p+1)%4;renderAll();
     }finally{window.DG_ENGINE_SUPPRESS_SYNC=false;}
@@ -7871,6 +7876,258 @@ body.dg-game-active #dgV51Badge{display:none}
 </style>
 <script id="dg-v51-badge-js">(()=>{const add=()=>{if(document.getElementById('dgV51Badge'))return;const b=document.createElement('div');b.id='dgV51Badge';b.textContent='V51';document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add()})();</script>
 <!-- DG V51 FIRESTORE HANDS SYNC FIX END -->
+
+
+
+<!-- DG V52 IPHONE LANDSCAPE FALLBACK START -->
+<style id="dg-v52-iphone-landscape-css">
+#dgV51Badge{display:none!important}
+#dgV52Badge{position:fixed;right:10px;top:10px;z-index:92000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV52Badge{display:none}
+
+/*
+   iPhone/iPad fallback for Portrait Orientation Lock or embedded Safari views.
+   If iOS keeps the CSS viewport in portrait while the player turns the phone
+   sideways, rotate the whole rendered body into a landscape-sized stage.
+   This keeps the board, menus, timer, reactions and overlays in one coordinate system.
+*/
+html.dg-ios-portrait-fallback{overflow:hidden!important;background:#080503!important}
+html.dg-ios-portrait-fallback body.dg-game-active{
+  position:fixed!important;
+  left:50%!important;
+  top:50%!important;
+  width:100dvh!important;
+  height:100vw!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+  transform:translate(-50%,-50%) rotate(90deg)!important;
+  transform-origin:50% 50%!important;
+}
+html.dg-ios-portrait-fallback body.dg-game-active #game{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+}
+html.dg-ios-portrait-fallback body.dg-game-active .rotate{display:none!important}
+
+/* Older iOS versions without dynamic viewport units. */
+@supports not (height:100dvh){
+  html.dg-ios-portrait-fallback body.dg-game-active{
+    width:100vh!important;
+    height:100vw!important;
+  }
+}
+</style>
+<script id="dg-v52-iphone-landscape-js">
+(()=>{
+  const ua=navigator.userAgent||'';
+  const isiOS=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  function portrait(){
+    try{return matchMedia('(orientation: portrait)').matches}catch(e){return innerHeight>=innerWidth}
+  }
+  function sync(){
+    document.documentElement.classList.toggle('dg-ios-portrait-fallback',!!isiOS&&portrait());
+    /* iOS can report stale viewport sizes for a moment after toolbar/orientation changes. */
+    document.documentElement.style.setProperty('--dg-v52-vw',innerWidth+'px');
+    document.documentElement.style.setProperty('--dg-v52-vh',innerHeight+'px');
+  }
+  function addBadge(){
+    if(document.getElementById('dgV52Badge'))return;
+    const b=document.createElement('div');b.id='dgV52Badge';b.textContent='V52';document.body.appendChild(b);
+  }
+  sync();addBadge();
+  addEventListener('resize',()=>{sync();setTimeout(sync,180)},{passive:true});
+  addEventListener('orientationchange',()=>{sync();setTimeout(sync,180);setTimeout(sync,650)},{passive:true});
+  addEventListener('pageshow',()=>{sync();setTimeout(sync,250)},{passive:true});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(sync,120)});
+})();
+</script>
+<!-- DG V52 IPHONE LANDSCAPE FALLBACK END -->
+
+<!-- DG V53 PASS AVATAR LABEL 4S START -->
+<style id="dg-v53-pass-label-css">
+#dgV52Badge{display:none!important}
+#dgV53Badge{position:fixed;right:10px;top:10px;z-index:94000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV53Badge{display:none}
+.player{overflow:visible!important}
+.dg-v53-pass-label{
+  position:absolute;z-index:95000;transform:translate(-50%,0);pointer-events:none;white-space:nowrap;
+  padding:5px 9px;border-radius:11px;border:1px solid rgba(255,220,130,.85);
+  background:rgba(30,18,8,.94);color:#ffe7a7;box-shadow:0 3px 10px rgba(0,0,0,.58);
+  font:1000 12px/1 Arial,sans-serif;letter-spacing:.01em;
+  animation:dgV53PassIn .18s ease-out both;
+}
+.dg-v53-pass-label::before{
+  content:'';position:absolute;left:50%;top:-5px;width:8px;height:8px;
+  background:rgba(30,18,8,.94);border-left:1px solid rgba(255,220,130,.85);border-top:1px solid rgba(255,220,130,.85);
+  transform:translateX(-50%) rotate(45deg);
+}
+@keyframes dgV53PassIn{from{opacity:0;transform:translate(-50%,4px) scale(.9)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@media(max-height:560px){.dg-v53-pass-label{font-size:10px;padding:4px 7px}}
+</style>
+<script id="dg-v53-pass-label-js">
+(()=>{
+  const roots=['.player-top','.player-right','.player-bottom','.player-left'];
+  let lastSeen='';
+  const timers=new Map();
+  function badge(){if(document.getElementById('dgV53Badge'))return;const b=document.createElement('div');b.id='dgV53Badge';b.textContent='V53';document.body.appendChild(b)}
+  function rootForSeat(seat){
+    const eng=window.DG_ENGINE;if(!eng)return null;
+    const human=Number(eng.getHumanSeat?.()??2);
+    const visual=(Number(seat)-human+2+4)%4;
+    return document.querySelector(roots[visual]);
+  }
+  function showPass(seat,id){
+    const root=rootForSeat(seat);if(!root)return;
+    root.querySelectorAll('.dg-v53-pass-label').forEach(e=>e.remove());
+    if(timers.has(seat)){clearTimeout(timers.get(seat));timers.delete(seat)}
+    const avatar=root.querySelector('.avatar')||root.querySelector('.player-card')||root;
+    const rr=root.getBoundingClientRect(),ar=avatar.getBoundingClientRect();
+    const e=document.createElement('div');e.className='dg-v53-pass-label';e.textContent='გავიარე';e.dataset.passId=id||'';
+    e.style.left=(ar.left-rr.left+ar.width/2)+'px';
+    e.style.top=(ar.bottom-rr.top+5)+'px';
+    root.appendChild(e);
+    const t=setTimeout(()=>{e.remove();timers.delete(seat)},4000);timers.set(seat,t);
+  }
+  function tick(){
+    const st=window.DG_ENGINE?.getState?.();const p=st?.lastPass;if(!p?.id||p.id===lastSeen)return;
+    lastSeen=p.id;
+    const age=Date.now()-Number(p.at||0);
+    if(Number.isFinite(age)&&age>6500)return;
+    showPass(Number(p.seat),p.id);
+  }
+  function init(){badge();setInterval(tick,120)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V53 PASS AVATAR LABEL 4S END -->
+
+
+<!-- DG V54 MOBILE FULLSCREEN + IOS HOME SCREEN START -->
+<style id="dg-v54-mobile-fullscreen-css">
+#dgV53Badge{display:none!important}
+#dgV54Badge{
+  position:fixed;right:10px;top:10px;z-index:98000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;
+  box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV54Badge{display:none}
+
+#dgV54IOSHint{
+  display:none;position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));
+  transform:translateX(-50%);z-index:120000;width:min(92vw,460px);
+  padding:12px 42px 12px 13px;border-radius:14px;
+  border:1px solid rgba(242,197,83,.78);
+  background:rgba(8,15,18,.97);color:#f5f5f5;
+  box-shadow:0 8px 28px rgba(0,0,0,.62);
+  font:800 12px/1.45 Arial,"Noto Sans Georgian",sans-serif;
+}
+#dgV54IOSHint.show{display:block;animation:dgV54HintIn .18s ease-out both}
+#dgV54IOSHint b{display:block;color:#f4ce67;margin-bottom:3px;font-size:13px}
+#dgV54IOSHint .share{font-size:16px;vertical-align:-1px}
+#dgV54IOSHintClose{
+  position:absolute;right:8px;top:8px;width:28px;height:28px;border:0;border-radius:50%;
+  background:rgba(255,255,255,.10);color:#fff;font-size:18px;font-weight:900;cursor:pointer
+}
+@keyframes dgV54HintIn{
+  from{opacity:0;transform:translate(-50%,8px) scale(.97)}
+  to{opacity:1;transform:translate(-50%,0) scale(1)}
+}
+</style>
+
+<script id="dg-v54-mobile-fullscreen-js">
+(()=>{
+  const ua=navigator.userAgent||'';
+  const isIOS=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const isAndroid=/Android/i.test(ua);
+  const LANG_KEY='dg_domino_v26_language';
+  const PROFILE_KEY='dg_domino_v25_profile';
+  const IOS_HINT_SEEN='dg_domino_v54_ios_hint_seen';
+
+  const TARGETS=[
+    '#dgEntryQuick','#dgEntryCreate','#dgEntryFriend','#dgFriendJoin',
+    '#dgCreateRoom','#dgJoinRoom','#dgOnlineStart','#dgTestBots'
+  ].join(',');
+
+  const TXT={
+    ka:{title:'სრულ ეკრანზე iPhone-ში',body:'Safari-ში დააჭირე <span class="share">□↑</span> Share-ს → <b style="display:inline;color:#f4ce67">Add to Home Screen</b>. შემდეგ DOMINO GEORGIA გახსენი მთავარი ეკრანიდან — ბრაუზერის ზოლების გარეშე გაიხსნება.'},
+    en:{title:'Full screen on iPhone',body:'In Safari tap <span class="share">□↑</span> Share → <b style="display:inline;color:#f4ce67">Add to Home Screen</b>. Then open DOMINO GEORGIA from your Home Screen for the app-like full-screen view.'},
+    ru:{title:'Полный экран на iPhone',body:'В Safari нажмите <span class="share">□↑</span> Share → <b style="display:inline;color:#f4ce67">Add to Home Screen</b>. Затем запускайте DOMINO GEORGIA с главного экрана.'},
+    tr:{title:"iPhone'da tam ekran",body:'Safari’de <span class="share">□↑</span> Share → <b style="display:inline;color:#f4ce67">Add to Home Screen</b> seçin. Sonra DOMINO GEORGIA’yı ana ekrandan açın.'},
+    de:{title:'Vollbild auf dem iPhone',body:'In Safari <span class="share">□↑</span> Share → <b style="display:inline;color:#f4ce67">Add to Home Screen</b> wählen. Danach DOMINO GEORGIA vom Home-Bildschirm öffnen.'},
+    ar:{title:'ملء الشاشة على iPhone',body:'في Safari اضغط <span class="share">□↑</span> Share ثم <b style="display:inline;color:#f4ce67">Add to Home Screen</b>. بعد ذلك افتح DOMINO GEORGIA من الشاشة الرئيسية.'}
+  };
+
+  function lang(){
+    let p={};try{p=JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){}
+    return localStorage.getItem(LANG_KEY)||p.language||'en';
+  }
+  function standalone(){
+    return !!(window.navigator.standalone||matchMedia('(display-mode: standalone)').matches);
+  }
+  function addBadge(){
+    if(document.getElementById('dgV54Badge'))return;
+    const b=document.createElement('div');b.id='dgV54Badge';b.textContent='V54';document.body.appendChild(b);
+  }
+  function makeHint(){
+    let box=document.getElementById('dgV54IOSHint');if(box)return box;
+    box=document.createElement('div');box.id='dgV54IOSHint';
+    const tr=TXT[lang()]||TXT.en;
+    box.innerHTML=`<button id="dgV54IOSHintClose" type="button" aria-label="Close">×</button><b>${tr.title}</b><span>${tr.body}</span>`;
+    document.body.appendChild(box);
+    box.querySelector('#dgV54IOSHintClose')?.addEventListener('click',()=>{
+      box.classList.remove('show');localStorage.setItem(IOS_HINT_SEEN,'1');
+    });
+    return box;
+  }
+  function showIOSHint(){
+    if(!isIOS||standalone()||localStorage.getItem(IOS_HINT_SEEN)==='1')return;
+    const box=makeHint();box.classList.add('show');
+    clearTimeout(showIOSHint._t);
+    showIOSHint._t=setTimeout(()=>box.classList.remove('show'),9000);
+  }
+
+  async function tryAndroidFullscreen(){
+    if(!isAndroid)return;
+    try{
+      const root=document.documentElement;
+      if(!document.fullscreenElement){
+        const p=root.requestFullscreen?.({navigationUI:'hide'})||root.webkitRequestFullscreen?.();
+        if(p&&typeof p.then==='function')await p;
+      }
+    }catch(e){}
+    try{
+      if(screen.orientation?.lock)await screen.orientation.lock('landscape');
+    }catch(e){}
+  }
+
+  /* Fullscreen must be requested during the player's real tap/click.
+     Capture phase runs before the older lobby handlers consume that click. */
+  document.addEventListener('click',e=>{
+    const target=e.target?.closest?.(TARGETS);if(!target)return;
+    if(isAndroid)tryAndroidFullscreen();
+    if(isIOS&&!standalone())showIOSHint();
+  },true);
+
+  /* If Android restores the browser chrome after returning to the page,
+     the next deliberate tap inside an active match can restore fullscreen. */
+  document.addEventListener('click',e=>{
+    if(!isAndroid||document.fullscreenElement||!document.body.classList.contains('dg-game-active'))return;
+    if(e.target?.closest?.('button,.domino,.emoji-choice'))tryAndroidFullscreen();
+  },true);
+
+  window.addEventListener('pageshow',()=>{
+    if(isIOS&&standalone())document.documentElement.classList.add('dg-v54-standalone');
+  });
+
+  addBadge();
+})();
+</script>
+<!-- DG V54 MOBILE FULLSCREEN + IOS HOME SCREEN END -->
 
 </body>
 </html>
