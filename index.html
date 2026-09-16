@@ -8795,5 +8795,88 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <!-- DG V59 DEDICATED GOOGLE LOGIN GATE END -->
 
+
+<!-- DG V60 GOOGLE EXISTING-ACCOUNT LOGIN FIX START -->
+<style id="dg-v60-google-fix-css">
+#dgV59Badge{display:none!important}
+#dgV60Badge{
+  position:fixed;right:10px;top:10px;z-index:103000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV60Badge{display:none}
+</style>
+<script type="module" id="dg-v60-google-fix-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import {
+  getAuth,GoogleAuthProvider,linkWithPopup,signInWithPopup,signInWithCredential
+} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const LANG_KEY='dg_domino_v26_language',PROFILE_KEY='dg_domino_v25_profile';
+const $=id=>document.getElementById(id);
+let auth=null,busy=false;
+const TXT={
+  ka:{working:'Google ავტორიზაცია მიმდინარეობს…',popup:'Google-ის ფანჯარა დაიბლოკა. გახსენი თამაში ჩვეულებრივ Chrome/Safari ბრაუზერში და ისევ სცადე.',error:'Google-ით შესვლა ვერ მოხერხდა.'},
+  en:{working:'Signing in with Google…',popup:'The Google window was blocked. Open the game in Chrome/Safari and try again.',error:'Google sign-in failed.'},
+  ru:{working:'Вход через Google…',popup:'Окно Google заблокировано. Откройте игру в Chrome/Safari и попробуйте снова.',error:'Не удалось войти через Google.'},
+  tr:{working:'Google ile giriş yapılıyor…',popup:'Google penceresi engellendi. Oyunu Chrome/Safari’de açıp tekrar deneyin.',error:'Google girişi başarısız oldu.'},
+  de:{working:'Google-Anmeldung läuft…',popup:'Das Google-Fenster wurde blockiert. Öffne das Spiel in Chrome/Safari und versuche es erneut.',error:'Google-Anmeldung fehlgeschlagen.'},
+  ar:{working:'جارٍ تسجيل الدخول عبر Google…',popup:'تم حظر نافذة Google. افتح اللعبة في Chrome/Safari وحاول مرة أخرى.',error:'تعذر تسجيل الدخول عبر Google.'}
+};
+function lang(){try{return localStorage.getItem(LANG_KEY)||JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}').language||'en'}catch(e){return 'en'}}
+function t(){return TXT[lang()]||TXT.en}
+function setMsg(v){const e=$('dgV59LoginMsg');if(e)e.textContent=v||''}
+function hasGoogle(u){return !!u&&(u.providerData||[]).some(p=>p.providerId==='google.com')}
+function setBusy(v){busy=!!v;const b=$('dgV59GoogleBtn');if(b)b.disabled=busy}
+function badge(){if($('dgV60Badge'))return;const b=document.createElement('div');b.id='dgV60Badge';b.textContent='V60';document.body.appendChild(b)}
+
+async function loginFixed(){
+  if(busy||!auth)return;
+  setBusy(true);setMsg(t().working);
+  const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
+  try{
+    const current=auth.currentUser;
+    if(current&&!hasGoogle(current)){
+      try{
+        await linkWithPopup(current,provider);
+      }catch(e){
+        const code=String(e?.code||'');
+        if(code.includes('credential-already-in-use')||code.includes('email-already-in-use')||code.includes('account-exists-with-different-credential')){
+          // The first Google popup already returned a valid Google credential.
+          // Reuse that credential directly instead of opening a second popup,
+          // which mobile browsers commonly block because it is no longer the original user gesture.
+          const credential=GoogleAuthProvider.credentialFromError(e);
+          if(!credential)throw e;
+          await signInWithCredential(auth,credential);
+        }else throw e;
+      }
+    }else if(!current){
+      await signInWithPopup(auth,provider);
+    }
+    if(!hasGoogle(auth.currentUser))throw new Error('GOOGLE_NOT_LINKED');
+    setMsg('');
+    setTimeout(()=>location.reload(),180);
+  }catch(e){
+    console.warn('V60 Google login',e);
+    const code=String(e?.code||'');
+    if(code.includes('popup-blocked')||code.includes('popup-closed')||code.includes('cancelled'))setMsg(t().popup);
+    else setMsg((e?.message&&e.message!=='GOOGLE_NOT_LINKED')?e.message:t().error);
+  }finally{setBusy(false)}
+}
+
+function init(){
+  badge();
+  try{const app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app)}catch(e){console.warn('V60 auth init',e)}
+  // Capture phase intentionally runs before V59's old direct button handler.
+  document.addEventListener('click',e=>{
+    const b=e.target?.closest?.('#dgV59GoogleBtn');if(!b)return;
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();loginFixed();
+  },true);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+</script>
+<!-- DG V60 GOOGLE EXISTING-ACCOUNT LOGIN FIX END -->
+
 </body>
 </html>
