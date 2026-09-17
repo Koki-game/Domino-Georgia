@@ -10318,5 +10318,245 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <!-- DG V74 COSMETIC SHOP WITH GAME POINTS END -->
 
+
+<!-- DG V75 SHARE BUTTON BESIDE LOGOUT START -->
+<style id="dg-v75-share-css">
+#dgV74Badge{display:none!important}
+#dgV75Badge{
+  position:fixed;right:10px;top:10px;z-index:118000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV75Badge{display:none}
+#dgV75ShareBtn{
+  border-color:#3b6258!important;background:#0c2b24!important;color:#bff5df!important;
+  min-width:96px!important
+}
+@media(max-width:430px){
+  #dgV56LobbyAccount{gap:6px!important}
+  #dgV75ShareBtn{min-width:84px!important;padding:0 7px!important;font-size:10px!important}
+}
+</style>
+<script id="dg-v75-share-js">
+(()=>{
+  const $=id=>document.getElementById(id);
+  const LANG_KEY='dg_domino_v26_language';
+  const SHARE_URL='https://koki-game.github.io/Domino-Georgia/';
+  const TXT={
+    ka:{share:'🔗 გაზიარება',title:'DOMINO GEORGIA',text:'ითამაშე DOMINO GEORGIA',copied:'ლინკი დაკოპირდა'},
+    en:{share:'🔗 Share',title:'DOMINO GEORGIA',text:'Play DOMINO GEORGIA',copied:'Link copied'},
+    ru:{share:'🔗 Поделиться',title:'DOMINO GEORGIA',text:'Играй в DOMINO GEORGIA',copied:'Ссылка скопирована'},
+    tr:{share:'🔗 Paylaş',title:'DOMINO GEORGIA',text:'DOMINO GEORGIA oyna',copied:'Bağlantı kopyalandı'},
+    de:{share:'🔗 Teilen',title:'DOMINO GEORGIA',text:'Spiele DOMINO GEORGIA',copied:'Link kopiert'},
+    ar:{share:'🔗 مشاركة',title:'DOMINO GEORGIA',text:'العب DOMINO GEORGIA',copied:'تم نسخ الرابط'}
+  };
+  function lang(){return localStorage.getItem(LANG_KEY)||'ka'}
+  function tr(){return TXT[lang()]||TXT.ka}
+  function badge(){if($('dgV75Badge'))return;const b=document.createElement('div');b.id='dgV75Badge';b.textContent='V75';document.body.appendChild(b)}
+  function toast(msg){
+    let e=$('dgV75ShareToast');
+    if(!e){e=document.createElement('div');e.id='dgV75ShareToast';Object.assign(e.style,{position:'fixed',left:'50%',bottom:'22px',transform:'translateX(-50%)',zIndex:'119000',padding:'8px 12px',borderRadius:'10px',background:'rgba(4,15,11,.95)',border:'1px solid rgba(224,185,79,.6)',color:'#f2d26f',font:'900 11px Arial, sans-serif',boxShadow:'0 4px 14px rgba(0,0,0,.4)',display:'none'});document.body.appendChild(e)}
+    e.textContent=msg;e.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>e.style.display='none',1400);
+  }
+  async function copyFallback(){
+    try{await navigator.clipboard.writeText(SHARE_URL);toast(tr().copied);return}catch(e){}
+    const ta=document.createElement('textarea');ta.value=SHARE_URL;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');toast(tr().copied)}catch(e){prompt('',SHARE_URL)}
+    ta.remove();
+  }
+  async function shareGame(){
+    const d={title:tr().title,text:tr().text,url:SHARE_URL};
+    if(navigator.share){try{await navigator.share(d);return}catch(e){if(e?.name==='AbortError')return}}
+    copyFallback();
+  }
+  function ensureButton(){
+    const bar=$('dgV56LobbyAccount'),logout=$('dgV56Logout');if(!bar||!logout)return;
+    let b=$('dgV75ShareBtn');
+    if(!b){b=document.createElement('button');b.type='button';b.id='dgV75ShareBtn';b.className='dg-v56-mini';b.addEventListener('click',e=>{e.preventDefault();shareGame()});bar.insertBefore(b,logout)}
+    b.textContent=tr().share;
+  }
+  function init(){badge();ensureButton();setTimeout(ensureButton,300);setTimeout(ensureButton,900);setInterval(ensureButton,900);document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-language-btn,#dgChangeLanguage'))setTimeout(ensureButton,120)},true)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V75 SHARE BUTTON BESIDE LOGOUT END -->
+
+
+<!-- DG V76 CLEAN LOBBY SUBPAGES + PRIVATE ACCOUNT + GREEN STAKE START -->
+<style id="dg-v76-clean-lobby-css">
+#dgV75Badge{display:none!important}
+#dgV76Badge{
+  position:fixed;right:10px;top:10px;z-index:120000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV76Badge{display:none}
+
+/* Keep the main lobby light: mode selection first, game actions on their own page. */
+#dgChoiceStep > .dg-entry-sub{display:none!important}
+#dgChoiceStep > .dg-entry-options{display:none!important}
+#dgChoiceStep > #dgV67TwoActions{display:none!important}
+#dgChoiceStep > #dgTestBots{display:none!important}
+#dgChoiceStep #dgV61ModeNote{display:none!important}
+#dgChoiceStep #dgV61ModeSelector{
+  margin:12px 0 10px!important;padding:0!important;border:0!important;background:transparent!important;gap:12px!important
+}
+#dgChoiceStep .dg-v61-mode{
+  min-height:72px!important;font-size:15px!important;border-radius:15px!important;
+  border:1px solid #405966!important;background:linear-gradient(145deg,#0c2029,#071218)!important;
+  color:#eef5f7!important;box-shadow:0 4px 14px rgba(0,0,0,.28)!important
+}
+#dgChoiceStep .dg-v61-mode[data-mode="2"]{border-color:#8d6722!important;background:linear-gradient(145deg,#6d480e,#322004)!important;color:#ffe6a4!important}
+#dgChoiceStep .dg-v61-mode[data-mode="4"]{border-color:#384f5d!important;background:linear-gradient(145deg,#10232d,#071218)!important}
+
+/* Hide Google/email account strip. Only compact account controls remain in profile header. */
+#dgV56LobbyAccount{display:none!important}
+#dgV56AccountLabel,[data-v56-google]{display:none!important}
+#dgChoiceStep .dg-entry-profile{
+  position:relative!important;min-height:54px!important;padding:10px 198px 10px 12px!important;
+  align-items:flex-start!important;flex-wrap:wrap!important
+}
+#dgChoiceStep #dgChangeProfile{margin-top:4px!important}
+#dgV76ProfileActions{
+  position:absolute;right:8px;bottom:8px;display:flex;gap:6px;align-items:center;z-index:5
+}
+#dgV76ProfileActions .dg-v76-account-btn{
+  min-height:30px;padding:0 9px;border-radius:8px;border:1px solid #405762;background:#0c1c24;color:#e9f0f3;
+  font:900 10px/1 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer;white-space:nowrap
+}
+#dgV76ProfileActions #dgV56Logout{border-color:#844840!important;background:#361512!important;color:#ffb5aa!important}
+#dgV76ProfileActions #dgV75ShareBtn{border-color:#3d6255!important;background:#0a2c20!important;color:#9ff0c6!important}
+
+/* Separate mode page. */
+#dgV76ModeStep{padding-top:2px}
+.dg-v76-head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.dg-v76-back{
+  flex:0 0 auto;min-height:34px;padding:0 10px;border-radius:9px;border:1px solid #415966;background:#0b1b23;color:#eef5f7;
+  font:900 11px/1 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer
+}
+.dg-v76-mode-title{flex:1;color:#f6f8fa;font:1000 20px/1.15 Arial,"Noto Sans Georgian",sans-serif}
+.dg-v76-mode-sub{margin:0 0 12px;color:#95a9b4;font:800 11px/1.45 Arial,"Noto Sans Georgian",sans-serif}
+#dgV76ModeStep .dg-entry-options{display:grid!important;gap:9px!important}
+#dgV76ModeStep .dg-entry-option{display:flex!important}
+#dgV76ModeStep .dg-entry-option small{display:block!important}
+#dgV76FriendPanel{display:none;margin-top:-1px;padding:10px;border:1px solid #304753;border-radius:10px;background:#071219}
+#dgV76FriendPanel.show{display:block}
+.dg-v76-friend-row{display:flex;gap:7px}
+.dg-v76-friend-row input{flex:1;min-width:0}
+.dg-v76-friend-row button{flex:0 0 auto}
+
+/* Replace the red stake star with a green hexagon of the same visual size. */
+.dg-board-tile.stake-domino::before{
+  content:''!important;display:block!important;position:absolute!important;
+  left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;
+  width:18px!important;height:18px!important;transform:translate(-50%,-50%)!important;
+  background:linear-gradient(145deg,#43e27f,#11964a)!important;
+  clip-path:polygon(25% 6.7%,75% 6.7%,100% 50%,75% 93.3%,25% 93.3%,0 50%)!important;
+  box-shadow:0 0 0 2px rgba(3,74,37,.7),0 1px 4px rgba(0,0,0,.55)!important;
+  filter:drop-shadow(0 0 3px rgba(48,224,119,.55))!important;z-index:12!important;pointer-events:none!important
+}
+
+@media(max-width:560px){
+  #dgChoiceStep .dg-entry-profile{padding-right:10px!important;padding-bottom:48px!important}
+  #dgV76ProfileActions{left:8px;right:auto;bottom:8px}
+  #dgChoiceStep #dgV61ModeSelector{grid-template-columns:1fr!important}
+  #dgChoiceStep .dg-v61-mode{min-height:58px!important}
+}
+</style>
+<script id="dg-v76-clean-lobby-js">
+(()=>{
+  const $=id=>document.getElementById(id);
+  const MODE_KEY='dg_domino_v61_mode',LANG_KEY='dg_domino_v26_language';
+  let mode=Number(localStorage.getItem(MODE_KEY))===2?2:4;
+  const TXT={
+    ka:{
+      back:'← უკან',title2:'2 მოთამაშე',title4:'4 მოთამაშე',sub2:'აირჩიე 2-კაციანი თამაშის ტიპი.',sub4:'აირჩიე 4-კაციანი თამაშის ტიპი.',
+      online2:'🌐 ონლაინ 2 მოთამაშე',online4:'🌐 ონლაინ 4 მოთამაშე',onlineSub:'მოძებნე მოთამაშეები და დაიწყე ონლაინ მატჩი.',
+      create:'➕ მაგიდის შექმნა',createSub2:'შექმენი პირადი 2-კაციანი მაგიდა და გაუზიარე კოდი მეგობარს.',createSub4:'შექმენი პირადი 4-კაციანი მაგიდა და გაუზიარე კოდი მეგობრებს.',
+      friend:'🔑 მეგობრის მაგიდა',friendSub:'შედი მეგობრის მიერ შექმნილ მაგიდაზე კოდით.',bot2:'🤖 ბოტთან თამაში',bot4:'🤖 3 ბოტთან თამაში',botSub2:'ითამაშე ერთი ბოტის წინააღმდეგ.',botSub4:'ითამაშე სამი ბოტის წინააღმდეგ.',code:'4-ნიშნა კოდი',join:'შესვლა',share:'🔗 გაზიარება',logout:'🚪 გამოსვლა'
+    },
+    en:{back:'← Back',title2:'2 Players',title4:'4 Players',sub2:'Choose a 2-player game type.',sub4:'Choose a 4-player game type.',online2:'🌐 Online 2 Players',online4:'🌐 Online 4 Players',onlineSub:'Find players and start an online match.',create:'➕ Create Table',createSub2:'Create a private 2-player table and share the code.',createSub4:'Create a private 4-player table and share the code.',friend:'🔑 Friend Table',friendSub:'Join a friend’s private table with a code.',bot2:'🤖 Play vs BOT',bot4:'🤖 Play vs 3 BOTs',botSub2:'Play against one bot.',botSub4:'Play against three bots.',code:'4-digit code',join:'Join',share:'🔗 Share',logout:'🚪 Log out'},
+    ru:{back:'← Назад',title2:'2 игрока',title4:'4 игрока',sub2:'Выберите тип игры на 2 игроков.',sub4:'Выберите тип игры на 4 игроков.',online2:'🌐 Онлайн 2 игрока',online4:'🌐 Онлайн 4 игрока',onlineSub:'Найдите игроков и начните онлайн-матч.',create:'➕ Создать стол',createSub2:'Создайте приватный стол на 2 игроков и поделитесь кодом.',createSub4:'Создайте приватный стол на 4 игроков и поделитесь кодом.',friend:'🔑 Стол друга',friendSub:'Войдите на приватный стол друга по коду.',bot2:'🤖 Играть с ботом',bot4:'🤖 Играть с 3 ботами',botSub2:'Игра против одного бота.',botSub4:'Игра против трёх ботов.',code:'4-значный код',join:'Войти',share:'🔗 Поделиться',logout:'🚪 Выйти'},
+    tr:{back:'← Geri',title2:'2 Oyuncu',title4:'4 Oyuncu',sub2:'2 kişilik oyun türünü seç.',sub4:'4 kişilik oyun türünü seç.',online2:'🌐 2 Kişilik Online',online4:'🌐 4 Kişilik Online',onlineSub:'Oyuncuları bul ve çevrimiçi maça başla.',create:'➕ Masa Oluştur',createSub2:'Özel 2 kişilik masa oluştur ve kodu paylaş.',createSub4:'Özel 4 kişilik masa oluştur ve kodu paylaş.',friend:'🔑 Arkadaş Masası',friendSub:'Arkadaşının özel masasına kodla katıl.',bot2:'🤖 BOT ile Oyna',bot4:'🤖 3 BOT ile Oyna',botSub2:'Bir bota karşı oyna.',botSub4:'Üç bota karşı oyna.',code:'4 haneli kod',join:'Katıl',share:'🔗 Paylaş',logout:'🚪 Çıkış'},
+    de:{back:'← Zurück',title2:'2 Spieler',title4:'4 Spieler',sub2:'Wähle den 2-Spieler-Modus.',sub4:'Wähle den 4-Spieler-Modus.',online2:'🌐 Online 2 Spieler',online4:'🌐 Online 4 Spieler',onlineSub:'Spieler finden und Online-Match starten.',create:'➕ Tisch erstellen',createSub2:'Privaten 2-Spieler-Tisch erstellen und Code teilen.',createSub4:'Privaten 4-Spieler-Tisch erstellen und Code teilen.',friend:'🔑 Freundestisch',friendSub:'Mit Code dem privaten Tisch eines Freundes beitreten.',bot2:'🤖 Gegen BOT',bot4:'🤖 Gegen 3 BOTs',botSub2:'Gegen einen Bot spielen.',botSub4:'Gegen drei Bots spielen.',code:'4-stelliger Code',join:'Beitreten',share:'🔗 Teilen',logout:'🚪 Abmelden'},
+    ar:{back:'← رجوع',title2:'لاعبان',title4:'4 لاعبين',sub2:'اختر نوع لعبة لاعبين.',sub4:'اختر نوع لعبة 4 لاعبين.',online2:'🌐 لاعبان أونلاين',online4:'🌐 4 لاعبين أونلاين',onlineSub:'ابحث عن لاعبين وابدأ مباراة أونلاين.',create:'➕ إنشاء طاولة',createSub2:'أنشئ طاولة خاصة للاعبين وشارك الرمز.',createSub4:'أنشئ طاولة خاصة لـ4 لاعبين وشارك الرمز.',friend:'🔑 طاولة صديق',friendSub:'ادخل إلى طاولة صديق خاصة باستخدام الرمز.',bot2:'🤖 اللعب ضد روبوت',bot4:'🤖 اللعب ضد 3 روبوتات',botSub2:'العب ضد روبوت واحد.',botSub4:'العب ضد ثلاثة روبوتات.',code:'رمز من 4 أرقام',join:'دخول',share:'🔗 مشاركة',logout:'🚪 خروج'}
+  };
+  function lang(){return localStorage.getItem(LANG_KEY)||'ka'}
+  function tr(){return TXT[lang()]||TXT.ka}
+  function badge(){if($('dgV76Badge'))return;const b=document.createElement('div');b.id='dgV76Badge';b.textContent='V76';document.body.appendChild(b)}
+  function showStep(id){document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));$(id)?.classList.add('active')}
+  function applyMode(m){
+    mode=Number(m)===2?2:4;window.DG_SELECTED_GAME_MODE=mode;localStorage.setItem(MODE_KEY,String(mode));
+    document.body.classList.toggle('dg-v61-two',mode===2);
+    document.querySelectorAll('.dg-v61-mode').forEach(b=>b.classList.toggle('active',Number(b.dataset.mode)===mode));
+  }
+  function buildModeStep(){
+    const card=document.querySelector('#dgEntryOverlay .dg-entry-card');if(!card)return;
+    let s=$('dgV76ModeStep');
+    if(!s){
+      s=document.createElement('section');s.className='dg-entry-step';s.id='dgV76ModeStep';
+      s.innerHTML=`
+        <div class="dg-v76-head"><button type="button" class="dg-v76-back" id="dgV76Back"></button><div class="dg-v76-mode-title" id="dgV76ModeTitle"></div></div>
+        <div class="dg-v76-mode-sub" id="dgV76ModeSub"></div>
+        <div class="dg-entry-options">
+          <button class="dg-entry-option" id="dgV76Online"><span class="dg-entry-icon">🌐</span><span><b></b><small></small></span></button>
+          <button class="dg-entry-option" id="dgV76Create"><span class="dg-entry-icon">➕</span><span><b></b><small></small></span></button>
+          <button class="dg-entry-option" id="dgV76Friend"><span class="dg-entry-icon">🔑</span><span><b></b><small></small></span></button>
+          <div id="dgV76FriendPanel"><div class="dg-v76-friend-row"><input class="dg-entry-input" id="dgV76FriendCode" inputmode="numeric" maxlength="4"><button class="dg-entry-btn primary" id="dgV76FriendJoin" type="button"></button></div></div>
+          <button class="dg-entry-option" id="dgV76Bot"><span class="dg-entry-icon">🤖</span><span><b></b><small></small></span></button>
+        </div>`;
+      card.appendChild(s);
+      $('dgV76Back').addEventListener('click',()=>showStep('dgChoiceStep'));
+      $('dgV76Online').addEventListener('click',()=>{applyMode(mode);if(mode===2&&$('dgV67Online2'))$('dgV67Online2').click();else $('dgEntryQuick')?.click()});
+      $('dgV76Create').addEventListener('click',()=>{applyMode(mode);$('dgEntryCreate')?.click()});
+      $('dgV76Friend').addEventListener('click',()=>$('dgV76FriendPanel')?.classList.toggle('show'));
+      $('dgV76FriendCode').addEventListener('input',e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,4));
+      $('dgV76FriendJoin').addEventListener('click',()=>{const v=$('dgV76FriendCode')?.value||'';if(v.length!==4)return;applyMode(mode);const old=$('dgFriendCode');if(old)old.value=v;$('dgFriendJoin')?.click()});
+      $('dgV76FriendCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('dgV76FriendJoin')?.click()});
+      $('dgV76Bot').addEventListener('click',()=>{applyMode(mode);if(mode===2)$('dgV67Bot2')?.click();else $('dgTestBots')?.click()});
+    }
+    renderModeStep();
+  }
+  function renderModeStep(){
+    const t=tr(),m=mode===2;
+    if($('dgV76Back'))$('dgV76Back').textContent=t.back;
+    if($('dgV76ModeTitle'))$('dgV76ModeTitle').textContent=m?t.title2:t.title4;
+    if($('dgV76ModeSub'))$('dgV76ModeSub').textContent=m?t.sub2:t.sub4;
+    const set=(id,b,s)=>{const e=$(id);if(!e)return;const bb=e.querySelector('b'),ss=e.querySelector('small');if(bb)bb.textContent=b;if(ss)ss.textContent=s};
+    set('dgV76Online',m?t.online2:t.online4,t.onlineSub);
+    set('dgV76Create',t.create,m?t.createSub2:t.createSub4);
+    set('dgV76Friend',t.friend,t.friendSub);
+    set('dgV76Bot',m?t.bot2:t.bot4,m?t.botSub2:t.botSub4);
+    if($('dgV76FriendCode'))$('dgV76FriendCode').placeholder=t.code;
+    if($('dgV76FriendJoin'))$('dgV76FriendJoin').textContent=t.join;
+    if($('dgV56Logout'))$('dgV56Logout').textContent=t.logout;
+    if($('dgV75ShareBtn'))$('dgV75ShareBtn').textContent=t.share;
+  }
+  function moveAccountControls(){
+    const profile=document.querySelector('#dgChoiceStep .dg-entry-profile');if(!profile)return;
+    let box=$('dgV76ProfileActions');if(!box){box=document.createElement('div');box.id='dgV76ProfileActions';profile.appendChild(box)}
+    const share=$('dgV75ShareBtn'),logout=$('dgV56Logout');
+    if(share){share.className='dg-v76-account-btn';box.appendChild(share)}
+    if(logout){logout.className='dg-v76-account-btn';box.appendChild(logout)}
+    renderModeStep();
+  }
+  function openMode(m){applyMode(m);buildModeStep();$('dgV76FriendPanel')?.classList.remove('show');showStep('dgV76ModeStep')}
+  function wireModeButtons(){
+    document.addEventListener('click',e=>{
+      const b=e.target?.closest?.('#dgChoiceStep .dg-v61-mode');if(!b)return;
+      e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();openMode(Number(b.dataset.mode));
+    },true);
+  }
+  function refresh(){buildModeStep();moveAccountControls();renderModeStep()}
+  function init(){
+    badge();wireModeButtons();refresh();
+    setTimeout(refresh,250);setTimeout(refresh,850);setInterval(moveAccountControls,800);
+    document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-language-btn,#dgChangeLanguage'))setTimeout(refresh,160)},true);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V76 CLEAN LOBBY SUBPAGES + PRIVATE ACCOUNT + GREEN STAKE END -->
+
 </body>
 </html>
