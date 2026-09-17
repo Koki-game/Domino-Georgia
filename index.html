@@ -6,7 +6,7 @@
 <meta name="viewport"
 content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 
-<link rel="manifest" href="./manifest.json">
+<link rel="manifest" href="./manifest.json?v=79">
 
 <meta name="theme-color" content="#2b1208">
 <meta name="mobile-web-app-capable" content="yes">
@@ -10543,6 +10543,150 @@ body.dg-game-active #dgV78Badge{display:none}
 })();
 </script>
 <!-- DG V78 SHOP GREEN + GOLD MODES + GREEN PEOPLE + YELLOW STAR END -->
+
+
+<!-- DG V79 PWA PORTRAIT LOBBY + LANDSCAPE MATCH START -->
+<style id="dg-v79-orientation-css">
+#dgV78Badge{display:none!important}
+#dgV79Badge{position:fixed;right:10px;top:10px;z-index:123000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV79Badge{display:none}
+</style>
+<script id="dg-v79-orientation-js">
+(()=>{
+  const isInstalled=()=>{
+    try{
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.matchMedia('(display-mode: fullscreen)').matches ||
+             window.navigator.standalone===true;
+    }catch(e){return false}
+  };
+
+  let wanted='';
+  async function lockOrientation(mode){
+    if(!isInstalled()) return;
+    if(!screen.orientation || typeof screen.orientation.lock!=='function') return;
+    if(wanted===mode) return;
+    wanted=mode;
+    try{ await screen.orientation.lock(mode); }
+    catch(e){ /* Unsupported devices simply follow normal auto-rotate. */ }
+  }
+
+  function syncOrientation(){
+    const inGame=document.body.classList.contains('dg-game-active') ||
+                 document.body.classList.contains('dg-match-mode');
+    lockOrientation(inGame?'landscape':'portrait');
+  }
+
+  function badge(){
+    if(document.getElementById('dgV79Badge')) return;
+    const b=document.createElement('div');
+    b.id='dgV79Badge';
+    b.textContent='V79';
+    document.body.appendChild(b);
+  }
+
+  function init(){
+    badge();
+    syncOrientation();
+    const obs=new MutationObserver(syncOrientation);
+    obs.observe(document.body,{attributes:true,attributeFilter:['class']});
+    window.addEventListener('pageshow',syncOrientation);
+    window.addEventListener('orientationchange',()=>setTimeout(syncOrientation,80));
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncOrientation()});
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
+<!-- DG V79 PWA PORTRAIT LOBBY + LANDSCAPE MATCH END -->
+
+
+<!-- DG V80 PLAY STORE PREP: ACCOUNT DELETE + DATA CONTROLS START -->
+<style id="dg-v80-account-delete-css">
+#dgV79Badge{display:none!important}
+#dgV80Badge{position:fixed;right:10px;top:10px;z-index:124000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV80Badge{display:none}
+#dgV80DeleteAccount{border:0;background:none;color:#e79186;text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:0;font:800 10px/1.35 Arial,"Noto Sans Georgian",sans-serif}
+#dgV80DeleteAccount:disabled{opacity:.55;cursor:wait}
+#dgV80DeleteMsg{display:none;margin-top:5px;color:#e7b39f;font:800 10px/1.35 Arial,"Noto Sans Georgian",sans-serif;text-align:center}
+#dgV80DeleteMsg.show{display:block}
+</style>
+<script type="module" id="dg-v80-account-delete-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,GoogleAuthProvider,reauthenticateWithPopup,deleteUser } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,collection,getDocs,doc,deleteDoc,updateDoc,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const LANG_KEY='dg_domino_v26_language';
+const $=id=>document.getElementById(id);
+let app,auth,db,busy=false;
+const TXT={
+ ka:{del:'ანგარიშის წაშლა',ask:'წაიშალოს DOMINO GEORGIA-ს ანგარიში? წაიშლება ნიკნეიმი, ქულები, პროგრესი და ნაყიდი კოსმეტიკა. შენი Google ანგარიში არ წაიშლება.',working:'ანგარიში იშლება…',login:'ანგარიშის წასაშლელად შედი Google-ით.',done:'ანგარიში წაიშალა.',rules:'მონაცემების წაშლა ვერ დასრულდა. ჯერ Firestore-ის ახალი წესები უნდა გამოქვეყნდეს.',fail:'ანგარიშის წაშლა ვერ მოხერხდა.'},
+ en:{del:'Delete account',ask:'Delete your DOMINO GEORGIA account? Your nickname, points, progress and purchased cosmetics will be deleted. Your Google account will NOT be deleted.',working:'Deleting account…',login:'Sign in with Google before deleting your account.',done:'Account deleted.',rules:'Data deletion could not finish. Publish the updated Firestore rules first.',fail:'Account deletion failed.'},
+ ru:{del:'Удалить аккаунт',ask:'Удалить аккаунт DOMINO GEORGIA? Ник, очки, прогресс и купленная косметика будут удалены. Ваш аккаунт Google НЕ будет удалён.',working:'Удаление аккаунта…',login:'Для удаления аккаунта войдите через Google.',done:'Аккаунт удалён.',rules:'Не удалось удалить данные. Сначала опубликуйте новые правила Firestore.',fail:'Не удалось удалить аккаунт.'},
+ tr:{del:'Hesabı sil',ask:'DOMINO GEORGIA hesabın silinsin mi? Takma adın, puanların, ilerlemen ve alınan kozmetikler silinir. Google hesabın SİLİNMEZ.',working:'Hesap siliniyor…',login:'Hesabı silmeden önce Google ile giriş yap.',done:'Hesap silindi.',rules:'Veriler silinemedi. Önce güncellenmiş Firestore kurallarını yayınla.',fail:'Hesap silinemedi.'},
+ de:{del:'Konto löschen',ask:'DOMINO-GEORGIA-Konto löschen? Spielname, Punkte, Fortschritt und gekaufte Kosmetik werden gelöscht. Dein Google-Konto wird NICHT gelöscht.',working:'Konto wird gelöscht…',login:'Melde dich vor dem Löschen mit Google an.',done:'Konto gelöscht.',rules:'Daten konnten nicht gelöscht werden. Veröffentliche zuerst die aktualisierten Firestore-Regeln.',fail:'Konto konnte nicht gelöscht werden.'},
+ ar:{del:'حذف الحساب',ask:'هل تريد حذف حساب DOMINO GEORGIA؟ سيتم حذف الاسم والنقاط والتقدم والعناصر التجميلية. لن يتم حذف حساب Google.',working:'جارٍ حذف الحساب…',login:'سجّل الدخول عبر Google قبل حذف الحساب.',done:'تم حذف الحساب.',rules:'تعذر حذف البيانات. انشر قواعد Firestore المحدّثة أولاً.',fail:'تعذر حذف الحساب.'}
+};
+function lang(){return localStorage.getItem(LANG_KEY)||'ka'}
+function tr(){return TXT[lang()]||TXT.en}
+function setMsg(text){let e=$('dgV80DeleteMsg');if(!e)return;e.textContent=text||'';e.classList.toggle('show',!!text)}
+function build(){
+  const row=$('dgV58PrivacyLobby');if(!row)return;
+  let sep=$('dgV80Sep');if(!sep){sep=document.createElement('span');sep.id='dgV80Sep';sep.textContent='·';sep.style.color='#6e8077';row.appendChild(sep)}
+  let b=$('dgV80DeleteAccount');if(!b){b=document.createElement('button');b.type='button';b.id='dgV80DeleteAccount';b.addEventListener('click',deleteAccount);row.appendChild(b)}
+  b.textContent=busy?tr().working:tr().del;b.disabled=busy;
+  let m=$('dgV80DeleteMsg');if(!m){m=document.createElement('div');m.id='dgV80DeleteMsg';row.insertAdjacentElement('afterend',m)}
+}
+async function cleanupRooms(uid){
+  const snap=await getDocs(collection(db,'dominoRooms'));
+  for(const ds of snap.docs){
+    const data=ds.data()||{},all=Array.isArray(data.players)?data.players:[];
+    if(!all.some(p=>p?.uid===uid) && !(Array.isArray(data.ratingProcessed)&&data.ratingProcessed.includes(uid))) continue;
+    const players=all.filter(p=>p?.uid!==uid);
+    if(!players.length){await deleteDoc(ds.ref);continue}
+    const patch={players,updatedAt:serverTimestamp()};
+    if(data.hostUid===uid)patch.hostUid=players[0]?.uid||'';
+    if(Array.isArray(data.ratingProcessed))patch.ratingProcessed=data.ratingProcessed.filter(x=>x!==uid);
+    await updateDoc(ds.ref,patch);
+  }
+}
+function clearLocalGameData(){
+  try{Object.keys(localStorage).filter(k=>k.startsWith('dg_')).forEach(k=>localStorage.removeItem(k));sessionStorage.clear()}catch(e){}
+}
+async function deleteAccount(){
+  if(busy)return;
+  const u=auth?.currentUser;if(!u||u.isAnonymous){setMsg(tr().login);return}
+  if(!confirm(tr().ask))return;
+  busy=true;build();setMsg(tr().working);
+  try{
+    const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
+    await reauthenticateWithPopup(u,provider);
+    try{document.getElementById('dgOnlineLeave')?.click();await new Promise(r=>setTimeout(r,350))}catch(e){}
+    await cleanupRooms(u.uid);
+    await deleteDoc(doc(db,'players',u.uid));
+    await deleteDoc(doc(db,'dominoProfiles',u.uid));
+    await deleteUser(u);
+    clearLocalGameData();
+    alert(tr().done);
+    location.replace('./?accountDeleted=1');
+  }catch(e){
+    console.warn('V80 delete account',e);
+    const c=String(e?.code||'');
+    setMsg(c.includes('permission-denied')?tr().rules:(e?.message||tr().fail));
+    busy=false;build();
+  }
+}
+function badge(){if($('dgV80Badge'))return;const b=document.createElement('div');b.id='dgV80Badge';b.textContent='V80';document.body.appendChild(b)}
+function init(){
+  badge();build();setTimeout(build,200);setTimeout(build,900);
+  document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-language-btn,#dgChangeLanguage'))setTimeout(build,100)},true);
+  try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app)}catch(e){console.warn('V80 Firebase',e)}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+</script>
+<!-- DG V80 PLAY STORE PREP: ACCOUNT DELETE + DATA CONTROLS END -->
 
 </body>
 </html>
