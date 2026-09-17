@@ -4795,7 +4795,13 @@ function updatePotentialCloser(mover,placed){
 }
 
 function addScore(t,pts,msg){G.scores[t]+=pts;if(G.scores[t]>=targetScore())G.threshold=true;updateScores();if(msg)message(msg);}
-function handPips(p){return G.hands[p].reduce((s,t)=>s+t.a+t.b,0);}
+function handPips(p){
+  const hand=G.hands[p]||[];
+  /* V71 scoring rule: a lone 0-0 left in a player's hand counts as 10 points.
+     In every other case 0-0 contributes its normal value of 0. */
+  if(hand.length===1&&Number(hand[0]?.a)===0&&Number(hand[0]?.b)===0)return 10;
+  return hand.reduce((s,t)=>s+t.a+t.b,0);
+}
 function teamRemain(t){if(GAME_MODE===2)return t===0?handPips(2):handPips(0);return t===0?handPips(0)+handPips(2):handPips(1)+handPips(3);}
 function finishNormal(player){
   if(G.handOver)return;G.handOver=true;const wt=team(player),lt=1-wt;let earned=round5(teamRemain(lt))+G.carry;G.carry=0;if(earned)addScore(wt,earned);G.nextStarter=player;G.pendingTransition=G.threshold?'resolveMatch':'nextRound';
@@ -9982,6 +9988,18 @@ body.dg-game-active #dgV70Badge{display:none}
 </style>
 <script id="dg-v70-badge-js">(()=>{const add=()=>{if(document.getElementById('dgV70Badge'))return;const b=document.createElement('div');b.id='dgV70Badge';b.textContent='V70';document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();})();</script>
 <!-- DG V70 MARKET FLIGHT + END-HAND REVEAL END -->
+
+
+<!-- DG V71 LONE 0-0 COUNTS 10 START -->
+<style id="dg-v71-badge-css">
+#dgV70Badge{display:none!important}
+#dgV71Badge{position:fixed;right:10px;top:10px;z-index:114000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV71Badge{display:none}
+</style>
+<script id="dg-v71-badge-js">
+(()=>{const add=()=>{if(document.getElementById('dgV71Badge'))return;const b=document.createElement('div');b.id='dgV71Badge';b.textContent='V71';document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();})();
+</script>
+<!-- DG V71 LONE 0-0 COUNTS 10 END -->
 
 </body>
 </html>
