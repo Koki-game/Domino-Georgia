@@ -10688,5 +10688,173 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <!-- DG V80 PLAY STORE PREP: ACCOUNT DELETE + DATA CONTROLS END -->
 
+
+
+<!-- DG V81 FRIEND TABLE CODE PANEL TOGGLE START -->
+<style id="dg-v81-friend-toggle-css">
+#dgV80Badge{display:none!important}
+#dgV81Badge{position:fixed;right:10px;top:10px;z-index:125000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV81Badge{display:none}
+#dgV76TwoPanel .dg-v76-friend-card .dg-v76-friend-row,
+#dgV76FourPanel .dg-v76-friend-card .dg-v76-friend-row{display:none!important}
+#dgV76TwoPanel .dg-v76-friend-card.dg-v81-open .dg-v76-friend-row,
+#dgV76FourPanel .dg-v76-friend-card.dg-v81-open .dg-v76-friend-row{display:flex!important}
+#dgV76TwoFriendLabel,
+#dgV76FourFriendLabel{position:relative;padding-right:42px!important}
+#dgV76TwoFriendLabel::after,
+#dgV76FourFriendLabel::after{content:'⌄';position:absolute;right:15px;top:50%;transform:translateY(-50%);font:1000 20px/1 Arial,sans-serif;color:#d9efff;transition:transform .18s ease}
+.dg-v76-friend-card.dg-v81-open #dgV76TwoFriendLabel::after,
+.dg-v76-friend-card.dg-v81-open #dgV76FourFriendLabel::after{transform:translateY(-50%) rotate(180deg)}
+</style>
+<script id="dg-v81-friend-toggle-js">
+(()=>{
+  const $=id=>document.getElementById(id);
+  function cards(){return [...document.querySelectorAll('#dgV76TwoPanel .dg-v76-friend-card,#dgV76FourPanel .dg-v76-friend-card')]}
+  function closeAll(except){cards().forEach(c=>{if(c!==except)c.classList.remove('dg-v81-open')})}
+  function toggleLabel(label){
+    const card=label?.closest?.('.dg-v76-friend-card');if(!card)return;
+    const willOpen=!card.classList.contains('dg-v81-open');
+    closeAll(card);card.classList.toggle('dg-v81-open',willOpen);
+    if(willOpen){const inp=card.querySelector('input');setTimeout(()=>inp?.focus(),40)}
+  }
+  function badge(){if($('dgV81Badge'))return;const b=document.createElement('div');b.id='dgV81Badge';b.textContent='V81';document.body.appendChild(b)}
+  function init(){
+    badge();closeAll();
+    document.addEventListener('click',e=>{
+      const label=e.target?.closest?.('#dgV76TwoFriendLabel,#dgV76FourFriendLabel');
+      if(label){e.preventDefault();toggleLabel(label);return}
+      if(e.target?.closest?.('[data-v76-back],#dgV76TwoOnline,#dgV76TwoCreate,#dgV76TwoBot,#dgV76FourOnline,#dgV76FourCreate,#dgV76FourBot,.dg-v61-mode')) closeAll();
+    },true);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V81 FRIEND TABLE CODE PANEL TOGGLE END -->
+
+
+<!-- DG V82 FINAL LOBBY + ANDROID FULLSCREEN POLISH START -->
+<style id="dg-v82-final-polish-css">
+#dgV81Badge{display:none!important}
+#dgV82Badge{position:fixed;right:10px;top:10px;z-index:126000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV82Badge{display:none}
+
+/* Exit button: inside the nickname/profile card, lower-right as marked. */
+#dgChoiceStep .dg-entry-profile{position:relative!important;padding-bottom:46px!important;min-height:78px!important}
+#dgChoiceStep .dg-entry-profile #dgV76TopTools{position:absolute!important;right:8px!important;bottom:7px!important;top:auto!important;left:auto!important;display:flex!important;z-index:8!important}
+#dgChoiceStep .dg-entry-profile #dgV76TopLogout{min-height:32px!important;padding:0 13px!important;border-radius:10px!important;font-size:10px!important}
+
+/* Remove old install/download button completely. Share now takes its old place. */
+#dgInstallApp{display:none!important}
+#dgV75ShareBtn.dg-v82-share-bottom{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;min-width:0!important;min-height:48px!important;
+  margin:12px 0 0!important;padding:0 14px!important;border-radius:12px!important;
+  border:1px solid #3b8f6a!important;background:linear-gradient(145deg,#0f6f48,#08442f)!important;
+  color:#e8fff3!important;font:1000 13px/1 Arial,"Noto Sans Georgian",sans-serif!important;
+  box-shadow:0 3px 10px rgba(0,0,0,.24)!important;
+}
+
+/* Slightly thicker 2/4-player selector buttons. */
+#dgV61ModeSelector .dg-v61-mode{min-height:60px!important;padding:14px 12px!important}
+@media(max-width:540px){#dgV61ModeSelector .dg-v61-mode{min-height:58px!important;padding:14px 12px!important}}
+
+/* Native fullscreen state highlight for the dedicated button. */
+html.dg-v82-native-full #dgV69FullBtn{color:#fff1b2!important;border-color:#d9b44d!important;box-shadow:inset 0 0 0 1px rgba(255,229,135,.16),0 3px 9px rgba(0,0,0,.75)!important}
+</style>
+<script id="dg-v82-final-polish-js">
+(()=>{
+  const $=id=>document.getElementById(id);
+
+  /* Save native fullscreen methods before neutralizing the old V54 auto-fullscreen.
+     V54 used to request fullscreen on ANY game button click; that caused the brief
+     rotate/return effect when opening the hamburger menu on Android. */
+  const nativeRequest = Element.prototype.requestFullscreen;
+  const nativeWebkitRequest = Element.prototype.webkitRequestFullscreen;
+  const nativeExit = document.exitFullscreen ? document.exitFullscreen.bind(document) : null;
+  const nativeWebkitExit = document.webkitExitFullscreen ? document.webkitExitFullscreen.bind(document) : null;
+  try{ if(nativeRequest) Element.prototype.requestFullscreen=function(){return Promise.resolve()}; }catch(e){}
+  try{ if(nativeWebkitRequest) Element.prototype.webkitRequestFullscreen=function(){return Promise.resolve()}; }catch(e){}
+
+  const isInstalled=()=>{
+    try{return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone===true}catch(e){return false}
+  };
+  const isNativeFull=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+
+  function syncFullButton(){
+    const b=$('dgV69FullBtn');if(!b)return;
+    const on=isNativeFull()||document.documentElement.classList.contains('dg-v72-soft-full');
+    b.textContent=on?'↙':'⛶';b.setAttribute('aria-pressed',on?'true':'false');
+    document.documentElement.classList.toggle('dg-v82-native-full',isNativeFull());
+  }
+
+  async function toggleFullscreen(){
+    const root=document.documentElement;
+    /* In the installed Android app use real fullscreen, so system navigation can
+       actually hide/show. In normal browsers keep the quiet V72 soft-fullscreen. */
+    if(isInstalled() && (nativeRequest||nativeWebkitRequest)){
+      try{
+        if(isNativeFull()){
+          if(nativeExit) await nativeExit(); else if(nativeWebkitExit) await nativeWebkitExit();
+        }else{
+          document.documentElement.classList.remove('dg-v72-soft-full');
+          document.body.classList.remove('dg-v72-soft-full');
+          if(nativeRequest) await nativeRequest.call(root,{navigationUI:'hide'});
+          else await nativeWebkitRequest.call(root);
+        }
+      }catch(e){
+        const on=!root.classList.contains('dg-v72-soft-full');
+        root.classList.toggle('dg-v72-soft-full',on);document.body.classList.toggle('dg-v72-soft-full',on);
+      }
+    }else{
+      const on=!root.classList.contains('dg-v72-soft-full');
+      root.classList.toggle('dg-v72-soft-full',on);document.body.classList.toggle('dg-v72-soft-full',on);
+    }
+    setTimeout(syncFullButton,40);
+  }
+
+  function moveLogout(){
+    const profile=document.querySelector('#dgChoiceStep .dg-entry-profile');
+    const tools=$('dgV76TopTools');
+    if(profile&&tools&&tools.parentElement!==profile) profile.appendChild(tools);
+  }
+
+  function moveShareAndRemoveInstall(){
+    document.querySelectorAll('#dgInstallApp').forEach(x=>x.remove());
+    const card=document.querySelector('#dgEntryOverlay .dg-entry-card');
+    const share=$('dgV75ShareBtn');
+    if(card&&share){
+      share.classList.add('dg-v82-share-bottom');
+      if(share.parentElement!==card) card.appendChild(share);
+    }
+  }
+
+  function badge(){if($('dgV82Badge'))return;const b=document.createElement('div');b.id='dgV82Badge';b.textContent='V82';document.body.appendChild(b)}
+
+  function polish(){moveLogout();moveShareAndRemoveInstall();syncFullButton()}
+
+  function init(){
+    badge();polish();setTimeout(polish,120);setTimeout(polish,700);setTimeout(polish,1800);
+    const obs=new MutationObserver(()=>{moveLogout();moveShareAndRemoveInstall()});
+    obs.observe(document.body,{childList:true,subtree:true});
+
+    /* Capture before old document listeners. This makes both the dedicated full
+       button and the menu's Fullscreen item use the fixed implementation. */
+    window.addEventListener('click',e=>{
+      const full=e.target?.closest?.('#dgV69FullBtn,#dgV15MenuPanel [data-act="full"]');
+      if(full){
+        e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+        $('dgV15MenuWrap')?.classList.remove('open');
+        toggleFullscreen();return;
+      }
+    },true);
+
+    document.addEventListener('fullscreenchange',syncFullButton);
+    document.addEventListener('webkitfullscreenchange',syncFullButton);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+<!-- DG V82 FINAL LOBBY + ANDROID FULLSCREEN POLISH END -->
+
 </body>
 </html>
