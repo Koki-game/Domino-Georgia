@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071b13">
+<title>DOMINO GEORGIA — Account Deletion</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0,#143b2b,#06110d 58%,#030806);color:#edf4ef;font-family:Arial,"Noto Sans Georgian",sans-serif;line-height:1.55}.wrap{width:min(760px,calc(100% - 28px));margin:0 auto;padding:30px 0 60px}.card{background:rgba(7,22,17,.96);border:1px solid #315342;border-radius:18px;padding:22px;box-shadow:0 18px 55px rgba(0,0,0,.45)}h1{margin:0;color:#f0c85c;font-size:clamp(27px,6vw,42px)}.sub{color:#9eb4aa;margin:5px 0 18px}.lang{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.lang button{border:1px solid #476657;background:#0c2118;color:#fff;border-radius:9px;padding:8px 12px;font-weight:800;cursor:pointer}.lang button.active{background:#b38121;border-color:#e2b64e;color:#130d03}.box{padding:14px;border-radius:12px;background:#0b261a;border:1px solid #27573b;margin:14px 0}.warn{border-color:#6c3c34;background:#25110e;color:#ffc2b8}.actions{display:grid;gap:10px;margin-top:18px}.btn{min-height:48px;border-radius:12px;border:1px solid #476657;background:#0e6f37;color:#fff;font-weight:900;font-size:15px;cursor:pointer}.btn.danger{background:#5c211b;border-color:#a85449}.btn:disabled{opacity:.55;cursor:wait}.hidden{display:none}.status{min-height:22px;margin-top:12px;color:#c8d8d0;font-weight:800}.status.err{color:#ffb1a5}.status.ok{color:#9be3b5}a{color:#e9c65f}.home{display:inline-block;margin-top:18px}ul{padding-left:20px}li{margin:6px 0}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+<h1>DOMINO GEORGIA</h1>
+<div class="sub">Account & data deletion</div>
+<div class="lang"><button id="kaBtn" class="active">ქართული</button><button id="enBtn">English</button></div>
+<section id="ka">
+<p>ამ გვერდიდან შეგიძლია მოითხოვო და პირდაპირ შეასრულო DOMINO GEORGIA-ს ანგარიშისა და მასთან დაკავშირებული მონაცემების წაშლა.</p>
+<div class="box"><b>რა წაიშლება:</b><ul><li>სათამაშო პროფილი და ნიკნეიმი</li><li>ქულები, მოგებები, დონე და პროგრესი</li><li>მაღაზიაში თამაშის ქულებით შეძენილი კოსმეტიკა</li><li>ანგარიშთან დაკავშირებული Firebase Authentication ჩანაწერი</li><li>აქტიურ ონლაინ ოთახებში შენთან დაკავშირებული მოთამაშის ჩანაწერი</li></ul></div>
+<div class="box warn"><b>შენი Google ანგარიში არ წაიშლება.</b> იშლება მხოლოდ DOMINO GEORGIA-ს ანგარიში და თამაშთან დაკავშირებული მონაცემები.</div>
+<p>უსაფრთხოებისთვის ჯერ Google-ით შედი. შემდეგ გამოჩნდება წაშლის ღილაკი და მოგეთხოვება საბოლოო დადასტურება.</p>
+</section>
+<section id="en" class="hidden">
+<p>Use this page to request and directly complete deletion of your DOMINO GEORGIA account and associated data.</p>
+<div class="box"><b>Data deleted:</b><ul><li>game profile and nickname</li><li>points, wins, level and progress</li><li>cosmetics purchased with game points</li><li>the Firebase Authentication record used by DOMINO GEORGIA</li><li>your player entry in active online rooms</li></ul></div>
+<div class="box warn"><b>Your Google account is NOT deleted.</b> Only the DOMINO GEORGIA account and game-related data are deleted.</div>
+<p>For security, sign in with Google first. The delete button will then appear and you will be asked for final confirmation.</p>
+</section>
+<div class="actions"><button class="btn" id="signInBtn">Google-ით შესვლა</button><button class="btn danger hidden" id="deleteBtn">ანგარიშის სამუდამოდ წაშლა</button></div>
+<div class="status" id="status"></div>
+<a class="home" href="./">← DOMINO GEORGIA</a> · <a class="home" href="./privacy.html">Privacy Policy</a>
+</div></div>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,GoogleAuthProvider,signInWithPopup,reauthenticateWithPopup,deleteUser,signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,collection,getDocs,doc,deleteDoc,updateDoc,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
+const ka=document.getElementById('ka'),en=document.getElementById('en'),kaBtn=document.getElementById('kaBtn'),enBtn=document.getElementById('enBtn'),signInBtn=document.getElementById('signInBtn'),deleteBtn=document.getElementById('deleteBtn'),status=document.getElementById('status');
+let lang='ka',busy=false;
+const T={ka:{signin:'Google-ით შესვლა',signed:'Google ავტორიზაცია წარმატებულია. ახლა შეგიძლია წაშლა.',del:'ანგარიშის სამუდამოდ წაშლა',ask:'დარწმუნებული ხარ? DOMINO GEORGIA-ს ანგარიში და თამაშის მონაცემები სამუდამოდ წაიშლება.',work:'მონაცემები იშლება…',done:'ანგარიში და მონაცემები წაიშალა.',fail:'წაშლა ვერ დასრულდა.',rules:'Firestore-ის წაშლის წესები ჯერ არ არის ჩართული.'},en:{signin:'Sign in with Google',signed:'Google sign-in successful. You can now delete the account.',del:'Delete account permanently',ask:'Are you sure? Your DOMINO GEORGIA account and game data will be permanently deleted.',work:'Deleting account data…',done:'Account and associated data deleted.',fail:'Deletion could not be completed.',rules:'Firestore deletion rules are not enabled yet.'}};
+function tr(){return T[lang]}
+function paint(){ka.classList.toggle('hidden',lang!=='ka');en.classList.toggle('hidden',lang!=='en');kaBtn.classList.toggle('active',lang==='ka');enBtn.classList.toggle('active',lang==='en');signInBtn.textContent=tr().signin;deleteBtn.textContent=tr().del}
+function msg(text,kind=''){status.textContent=text||'';status.className='status'+(kind?' '+kind:'')}
+kaBtn.onclick=()=>{lang='ka';paint()};enBtn.onclick=()=>{lang='en';paint()};paint();
+async function cleanupRooms(uid){const snap=await getDocs(collection(db,'dominoRooms'));for(const ds of snap.docs){const data=ds.data()||{},all=Array.isArray(data.players)?data.players:[];if(!all.some(p=>p?.uid===uid)&&!(Array.isArray(data.ratingProcessed)&&data.ratingProcessed.includes(uid)))continue;const players=all.filter(p=>p?.uid!==uid);if(!players.length){await deleteDoc(ds.ref);continue}const patch={players,updatedAt:serverTimestamp()};if(data.hostUid===uid)patch.hostUid=players[0]?.uid||'';if(Array.isArray(data.ratingProcessed))patch.ratingProcessed=data.ratingProcessed.filter(x=>x!==uid);await updateDoc(ds.ref,patch)}}
+signInBtn.onclick=async()=>{if(busy)return;busy=true;signInBtn.disabled=true;msg('…');try{const r=await signInWithPopup(auth,provider);if(!r.user||r.user.isAnonymous)throw new Error('Google sign-in required');deleteBtn.classList.remove('hidden');msg(tr().signed,'ok')}catch(e){msg(e?.message||tr().fail,'err')}finally{busy=false;signInBtn.disabled=false}};
+deleteBtn.onclick=async()=>{if(busy||!auth.currentUser)return;if(!confirm(tr().ask))return;busy=true;deleteBtn.disabled=true;signInBtn.disabled=true;msg(tr().work);try{const u=auth.currentUser;await reauthenticateWithPopup(u,provider);await cleanupRooms(u.uid);await deleteDoc(doc(db,'players',u.uid));await deleteDoc(doc(db,'dominoProfiles',u.uid));await deleteUser(u);msg(tr().done,'ok');deleteBtn.classList.add('hidden');signInBtn.classList.add('hidden')}catch(e){console.warn(e);const c=String(e?.code||'');msg(c.includes('permission-denied')?tr().rules:(e?.message||tr().fail),'err');try{await signOut(auth)}catch(_){};deleteBtn.classList.add('hidden')}finally{busy=false;deleteBtn.disabled=false;signInBtn.disabled=false}};
+</script>
+</body>
+</html>
