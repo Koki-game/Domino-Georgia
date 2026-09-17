@@ -9899,24 +9899,21 @@ body.dg-game-active #dgV69Badge{display:none}
     if(!wrap){
       wrap=document.createElement('div');wrap.id='dgV69QuickTools';
       wrap.innerHTML=`
-        <button id="dgV69FullBtn" class="dg-v69-quick-btn" type="button" aria-label="სრული ეკრანი" title="სრული ეკრანი">⛶</button>
+        <div id="dgV69FullBtn" class="dg-v69-quick-btn" role="button" tabindex="0" aria-label="სრული ეკრანი" title="სრული ეკრანი">⛶</div>
         <button id="dgV69SoundBtn" class="dg-v69-quick-btn" type="button" aria-label="ხმა" title="ხმა">🔊</button>`;
       game.appendChild(wrap);
-
-      $('dgV69FullBtn')?.addEventListener('click',async e=>{
+      $('dgV69FullBtn')?.addEventListener('click',e=>{
         e.preventDefault();e.stopPropagation();
-        try{
-          if(!document.fullscreenElement){
-            const p=document.documentElement.requestFullscreen?.({navigationUI:'hide'})||document.documentElement.webkitRequestFullscreen?.();
-            if(p&&typeof p.then==='function')await p;
-          }else{
-            const p=document.exitFullscreen?.()||document.webkitExitFullscreen?.();
-            if(p&&typeof p.then==='function')await p;
-          }
-        }catch(_e){
-          /* Fall back to the existing full-screen menu action when the browser blocks the direct API. */
-          document.querySelector('#dgV15MenuPanel [data-act="full"]')?.click();
-        }
+        /* V72: app-style CSS fullscreen. No requestFullscreen(), so mobile browsers
+           do not show their native fullscreen warning/toast. */
+        const on=!document.documentElement.classList.contains('dg-v72-soft-full');
+        document.documentElement.classList.toggle('dg-v72-soft-full',on);
+        document.body.classList.toggle('dg-v72-soft-full',on);
+        const b=$('dgV69FullBtn');if(b){b.textContent=on?'↙':'⛶';b.setAttribute('aria-pressed',on?'true':'false')}
+        try{window.scrollTo(0,1)}catch(_e){}
+      });
+      $('dgV69FullBtn')?.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}
       });
 
       $('dgV69SoundBtn')?.addEventListener('click',e=>{
@@ -10000,6 +9997,54 @@ body.dg-game-active #dgV71Badge{display:none}
 (()=>{const add=()=>{if(document.getElementById('dgV71Badge'))return;const b=document.createElement('div');b.id='dgV71Badge';b.textContent='V71';document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();})();
 </script>
 <!-- DG V71 LONE 0-0 COUNTS 10 END -->
+
+
+<!-- DG V72 SOFT FULLSCREEN NO BROWSER TOAST START -->
+<style id="dg-v72-soft-fullscreen-css">
+#dgV71Badge{display:none!important}
+#dgV72Badge{position:fixed;right:10px;top:10px;z-index:116000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV72Badge{display:none}
+
+/* App-style fullscreen: uses the whole AVAILABLE viewport without calling the
+   browser Fullscreen API. Works on iPhone/Android and avoids the native warning. */
+html.dg-v72-soft-full,
+html.dg-v72-soft-full body,
+body.dg-v72-soft-full{
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  max-height:100dvh!important;
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+  background:#050505!important;
+}
+html.dg-v72-soft-full body{position:fixed!important;inset:0!important;margin:0!important;padding:0!important}
+html.dg-v72-soft-full #game{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  max-height:100dvh!important;
+  overflow:hidden!important;
+}
+html.dg-v72-soft-full #dgV69FullBtn{color:#fff1b2!important;border-color:#d9b44d!important;box-shadow:inset 0 0 0 1px rgba(255,229,135,.16),0 3px 9px rgba(0,0,0,.75)!important}
+
+/* Do not show the old iPhone fullscreen helper when the user deliberately uses
+   the new app-style fullscreen button. */
+html.dg-v72-soft-full #dgV54IOSHint{display:none!important}
+</style>
+<script id="dg-v72-soft-fullscreen-js">
+(()=>{
+  const add=()=>{
+    if(!document.getElementById('dgV72Badge')){const b=document.createElement('div');b.id='dgV72Badge';b.textContent='V72';document.body.appendChild(b)}
+    const full=document.getElementById('dgV69FullBtn');
+    if(full){full.setAttribute('aria-pressed',document.documentElement.classList.contains('dg-v72-soft-full')?'true':'false')}
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();
+})();
+</script>
+<!-- DG V72 SOFT FULLSCREEN NO BROWSER TOAST END -->
 
 </body>
 </html>
