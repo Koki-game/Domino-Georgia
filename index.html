@@ -10161,10 +10161,162 @@ async function boot(){
   setInterval(ensurePoints,5*60*1000);
 }
 window.addEventListener('dg-v30-room',e=>processRoom(e.detail));
+window.addEventListener('dg-v74-points-update',e=>{const n=Number(e.detail);if(Number.isFinite(n)){points=Math.max(0,n);renderPoints();}});
 document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-v61-mode,.dg-language-btn'))setTimeout(syncUi,80)},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 </script>
 <!-- DG V73 GAME POINTS + 12H REFILL + HIDE 3-BOT IN 2P END -->
+
+
+<!-- DG V74 COSMETIC SHOP WITH GAME POINTS START -->
+<style id="dg-v74-shop-css">
+#dgV73Badge{display:none!important}
+#dgV74Badge{
+  position:fixed;right:10px;top:10px;z-index:118000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV74Badge{display:none}
+
+#dgV74ShopBtn{
+  width:100%;min-height:44px;margin:0 0 10px;border-radius:11px;border:1px solid #b6862c;
+  background:linear-gradient(145deg,#6d4810,#3b2607);color:#ffe99b;
+  font:1000 12px/1.2 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.28)
+}
+#dgV74ShopOverlay{
+  display:none;position:fixed;inset:0;z-index:117500;background:rgba(0,0,0,.72);
+  align-items:center;justify-content:center;padding:14px
+}
+#dgV74ShopOverlay.show{display:flex}
+#dgV74ShopCard{
+  width:min(94vw,620px);max-height:88vh;overflow:auto;border-radius:18px;
+  border:1px solid rgba(230,185,74,.58);background:linear-gradient(180deg,#0b1716,#07100f 68%,#0b1513);
+  color:#eef5f2;box-shadow:0 14px 45px rgba(0,0,0,.62);padding:14px
+}
+.dg-v74-shop-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.dg-v74-shop-head h3{font:1000 18px/1.1 Arial,"Noto Sans Georgian",sans-serif;color:#f3d26f}
+.dg-v74-shop-balance{margin-left:auto;padding:6px 9px;border-radius:999px;border:1px solid rgba(229,185,72,.38);background:#211a08;color:#f4d36e;font:1000 11px/1 Arial,sans-serif}
+#dgV74ShopClose{width:34px;height:34px;border:0;border-radius:50%;background:#172522;color:#fff;font-size:18px;cursor:pointer}
+.dg-v74-section-title{margin:12px 0 7px;color:#d7e5df;font:1000 12px/1 Arial,"Noto Sans Georgian",sans-serif;letter-spacing:.02em}
+.dg-v74-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.dg-v74-item{position:relative;min-height:112px;border:1px solid #2d4640;border-radius:13px;background:#0d1a18;padding:9px;text-align:left;color:#e9f0ed;cursor:pointer}
+.dg-v74-item.owned{border-color:#7c6a2c}.dg-v74-item.active{box-shadow:0 0 0 2px #d6aa42 inset;border-color:#d6aa42}
+.dg-v74-preview{height:54px;border-radius:9px;margin-bottom:7px;border:2px solid #4a2b1b;box-shadow:inset 0 0 18px rgba(0,0,0,.45)}
+.dg-v74-preview.classic{background:radial-gradient(ellipse,#126743,#075033 55%,#033620)}
+.dg-v74-preview.blue{background:radial-gradient(ellipse,#1c6a8d,#0d4763 55%,#062d40)}
+.dg-v74-preview.burgundy{background:radial-gradient(ellipse,#7b2f3b,#541b27 55%,#2d0c15)}
+.dg-v74-item b{display:block;font:1000 11px/1.25 Arial,"Noto Sans Georgian",sans-serif}
+.dg-v74-price{display:block;margin-top:4px;color:#f1cf6a;font:900 10px/1 Arial,sans-serif}
+.dg-v74-emoji{display:flex;align-items:center;justify-content:center;height:56px;font-size:32px}
+.dg-v74-note{margin-top:10px;color:#8fa39c;font:800 9px/1.4 Arial,"Noto Sans Georgian",sans-serif;text-align:center}
+#dgV74ShopMsg{min-height:16px;margin-top:8px;text-align:center;color:#f3ce68;font:900 10px/1.3 Arial,"Noto Sans Georgian",sans-serif}
+@media(max-width:540px){.dg-v74-grid{grid-template-columns:repeat(2,1fr)}#dgV74ShopCard{padding:11px}.dg-v74-item{min-height:104px}}
+
+/* Purchased table cosmetics. Game logic and dimensions stay unchanged. */
+body.dg-table-blue .table-area{
+  background:radial-gradient(ellipse at 50% 48%,#1c6a8d 0%,#0d4763 55%,#062d40 100%)!important;
+  outline-color:#9d6c38!important
+}
+body.dg-table-burgundy .table-area{
+  background:radial-gradient(ellipse at 50% 48%,#7b2f3b 0%,#541b27 55%,#2d0c15 100%)!important;
+  outline-color:#9d6c38!important
+}
+</style>
+
+<script type="module" id="dg-v74-shop-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,getDoc,runTransaction,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const PROFILES='dominoProfiles',LANG_KEY='dg_domino_v26_language';
+const $=id=>document.getElementById(id);
+let app,auth,db,uid='',balance=1000,profile={};
+const TABLES=[
+  {id:'classic',name:{ka:'კლასიკური მწვანე',en:'Classic Green'},price:0,cls:'classic'},
+  {id:'blue',name:{ka:'ლურჯი მაგიდა',en:'Blue Table'},price:300,cls:'blue'},
+  {id:'burgundy',name:{ka:'ბორდოს მაგიდა',en:'Burgundy Table'},price:500,cls:'burgundy'}
+];
+const EMOJIS=[
+  {id:'laugh',emoji:'😂',price:150},
+  {id:'party',emoji:'🥳',price:150},
+  {id:'wink',emoji:'😜',price:200},
+  {id:'mind',emoji:'🤯',price:200}
+];
+const TXT={
+  ka:{shop:'🛍️ მაღაზია',title:'მაღაზია',tables:'მაგიდები',emojis:'ემოჯები',owned:'ნაყიდია',active:'არჩეულია',use:'არჩევა',buy:'ყიდვა',notEnough:'ქულები არ გყოფნის',bought:'შეძენილია',balance:'ქულა',note:'ყველაფერი იყიდება მხოლოდ თამაშში დაგროვილი ქულებით. რეალური ფული არ გამოიყენება.'},
+  en:{shop:'🛍️ Shop',title:'Shop',tables:'Tables',emojis:'Emojis',owned:'Owned',active:'Selected',use:'Use',buy:'Buy',notEnough:'Not enough points',bought:'Purchased',balance:'points',note:'Everything is bought only with game points. No real money is used.'}
+};
+function lang(){return localStorage.getItem(LANG_KEY)||'ka'}
+function tr(){return TXT[lang()]||TXT.en}
+function nameFor(x){return x.name?.[lang()]||x.name?.en||x.id}
+function badge(){if($('dgV74Badge'))return;const b=document.createElement('div');b.id='dgV74Badge';b.textContent='V74';document.body.appendChild(b)}
+function ownedTables(){return Array.isArray(profile.shopOwnedTables)?profile.shopOwnedTables:['classic']}
+function ownedEmojis(){return Array.isArray(profile.shopOwnedEmojis)?profile.shopOwnedEmojis:[]}
+function activeTable(){return profile.activeTable||'classic'}
+function applyTable(id){document.body.classList.remove('dg-table-blue','dg-table-burgundy');if(id==='blue')document.body.classList.add('dg-table-blue');if(id==='burgundy')document.body.classList.add('dg-table-burgundy')}
+function ensureEmojiButtons(){
+  const p=$('emojiPanel');if(!p)return;
+  const owned=ownedEmojis();
+  EMOJIS.forEach(it=>{
+    let b=p.querySelector(`[data-shop-emoji="${it.id}"]`);
+    if(owned.includes(it.id)){
+      if(!b){b=document.createElement('button');b.className='emoji-choice';b.dataset.shopEmoji=it.id;b.textContent=it.emoji;p.appendChild(b)}
+    }else b?.remove();
+  });
+}
+function syncPointsDom(){window.dispatchEvent(new CustomEvent('dg-v74-points-update',{detail:balance}));const e=$('dgV74ShopBalance');if(e)e.textContent=`◆ ${balance} ${tr().balance}`}
+function msg(v){const e=$('dgV74ShopMsg');if(e)e.textContent=v||''}
+function ensureButton(){
+  const choice=$('dgChoiceStep');if(!choice)return;
+  let b=$('dgV74ShopBtn');if(!b){b=document.createElement('button');b.id='dgV74ShopBtn';const rank=$('dgRankLine');rank?rank.insertAdjacentElement('afterend',b):choice.querySelector('.dg-entry-profile')?.insertAdjacentElement('afterend',b);b.addEventListener('click',openShop)}
+  b.textContent=tr().shop;
+}
+function buildOverlay(){
+  let o=$('dgV74ShopOverlay');if(o)return o;
+  o=document.createElement('div');o.id='dgV74ShopOverlay';o.innerHTML=`<div id="dgV74ShopCard"><div class="dg-v74-shop-head"><h3 id="dgV74ShopTitle"></h3><span class="dg-v74-shop-balance" id="dgV74ShopBalance"></span><button id="dgV74ShopClose" type="button">×</button></div><div class="dg-v74-section-title" id="dgV74TablesTitle"></div><div class="dg-v74-grid" id="dgV74Tables"></div><div class="dg-v74-section-title" id="dgV74EmojisTitle"></div><div class="dg-v74-grid" id="dgV74Emojis"></div><div id="dgV74ShopMsg"></div><div class="dg-v74-note" id="dgV74Note"></div></div>`;
+  document.body.appendChild(o);$('dgV74ShopClose').onclick=closeShop;o.addEventListener('click',e=>{if(e.target===o)closeShop()});return o;
+}
+function renderShop(){
+  buildOverlay();$('dgV74ShopTitle').textContent=tr().title;$('dgV74TablesTitle').textContent=tr().tables;$('dgV74EmojisTitle').textContent=tr().emojis;$('dgV74Note').textContent=tr().note;syncPointsDom();
+  const ot=ownedTables(),oe=ownedEmojis(),act=activeTable();
+  $('dgV74Tables').innerHTML=TABLES.map(it=>{const owned=it.price===0||ot.includes(it.id),active=act===it.id;const label=active?tr().active:(owned?tr().use:`${tr().buy} · ◆${it.price}`);return `<button class="dg-v74-item ${owned?'owned':''} ${active?'active':''}" data-table="${it.id}"><div class="dg-v74-preview ${it.cls}"></div><b>${nameFor(it)}</b><span class="dg-v74-price">${label}</span></button>`}).join('');
+  $('dgV74Emojis').innerHTML=EMOJIS.map(it=>{const owned=oe.includes(it.id);return `<button class="dg-v74-item ${owned?'owned':''}" data-emoji="${it.id}"><div class="dg-v74-emoji">${it.emoji}</div><b>${owned?tr().owned:`${tr().buy} · ◆${it.price}`}</b></button>`}).join('');
+}
+async function loadProfile(){if(!uid||!db)return;const s=await getDoc(doc(db,PROFILES,uid));profile=s.exists()?s.data():{};balance=Number.isFinite(Number(profile.points))?Math.max(0,Number(profile.points)):1000;applyTable(activeTable());ensureEmojiButtons();syncPointsDom()}
+async function buyTable(id){
+  const item=TABLES.find(x=>x.id===id);if(!item)return;msg('');
+  if(item.price===0||ownedTables().includes(id)){await selectTable(id);return}
+  const res=await purchase('table',id,item.price);if(res)await selectTable(id)
+}
+async function selectTable(id,skipWrite=false){
+  try{if(!skipWrite){await runTransaction(db,async tx=>{const r=doc(db,PROFILES,uid),s=await tx.get(r);if(!s.exists())return;const d=s.data(),owned=Array.isArray(d.shopOwnedTables)?d.shopOwnedTables:['classic'];if(id!=='classic'&&!owned.includes(id))return;tx.update(r,{activeTable:id,updatedAt:serverTimestamp()})})}profile.activeTable=id;applyTable(id);renderShop()}catch(e){console.warn('V74 select table',e)}
+}
+async function buyEmoji(id){const item=EMOJIS.find(x=>x.id===id);if(!item)return;if(ownedEmojis().includes(id)){msg(tr().owned);return}if(await purchase('emoji',id,item.price)){ensureEmojiButtons();renderShop()}}
+async function purchase(kind,id,price){
+  if(!uid||!db)return false;
+  try{
+    const r=doc(db,PROFILES,uid);
+    const out=await runTransaction(db,async tx=>{
+      const s=await tx.get(r);if(!s.exists())return {ok:false};const d=s.data();let p=Number.isFinite(Number(d.points))?Math.max(0,Number(d.points)):1000;
+      const tk=Array.isArray(d.shopOwnedTables)?d.shopOwnedTables:['classic'],em=Array.isArray(d.shopOwnedEmojis)?d.shopOwnedEmojis:[];
+      if((kind==='table'&&tk.includes(id))||(kind==='emoji'&&em.includes(id)))return {ok:true,points:p,d};
+      if(p<price)return {ok:false,low:true,points:p,d};p-=price;
+      const patch={points:p,updatedAt:serverTimestamp()};
+      if(kind==='table')patch.shopOwnedTables=[...new Set([...tk,id])];else patch.shopOwnedEmojis=[...new Set([...em,id])];
+      tx.update(r,patch);return {ok:true,points:p,d:{...d,...patch}};
+    });
+    if(!out?.ok){balance=out?.points??balance;syncPointsDom();msg(tr().notEnough);return false}
+    balance=out.points;profile={...profile,...out.d,points:balance};syncPointsDom();msg(tr().bought);return true;
+  }catch(e){console.warn('V74 purchase',e);return false}
+}
+async function openShop(){try{await loadProfile()}catch(e){}renderShop();$('dgV74ShopOverlay')?.classList.add('show')}
+function closeShop(){$('dgV74ShopOverlay')?.classList.remove('show')}
+function wire(){document.addEventListener('click',e=>{const t=e.target?.closest?.('[data-table]');if(t){buyTable(t.dataset.table);return}const m=e.target?.closest?.('[data-emoji]');if(m)buyEmoji(m.dataset.emoji)},true)}
+async function boot(){badge();buildOverlay();ensureButton();wire();try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});await loadProfile()}catch(e){console.warn('V74 boot',e)}setInterval(()=>{ensureButton();ensureEmojiButtons()},600)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+</script>
+<!-- DG V74 COSMETIC SHOP WITH GAME POINTS END -->
 
 </body>
 </html>
