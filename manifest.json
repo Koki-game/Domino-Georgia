@@ -5,7 +5,7 @@
   "start_url": "/Domino-Georgia/",
   "scope": "/Domino-Georgia/",
   "display": "fullscreen",
-  "orientation": "landscape",
+  "orientation": "any",
   "background_color": "#071b13",
   "theme_color": "#3b1b0c",
   "icons": [
@@ -19,5 +19,11 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "id": "/Domino-Georgia/",
+  "lang": "ka",
+  "categories": [
+    "games"
+  ],
+  "prefer_related_applications": false
 }
