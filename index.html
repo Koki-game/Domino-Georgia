@@ -4483,6 +4483,53 @@ function find66(){for(const p of activeSeats()){const i=G.hands[p].findIndex(t=>
 let msgTimer=null;
 function message(text,ms=1500){const el=$('turnMessage');if(!el)return;clearTimeout(msgTimer);el.textContent=text;el.classList.add('show');msgTimer=setTimeout(()=>el.classList.remove('show'),ms);}
 
+/* V70: short end-of-hand reveal + visible market-draw flight. */
+let dgV70RevealUntil=0,dgV70RevealTimer=null,dgV70PointTimer=null;
+function dgV70SeatHandElement(p){
+  if(Number(p)===Number(HUMAN))return $('playerHand');
+  const top=(HUMAN+2)%4,right=(HUMAN+3)%4,left=(HUMAN+1)%4;
+  if(Number(p)===Number(top))return $('topHiddenHand');
+  if(Number(p)===Number(right))return $('rightHiddenHand');
+  if(Number(p)===Number(left))return $('leftHiddenHand');
+  return null;
+}
+function dgV70ShowPoints(points){
+  const game=$('game');if(!game)return;
+  let e=$('dgV70HandPoints');
+  if(!e){e=document.createElement('div');e.id='dgV70HandPoints';game.appendChild(e);}
+  e.textContent=`+${Math.max(0,Number(points)||0)}`;
+  e.classList.remove('show');void e.offsetWidth;e.classList.add('show');
+  clearTimeout(dgV70PointTimer);dgV70PointTimer=setTimeout(()=>e.classList.remove('show'),1000);
+}
+function dgV70RevealHands(points){
+  dgV70RevealUntil=Date.now()+1000;
+  clearTimeout(dgV70RevealTimer);
+  renderHidden();dgV70ShowPoints(points);
+  dgV70RevealTimer=setTimeout(()=>{dgV70RevealUntil=0;renderHidden();},1000);
+}
+function dgV70AnimateMarketDraw(p,tile,delay=0){
+  const market=$('dgV61StockStatus')?.querySelector('.dg-v62-market-pile');
+  const target=dgV70SeatHandElement(p);
+  if(!market||!target||!tile)return;
+  const mr=market.getBoundingClientRect(),tr=target.getBoundingClientRect();
+  if(!mr.width||!mr.height||!tr.width||!tr.height)return;
+  const sx=mr.left+mr.width*.52,sy=mr.top+mr.height*.54;
+  const tx=tr.left+tr.width*.5,ty=tr.top+tr.height*.5;
+  setTimeout(()=>{
+    const d=document.createElement('div');
+    const own=Number(p)===Number(HUMAN);
+    d.className=own?'domino dg-v70-fly-tile dg-v70-fly-front':'tile-back dg-v70-fly-tile dg-v70-fly-back';
+    if(own)d.innerHTML=halfHTML(tile.a)+halfHTML(tile.b);
+    d.style.left=`${sx}px`;d.style.top=`${sy}px`;
+    document.body.appendChild(d);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      d.style.transform=`translate(${tx-sx}px,${ty-sy}px) scale(.92) rotate(${own?0:6}deg)`;
+      d.style.opacity='1';
+    }));
+    setTimeout(()=>{d.style.opacity='0';setTimeout(()=>d.remove(),120);},430);
+  },Math.max(0,Number(delay)||0));
+}
+
 function createPort(o){const p={id:`P${G.portSeq++}`,active:true,kind:'normal',contribution:o.value,...o};G.ports.push(p);return p;}
 const activePorts=()=>G.ports.filter(p=>p.active);
 const getPort=id=>G.ports.find(p=>p.id===id&&p.active);
@@ -4751,20 +4798,24 @@ function addScore(t,pts,msg){G.scores[t]+=pts;if(G.scores[t]>=targetScore())G.th
 function handPips(p){return G.hands[p].reduce((s,t)=>s+t.a+t.b,0);}
 function teamRemain(t){if(GAME_MODE===2)return t===0?handPips(2):handPips(0);return t===0?handPips(0)+handPips(2):handPips(1)+handPips(3);}
 function finishNormal(player){
-  if(G.handOver)return;G.handOver=true;const wt=team(player),lt=1-wt;let earned=round5(teamRemain(lt))+G.carry;G.carry=0;if(earned)addScore(wt,earned);G.nextStarter=player;G.pendingTransition=G.threshold?'resolveMatch':'nextRound';message(`${teamName(wt)} — ხელი +${earned}`,2300);dgNotifyState();
+  if(G.handOver)return;G.handOver=true;const wt=team(player),lt=1-wt;let earned=round5(teamRemain(lt))+G.carry;G.carry=0;if(earned)addScore(wt,earned);G.nextStarter=player;G.pendingTransition=G.threshold?'resolveMatch':'nextRound';
+  dgV70RevealHands(earned);
+  message(`${teamName(wt)} — ხელი +${earned}`,2300);dgNotifyState();
   if(G.threshold)setTimeout(resolveMatch,1900);else setTimeout(nextRound,2200);
 }
 function resolveMatch(){const [a,b]=G.scores;if(a===b){G.pendingTransition='nextRound';message(`${a}:${b} — კიდევ ერთი ხელი`,2200);dgNotifyState();setTimeout(nextRound,2300);return;}const wt=a>b?0:1;G.matchOver=true;G.pendingTransition=null;message(`${teamName(wt)} — მატჩის გამარჯვებული! ${a}:${b}`,6000);dgNotifyState();setTimeout(()=>showWinCelebration(wt,false),420);}
 function finishRiba(){
   if(G.handOver)return;G.handOver=true;const a=teamRemain(0),b=teamRemain(1);const closer=G.pendingCloser??G.lastPlayer??0;G.nextStarter=closer;G.pendingTransition='nextRound';
-  if(a===b){const c=round5(a);G.carry+=c;message(`რიბა ${a}:${b} — გადადის +${c}`,2600);dgNotifyState();setTimeout(nextRound,2600);return;}
-  const wt=a<b?0:1, loser=wt===0?b:a;let earned=round5(loser)+G.carry;G.carry=0;addScore(wt,earned);message(`რიბა — ${teamName(wt)} +${earned}`,2600);dgNotifyState();setTimeout(nextRound,2600);
+  if(a===b){const c=round5(a);G.carry+=c;dgV70RevealHands(c);message(`რიბა ${a}:${b} — გადადის +${c}`,2600);dgNotifyState();setTimeout(nextRound,2600);return;}
+  const wt=a<b?0:1, loser=wt===0?b:a;let earned=round5(loser)+G.carry;G.carry=0;addScore(wt,earned);dgV70RevealHands(earned);message(`რიბა — ${teamName(wt)} +${earned}`,2600);dgNotifyState();setTimeout(nextRound,2600);
 }
 function drawUntilPlayable(p){
   if(GAME_MODE!==2||G.handOver||G.matchOver||!G.placements.length)return 0;
   let drawn=0;
   while(!hasMove(p)&&G.stock.length>2){
-    const tile=G.stock.pop();if(!tile)break;G.hands[p].push(tile);drawn++;
+    const tile=G.stock.pop();if(!tile)break;
+    dgV70AnimateMarketDraw(p,tile,drawn*230);
+    G.hands[p].push(tile);drawn++;
   }
   if(drawn){
     const reserve=G.stock.length<=2?' · ბოლო 2 ქვა დაცულია':'';
@@ -4778,6 +4829,7 @@ function drawOneFromMarket(p){
   if(hasMove(HUMAN))return false;
   if(G.stock.length<=2){message('ბაზარში ბოლო 2 ქვა რჩება — მათი აღება არ შეიძლება',1500);renderAll();return false;}
   const tile=G.stock.pop();if(!tile)return false;
+  dgV70AnimateMarketDraw(HUMAN,tile,0);
   G.hands[HUMAN].push(tile);
   G.passStreak=0;
   renderAll();
@@ -4937,7 +4989,17 @@ function updateAbacus(box,score){
 function renderHidden(){
   const top=(HUMAN+2)%4,right=(HUMAN+3)%4,left=(HUMAN+1)%4;
   const map=[['topHiddenHand',top],['rightHiddenHand',right],['leftHiddenHand',left]];
-  for(const [id,p] of map){const e=$(id);if(!e)continue;e.innerHTML='';for(let i=0;i<G.hands[p].length;i++){const d=document.createElement('div');d.className='tile-back';e.appendChild(d);}}
+  const reveal=Date.now()<dgV70RevealUntil;
+  for(const [id,p] of map){
+    const e=$(id);if(!e)continue;e.innerHTML='';
+    for(let i=0;i<G.hands[p].length;i++){
+      const t=G.hands[p][i];
+      const d=document.createElement('div');
+      if(reveal){d.className='domino dg-v70-reveal-front';d.innerHTML=halfHTML(t.a)+halfHTML(t.b);}
+      else d.className='tile-back';
+      e.appendChild(d);
+    }
+  }
 }
 function makeTileEl(pl){const d=document.createElement('div');d.className=`domino dg-board-tile ${pl.ori==='H'?'dg-horizontal':'dg-vertical'}${pl.isStake?' stake-domino':''}`;d.dataset.tileId=pl.id;d.innerHTML=halfHTML(pl.r1)+halfHTML(pl.r2);const w=pl.ori==='H'?W:H,h=pl.ori==='H'?H:W;d.style.left=`${pl.x-w/2}px`;d.style.top=`${pl.y-h/2}px`;return d;}
 function renderBoard(){
@@ -5410,12 +5472,18 @@ window.DG_ENGINE={
   getState(){return dgStateSnapshot();},
   loadState(state){
     if(!state||typeof state!=='object')return false;
+    const wasHandOver=!!G.handOver,prevScores=[Number(G.scores?.[0])||0,Number(G.scores?.[1])||0];
     window.DG_ENGINE_APPLYING_REMOTE=true;
     try{
       const copy=JSON.parse(JSON.stringify(state));
       GAME_MODE=Number(copy.mode)===2?2:4;copy.mode=GAME_MODE;if(!Array.isArray(copy.stock))copy.stock=[];
       Object.keys(G).forEach(k=>{if(Object.prototype.hasOwnProperty.call(copy,k))G[k]=copy[k];});
       G.selectedIndex=null;G.aiBusy=false;clearChoices();renderAll();
+      if(!wasHandOver&&G.handOver&&!G.matchOver){
+        const d0=Math.max(0,(Number(G.scores?.[0])||0)-prevScores[0]);
+        const d1=Math.max(0,(Number(G.scores?.[1])||0)-prevScores[1]);
+        dgV70RevealHands(Math.max(d0,d1,round5(Math.min(teamRemain(0),teamRemain(1)))));
+      }
     }finally{window.DG_ENGINE_APPLYING_REMOTE=false;}
     scheduleTurn();return true;
   },
@@ -9867,6 +9935,53 @@ body.dg-game-active #dgV69Badge{display:none}
 })();
 </script>
 <!-- DG V69 QUICK EMOJI + FULLSCREEN + SOUND END -->
+
+
+
+<!-- DG V70 MARKET FLIGHT + END-HAND REVEAL START -->
+<style id="dg-v70-reveal-css">
+#dgV69Badge{display:none!important}
+#dgV70Badge{position:fixed;right:10px;top:10px;z-index:114000;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV70Badge{display:none}
+
+/* A market tile visibly flies from the market to the player's hand. */
+.dg-v70-fly-tile{
+  position:fixed!important;z-index:119500!important;margin:0!important;pointer-events:none!important;
+  transform:translate(-50%,-50%) scale(.82) rotate(-7deg);transform-origin:center!important;
+  transition:transform .42s cubic-bezier(.2,.75,.22,1),opacity .12s linear!important;opacity:.98;
+  box-sizing:border-box!important;
+}
+.dg-v70-fly-front{width:28px!important;height:48px!important;display:flex!important;flex-direction:column!important;border-radius:6px!important}
+.dg-v70-fly-front::after{left:4px!important;right:4px!important;top:50%!important;bottom:auto!important;width:auto!important;height:1.5px!important;transform:translateY(-50%)!important}
+.dg-v70-fly-front .domino-half{width:100%!important;height:50%!important}
+.dg-v70-fly-front .pip{width:4px!important;height:4px!important}
+.dg-v70-fly-back{width:25px!important;height:36px!important}
+
+/* At hand end, remaining hidden tiles flip face-up for one second. */
+.dg-v70-reveal-front{
+  width:24px!important;height:36px!important;display:flex!important;flex-direction:column!important;
+  border-radius:5px!important;border:1px solid #b8a77f!important;overflow:hidden!important;
+  animation:dgV70Flip .22s ease-out both!important;
+}
+.dg-v70-reveal-front::after{left:3px!important;right:3px!important;top:50%!important;bottom:auto!important;width:auto!important;height:1px!important;transform:translateY(-50%)!important}
+.dg-v70-reveal-front .domino-half{width:100%!important;height:50%!important}
+.dg-v70-reveal-front .pip{width:3.2px!important;height:3.2px!important}
+.hidden-left .dg-v70-reveal-front,.hidden-right .dg-v70-reveal-front{width:23px!important;height:34px!important}
+@keyframes dgV70Flip{0%{transform:rotateY(90deg) scale(.92);opacity:.3}100%{transform:rotateY(0) scale(1);opacity:1}}
+
+/* One-second awarded-points label: normal size, slightly smaller than the custom reaction text. */
+#dgV70HandPoints{
+  position:absolute;left:50%;top:43%;transform:translate(-50%,-50%) scale(.94);z-index:119000;
+  min-width:72px;padding:7px 14px;border-radius:16px;text-align:center;
+  background:rgba(10,38,27,.90);border:1px solid rgba(239,197,93,.62);color:#ffe18a;
+  font:1000 clamp(15px,1.45vw,21px)/1 Arial,"Noto Sans Georgian",sans-serif;
+  text-shadow:0 2px 3px rgba(0,0,0,.65);box-shadow:0 5px 18px rgba(0,0,0,.45);
+  opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;
+}
+#dgV70HandPoints.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+</style>
+<script id="dg-v70-badge-js">(()=>{const add=()=>{if(document.getElementById('dgV70Badge'))return;const b=document.createElement('div');b.id='dgV70Badge';b.textContent='V70';document.body.appendChild(b)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add,{once:true});else add();})();</script>
+<!-- DG V70 MARKET FLIGHT + END-HAND REVEAL END -->
 
 </body>
 </html>
