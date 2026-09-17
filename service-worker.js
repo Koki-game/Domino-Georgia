@@ -1,17 +1,19 @@
-const CACHE_NAME = "domino-georgia-v1";
+const CACHE_NAME = "domino-georgia-v80";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
-  "./manifest.json"
+  "./manifest.json",
+  "./privacy.html",
+  "./delete-account.html",
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(FILES_TO_CACHE))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
   );
-
   self.skipWaiting();
 });
 
@@ -25,7 +27,6 @@ self.addEventListener("activate", event => {
       )
     )
   );
-
   self.clients.claim();
 });
 
@@ -36,10 +37,9 @@ self.addEventListener("fetch", event => {
     fetch(event.request)
       .then(response => {
         const copy = response.clone();
-
         caches.open(CACHE_NAME)
-          .then(cache => cache.put(event.request, copy));
-
+          .then(cache => cache.put(event.request, copy))
+          .catch(() => {});
         return response;
       })
       .catch(() => caches.match(event.request))
