@@ -10046,5 +10046,125 @@ html.dg-v72-soft-full #dgV54IOSHint{display:none!important}
 </script>
 <!-- DG V72 SOFT FULLSCREEN NO BROWSER TOAST END -->
 
+
+
+<!-- DG V73 GAME POINTS + 12H REFILL + HIDE 3-BOT IN 2P START -->
+<style id="dg-v73-points-css">
+#dgV72Badge{display:none!important}
+#dgV73Badge{
+  position:fixed;right:10px;top:10px;z-index:116000;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV73Badge{display:none}
+
+/* In 2-player mode the old "Test with 3 Bots" option must not appear. */
+body.dg-v61-two #dgTestBots{display:none!important}
+
+/* Virtual game points shown next to the existing rating line. */
+#dgRankLine .dg-v73-points{
+  display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:999px;
+  border:1px solid rgba(230,187,75,.38);background:rgba(88,60,11,.28);color:#f4cf66;
+  font:1000 10px/1 Arial,"Noto Sans Georgian",sans-serif;white-space:nowrap
+}
+#dgV73PointToast{
+  display:none;position:fixed;left:50%;top:22%;transform:translate(-50%,-50%);z-index:116500;
+  padding:8px 13px;border-radius:12px;border:1px solid rgba(231,190,76,.58);
+  background:rgba(4,15,11,.94);color:#f5d36f;box-shadow:0 5px 18px rgba(0,0,0,.48);
+  font:1000 14px/1.15 Arial,"Noto Sans Georgian",sans-serif;pointer-events:none
+}
+#dgV73PointToast.show{display:block}
+</style>
+<script type="module" id="dg-v73-points-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,getDoc,runTransaction,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const PROFILES='dominoProfiles',ROOMS='dominoRooms',LANG_KEY='dg_domino_v26_language';
+const REFILL_MS=12*60*60*1000,REFILL_TARGET=1000;
+const $=id=>document.getElementById(id);
+let app,auth,db,uid='',points=1000,lastProcessedKey='';
+const TXT={
+  ka:{points:'ქულა',plus:n=>`+${n} ქულა`,minus:n=>`-${n} ქულა`,refill:'ქულები აღდგა 1000-მდე'},
+  en:{points:'points',plus:n=>`+${n} points`,minus:n=>`-${n} points`,refill:'Points restored to 1000'},
+  ru:{points:'очки',plus:n=>`+${n} очков`,minus:n=>`-${n} очков`,refill:'Очки восстановлены до 1000'},
+  tr:{points:'puan',plus:n=>`+${n} puan`,minus:n=>`-${n} puan`,refill:'Puanlar 1000’e yenilendi'},
+  de:{points:'Punkte',plus:n=>`+${n} Punkte`,minus:n=>`-${n} Punkte`,refill:'Punkte auf 1000 aufgefüllt'},
+  ar:{points:'نقاط',plus:n=>`+${n} نقطة`,minus:n=>`-${n} نقطة`,refill:'تمت استعادة النقاط إلى 1000'}
+};
+function lang(){return localStorage.getItem(LANG_KEY)||'ka'}
+function tr(){return TXT[lang()]||TXT.ka}
+function badge(){if($('dgV73Badge'))return;const b=document.createElement('div');b.id='dgV73Badge';b.textContent='V73';document.body.appendChild(b)}
+function pointToast(text){let e=$('dgV73PointToast');if(!e){e=document.createElement('div');e.id='dgV73PointToast';document.body.appendChild(e)}e.textContent=text;e.classList.add('show');clearTimeout(pointToast._t);pointToast._t=setTimeout(()=>e.classList.remove('show'),1800)}
+function renderPoints(){
+  const line=$('dgRankLine');if(!line)return;
+  let e=line.querySelector('.dg-v73-points');
+  if(!e){e=document.createElement('span');e.className='dg-v73-points';const wins=line.querySelector('.wins');wins?line.insertBefore(e,wins):line.appendChild(e)}
+  e.textContent=`◆ ${Math.max(0,Number(points)||0)} ${tr().points}`;
+}
+async function ensurePoints(){
+  if(!uid||!db)return;
+  const pr=doc(db,PROFILES,uid),now=Date.now();
+  try{
+    const result=await runTransaction(db,async tx=>{
+      const ps=await tx.get(pr);const old=ps.exists()?ps.data():{};
+      let p=Number.isFinite(Number(old.points))?Math.max(0,Number(old.points)):REFILL_TARGET;
+      let last=Number(old.pointsRefillMs||0),refilled=false;
+      if(!last)last=now;
+      else if(now-last>=REFILL_MS){p=Math.max(p,REFILL_TARGET);last=now;refilled=true}
+      const patch={points:p,pointsRefillMs:last,updatedAt:serverTimestamp()};
+      if(ps.exists())tx.update(pr,patch);else tx.set(pr,{...patch,createdAt:now});
+      return {points:p,refilled};
+    });
+    points=result?.points??REFILL_TARGET;renderPoints();if(result?.refilled)pointToast(tr().refill);
+  }catch(e){console.warn('V73 ensure points',e);renderPoints()}
+}
+function resultInfo(room){
+  if(!room||room.mode!=='public'||room.status!=='playing'||!room.gameState?.matchOver)return null;
+  const me=(room.players||[]).find(p=>p.uid===uid);if(!me)return null;
+  const scores=room.gameState.scores||[0,0],a=Number(scores[0]||0),b=Number(scores[1]||0);if(a===b)return {tie:true};
+  const winner=a>b?0:1,mode=Number(room.gameMode)===2?2:4;
+  const myTeam=mode===2?(Number(me.seat)===2?0:1):(Number(me.seat)%2);
+  return {won:myTeam===winner,mode,amount:mode===2?200:100};
+}
+async function processRoom(room){
+  if(!uid||!db)return;const info=resultInfo(room);if(!info||info.tie)return;
+  const key=`${room.code}:${room.matchId||''}:${uid}`;if(key===lastProcessedKey)return;
+  lastProcessedKey=key;
+  const rr=doc(db,ROOMS,room.code),pr=doc(db,PROFILES,uid),now=Date.now();
+  try{
+    const result=await runTransaction(db,async tx=>{
+      const rs=await tx.get(rr);if(!rs.exists())return null;const rd=rs.data();
+      if(rd.mode!=='public'||rd.status!=='playing'||!rd.gameState?.matchOver)return null;
+      const done=Array.isArray(rd.pointsProcessed)?rd.pointsProcessed:[];if(done.includes(uid))return {already:true};
+      const fresh=resultInfo({code:room.code,...rd});if(!fresh||fresh.tie)return null;
+      const ps=await tx.get(pr),old=ps.exists()?ps.data():{};
+      let p=Number.isFinite(Number(old.points))?Math.max(0,Number(old.points)):REFILL_TARGET;
+      let last=Number(old.pointsRefillMs||0);if(!last)last=now;
+      if(now-last>=REFILL_MS){p=Math.max(p,REFILL_TARGET);last=now}
+      p=Math.max(0,p+(fresh.won?fresh.amount:-fresh.amount));
+      const patch={points:p,pointsRefillMs:last,updatedAt:serverTimestamp()};
+      if(ps.exists())tx.update(pr,patch);else tx.set(pr,{...patch,createdAt:now});
+      tx.update(rr,{pointsProcessed:[...done,uid],pointsUpdatedAt:serverTimestamp()});
+      return {points:p,won:fresh.won,amount:fresh.amount};
+    });
+    if(result?.already){await ensurePoints();return}
+    if(result){points=result.points;renderPoints();pointToast(result.won?tr().plus(result.amount):tr().minus(result.amount))}
+  }catch(e){lastProcessedKey='';console.warn('V73 points award',e)}
+}
+function syncUi(){renderPoints();if(document.body.classList.contains('dg-v61-two'))$('dgTestBots')?.style.setProperty('display','none','important');else $('dgTestBots')?.style.removeProperty('display')}
+async function boot(){
+  badge();
+  try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});await ensurePoints();if(window.DG_V30_ROOM)processRoom(window.DG_V30_ROOM)}catch(e){console.warn('V73 boot',e)}
+  setInterval(syncUi,400);
+  setInterval(ensurePoints,5*60*1000);
+}
+window.addEventListener('dg-v30-room',e=>processRoom(e.detail));
+document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-v61-mode,.dg-language-btn'))setTimeout(syncUi,80)},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+</script>
+<!-- DG V73 GAME POINTS + 12H REFILL + HIDE 3-BOT IN 2P END -->
+
 </body>
 </html>
