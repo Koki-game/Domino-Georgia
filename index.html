@@ -7767,6 +7767,10 @@ body.dg-game-active #dgV42Badge{display:none}
   font-size:64px;line-height:1;filter:drop-shadow(0 5px 10px rgba(0,0,0,.65));
   will-change:transform,opacity;
 }
+.dg-v41-reaction.dg-mourie-reaction img{
+  width:112px;height:auto;max-height:78px;object-fit:contain;
+  filter:drop-shadow(0 5px 10px rgba(0,0,0,.55));
+}
 </style>
 <script type="module" id="dg-v42-reaction-js">
 import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
@@ -7797,7 +7801,17 @@ function animateReaction(emoji,seat=null){
   const source=seat===null?localAvatar():avatarForSeat(seat)||localAvatar();
   const sr=source?.getBoundingClientRect();const start={x:sr?sr.left+sr.width/2:innerWidth/2,y:sr?sr.top+sr.height/2:innerHeight*.8};
   const end=centerPoint();
-  const el=document.createElement('div');el.className='dg-v41-reaction';el.textContent=emoji;document.body.appendChild(el);
+  const el=document.createElement('div');el.className='dg-v41-reaction';
+  if(emoji==='__DG_MOURIE__'){
+    el.classList.add('dg-mourie-reaction');
+    const img=document.createElement('img');
+    img.src=document.querySelector('#dgV69MourieBtn img')?.src||'';
+    img.alt='მოურიე';
+    if(img.src)el.appendChild(img);else el.textContent='მოურიე';
+  }else{
+    el.textContent=emoji;
+  }
+  document.body.appendChild(el);
   const half=41;
   const sx=start.x-half,sy=start.y-half,ex=end.x-half,ey=end.y-half;
   const anim=el.animate([
@@ -9873,6 +9887,12 @@ body.dg-game-active #dgV69Badge{display:none}
 
   function ensureMourie(){
     const game=$('game');if(!game)return;
+    const selectedLang=(()=>{
+      try{
+        return localStorage.getItem('dg_domino_v26_language')||
+          JSON.parse(localStorage.getItem('dg_domino_v25_profile')||'{}').language||'en';
+      }catch(_e){return 'en'}
+    })();
     let b=$('dgV69MourieBtn');
     if(!b){
       b=document.createElement('button');
@@ -9884,13 +9904,14 @@ body.dg-game-active #dgV69Badge{display:none}
         let proxy=$('dgV69MourieProxy');
         if(!proxy){
           proxy=document.createElement('button');proxy.id='dgV69MourieProxy';proxy.type='button';
-          proxy.className='emoji-choice';proxy.textContent='მოურიე';proxy.style.display='none';
+          proxy.className='emoji-choice';proxy.textContent='__DG_MOURIE__';proxy.style.display='none';
           document.body.appendChild(proxy);
         }
         proxy.click();
       });
       game.appendChild(b);
     } else if(b.parentElement!==game) game.appendChild(b);
+    b.style.display=selectedLang==='ka'?'flex':'none';
   }
 
   function ensureQuickTools(){
@@ -10856,5 +10877,34 @@ html.dg-v82-native-full #dgV69FullBtn{color:#fff1b2!important;border-color:#d9b4
 </script>
 <!-- DG V82 FINAL LOBBY + ANDROID FULLSCREEN POLISH END -->
 
+
+<!-- DG V84 ONLINE BUTTON LAYOUT FIX START -->
+<style id="dg-v84-online-layout-fix">
+/* The old generic .online class uses absolute positioning elsewhere in the game.
+   Neutralize that only for the lobby's online-mode button, keep it first,
+   and let the list flow normally so it can never cover the BOT button. */
+#dgV76TwoPanel .dg-v76-list > .dg-v76-option.online,
+#dgV76FourPanel .dg-v76-list > .dg-v76-option.online{
+  position:relative!important;
+  left:auto!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:auto!important;
+  transform:none!important;
+  width:100%!important;
+  order:-10!important;
+  margin:0!important;
+  z-index:1!important;
+}
+#dgV76TwoPanel .dg-v76-list,
+#dgV76FourPanel .dg-v76-list{
+  align-items:stretch!important;
+}
+</style>
+<!-- DG V84 ONLINE BUTTON LAYOUT FIX END -->
+
 </body>
 </html>
+
+<!-- DG V83: Georgian-only custom MOURIE artwork reaction -->
+<!-- DG V84: Online button restored to first normal-flow position -->
