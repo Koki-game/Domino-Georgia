@@ -7576,7 +7576,7 @@ body.dg-game-active #dgLobbyHome{display:block}
 
   function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
   function lang(){return localStorage.getItem(LANG_KEY)||profile().language||'en'}
-  function lobbyText(){return ({ka:'← ლობიში გასვლა',en:'← Exit to Lobby',ru:'← Выйти в лобби',tr:'← Lobiye çık',de:'← Zur Lobby',ar:'الخروج إلى الردهة ←'})[lang()]||'← Exit to Lobby'}
+  function lobbyText(){return ({ka:'ლობი',en:'Lobby',ru:'Лобби',tr:'Lobi',de:'Lobby',ar:'الردهة'})[lang()]||'Lobby'}
   function toast(text){let e=$('dgV35Toast');if(!e){e=document.createElement('div');e.id='dgV35Toast';document.body.appendChild(e)}e.textContent=text;e.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),3600)}
   function addBadge(){if(!$('dgV35Badge')){const b=document.createElement('div');b.id='dgV35Badge';b.textContent='V35';document.body.appendChild(b)}}
   function addLobbyButton(){
@@ -8111,7 +8111,7 @@ const ROOMS='dominoRooms',GREEN_MS=30000,RED_MS=15000,TOTAL_MS=45000,LANG_KEY='d
 const roots=['.player-top','.player-right','.player-bottom','.player-left'];
 let app,auth,db,uid='',room=window.DG_V30_ROOM||null,lastTimerWrite='',handling='',returnBusy=false;
 const $=id=>document.getElementById(id);
-const TXT={ka:{title:'დრო ამოიწურა',body:'შენს ადგილას BOT აგრძელებს თამაშს.',back:'თამაშში დაბრუნება · 1 შანსი',used:'დაბრუნების შანსი უკვე გამოიყენე. BOT გააგრძელებს ამ მატჩს.',returning:'ვბრუნდებით თამაშში…'},en:{title:'Time expired',body:'A BOT is continuing in your seat.',back:'Return to game · 1 chance',used:'Your return chance has already been used. The BOT will finish this match.',returning:'Returning to game…'},ru:{title:'Время вышло',body:'BOT продолжает играть вместо вас.',back:'Вернуться · 1 шанс',used:'Шанс возвращения уже использован. BOT закончит этот матч.',returning:'Возвращаемся…'},tr:{title:'Süre doldu',body:'Yerine BOT oynamaya devam ediyor.',back:'Oyuna dön · 1 hak',used:'Dönüş hakkını kullandın. BOT bu maçı tamamlayacak.',returning:'Oyuna dönülüyor…'},de:{title:'Zeit abgelaufen',body:'Ein BOT spielt auf deinem Platz weiter.',back:'Zurück ins Spiel · 1 Chance',used:'Deine Rückkehr-Chance wurde bereits benutzt. Der BOT beendet dieses Match.',returning:'Rückkehr…'},ar:{title:'انتهى الوقت',body:'الروبوت يواصل اللعب مكانك.',back:'العودة للعبة · فرصة واحدة',used:'تم استخدام فرصة العودة. سيكمل الروبوت هذه المباراة.',returning:'جارٍ العودة…'}};
+const TXT={ka:{title:'დრო ამოიწურა',body:'შენს ადგილას BOT აგრძელებს თამაშს.',back:'თამაშში დაბრუნება',used:'დაბრუნების შანსი უკვე გამოიყენე. BOT გააგრძელებს ამ მატჩს.',returning:'თამაშში დაბრუნება'},en:{title:'Time expired',body:'A BOT is continuing in your seat.',back:'Return to game',used:'Your return chance has already been used. The BOT will finish this match.',returning:'Return to game'},ru:{title:'Время вышло',body:'BOT продолжает играть вместо вас.',back:'Вернуться в игру',used:'Шанс возвращения уже использован. BOT закончит этот матч.',returning:'Вернуться в игру'},tr:{title:'Süre doldu',body:'Yerine BOT oynamaya devam ediyor.',back:'Oyuna dön',used:'Dönüş hakkını kullandın. BOT bu maçı tamamlayacak.',returning:'Oyuna dön'},de:{title:'Zeit abgelaufen',body:'Ein BOT spielt auf deinem Platz weiter.',back:'Zurück ins Spiel',used:'Deine Rückkehr-Chance wurde bereits benutzt. Der BOT beendet dieses Match.',returning:'Zurück ins Spiel'},ar:{title:'انتهى الوقت',body:'الروبوت يواصل اللعب مكانك.',back:'العودة للعبة',used:'تم استخدام فرصة العودة. سيكمل الروبوت هذه المباراة.',returning:'العودة للعبة'}};
 function tr(){return TXT[localStorage.getItem(LANG_KEY)||'en']||TXT.en}
 function badge(){if($('dgV46Badge'))return;const b=document.createElement('div');b.id='dgV46Badge';b.textContent='V46';document.body.appendChild(b)}
 function playerForSeat(seat){return (room?.players||[]).find(p=>Number(p.seat)===Number(seat))}
@@ -8462,12 +8462,12 @@ const $=id=>document.getElementById(id);
 let app,auth,db,uid='',room=window.DG_V30_ROOM||null,returnBusy=false,repairBusy=false,botBusy=false,lastBotKey='';
 
 const TXT={
-  ka:{title:'ბოტი თამაშობს შენს ადგილას',body:'დრო ამოიწურა და შენს ადგილას ბოტი აგრძელებს თამაშს. დაბრუნება შეგიძლია ნებისმიერ დროს.',back:'თამაშში დაბრუნება',returning:'ვბრუნდებით თამაშში…',bot:'🤖 ბოტი თამაშობს'},
-  en:{title:'BOT is playing in your seat',body:'Your time expired and a BOT is continuing in your seat. You can return at any time.',back:'Return to game',returning:'Returning to game…',bot:'🤖 BOT playing'},
-  ru:{title:'BOT играет вместо вас',body:'Время вышло, и BOT продолжает играть вместо вас. Вернуться можно в любое время.',back:'Вернуться в игру',returning:'Возвращаемся…',bot:'🤖 BOT играет'},
-  tr:{title:'Yerine BOT oynuyor',body:'Süren doldu ve yerine BOT oynuyor. İstediğin zaman oyuna dönebilirsin.',back:'Oyuna dön',returning:'Oyuna dönülüyor…',bot:'🤖 BOT oynuyor'},
-  de:{title:'BOT spielt für dich',body:'Deine Zeit ist abgelaufen. Ein BOT spielt weiter; du kannst jederzeit zurückkehren.',back:'Zurück ins Spiel',returning:'Rückkehr…',bot:'🤖 BOT spielt'},
-  ar:{title:'الروبوت يلعب مكانك',body:'انتهى الوقت والروبوت يواصل اللعب مكانك. يمكنك العودة في أي وقت.',back:'العودة للعبة',returning:'جارٍ العودة…',bot:'🤖 الروبوت يلعب'}
+  ka:{title:'ბოტი თამაშობს შენს ადგილას',body:'დრო ამოიწურა და შენს ადგილას ბოტი აგრძელებს თამაშს. დაბრუნება შეგიძლია ნებისმიერ დროს.',back:'თამაშში დაბრუნება',returning:'თამაშში დაბრუნება',bot:'🤖 ბოტი თამაშობს'},
+  en:{title:'BOT is playing in your seat',body:'Your time expired and a BOT is continuing in your seat. You can return at any time.',back:'Return to game',returning:'Return to game',bot:'🤖 BOT playing'},
+  ru:{title:'BOT играет вместо вас',body:'Время вышло, и BOT продолжает играть вместо вас. Вернуться можно в любое время.',back:'Вернуться в игру',returning:'Вернуться в игру',bot:'🤖 BOT играет'},
+  tr:{title:'Yerine BOT oynuyor',body:'Süren doldu ve yerine BOT oynuyor. İstediğin zaman oyuna dönebilirsin.',back:'Oyuna dön',returning:'Oyuna dön',bot:'🤖 BOT oynuyor'},
+  de:{title:'BOT spielt für dich',body:'Deine Zeit ist abgelaufen. Ein BOT spielt weiter; du kannst jederzeit zurückkehren.',back:'Zurück ins Spiel',returning:'Zurück ins Spiel',bot:'🤖 BOT spielt'},
+  ar:{title:'الروبوت يلعب مكانك',body:'انتهى الوقت والروبوت يواصل اللعب مكانك. يمكنك العودة في أي وقت.',back:'العودة للعبة',returning:'العودة للعبة',bot:'🤖 الروبوت يلعب'}
 };
 function tr(){return TXT[localStorage.getItem(LANG_KEY)||'en']||TXT.en}
 function flag(code){const c=String(code||'').toUpperCase();if(c.length!==2)return '🌐';return String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt()))}
@@ -9676,17 +9676,22 @@ body.dg-game-active #dgV68Badge{display:none}
 body.dg-v61-two #game > #dgV61StockStatus.dg-v62-market{
   left:.85%!important;
   top:18.2%!important;
+  width:calc(13.5% - .85%)!important;
 }
 @media(max-width:760px){
   body.dg-v61-two #game > #dgV61StockStatus.dg-v62-market{
     left:.65%!important;
     top:17.2%!important;
+    width:calc(13.5% - .65%)!important;
   }
 }
 
 /* 3) Lobby-return button: slightly lower so it does not cover the player name. */
 #dgLobbyHome{
-  top:max(44px,env(safe-area-inset-top))!important;
+  top:max(30px,env(safe-area-inset-top))!important;
+  padding:7px 10px!important;
+  min-width:0!important;
+  white-space:nowrap!important;
 }
 
 /* 4) My turn clock: horizontal line at the RIGHT of my domino rack,
@@ -9754,6 +9759,17 @@ body.dg-v61-two #game > #dgV61StockStatus.dg-v62-market{
   display:block!important;
   margin:0!important;
 }
+
+/* V85: timeout return button must never blink/change appearance while visible. */
+#dgV46TimeoutOverlay.show #dgV46ReturnBtn{
+  display:block!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+#dgV46TimeoutOverlay.show #dgV46ReturnBtn:disabled{
+  opacity:1!important;
+}
+
 </style>
 
 <script id="dg-v68-from-v67-ui-fix-js">
@@ -10903,6 +10919,8 @@ html.dg-v82-native-full #dgV69FullBtn{color:#fff1b2!important;border-color:#d9b4
 </style>
 <!-- DG V84 ONLINE BUTTON LAYOUT FIX END -->
 
+
+<!-- DG V85: stable timeout return + compact higher lobby + market background to felt -->
 </body>
 </html>
 
