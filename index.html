@@ -5014,7 +5014,7 @@ function renderBoard(){
 function fitBoard(){
   const b=$('dominoBoard'),l=b?.querySelector('.dg-board-layer');if(!b||!l||!G.placements.length){if(l)l.style.transform='scale(1)';return;}let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;for(const p of G.placements){const r=rectAt(p.x,p.y,p.ori);minX=Math.min(minX,r.l);maxX=Math.max(maxX,r.r);minY=Math.min(minY,r.t);maxY=Math.max(maxY,r.b);}const cw=maxX-minX,ch=maxY-minY;const aw=Math.max(1,b.clientWidth-20),ah=Math.max(1,b.clientHeight-20);const s=Math.min(1,aw/cw,ah/ch);const cx=(minX+maxX)/2,cy=(minY+maxY)/2;l.style.transform=`translate(${-cx*s}px,${-cy*s}px) scale(${s})`;
 }
-function renderHand(){const h=$('playerHand');if(!h)return;h.innerHTML='';G.hands[HUMAN].forEach((t,i)=>{const d=document.createElement('div');d.className='domino';if(G.current===HUMAN&&(!G.placements.length||legalPorts(t).length))d.classList.add('playable');if(G.selectedIndex===i)d.classList.add('selected');d.innerHTML=halfHTML(t.a)+halfHTML(t.b);d.onclick=()=>humanPlay(i);h.appendChild(d);});}
+function renderHand(){const h=$('playerHand');if(!h)return;h.innerHTML='';G.hands[HUMAN].forEach((t,i)=>{const d=document.createElement('div');d.className='domino';d.dataset.tileId=t.id||'';if(G.current===HUMAN&&(!G.placements.length||legalPorts(t).length))d.classList.add('playable');if(G.selectedIndex===i)d.classList.add('selected');d.innerHTML=halfHTML(t.a)+halfHTML(t.b);d.onclick=()=>{if(document.documentElement.classList.contains('dg-v86-sync-lock'))return;const idx=G.hands[HUMAN].findIndex(x=>x?.id===t.id);if(idx>=0)humanPlay(idx)};h.appendChild(d);});}
 function updateTurn(){
   document.querySelectorAll('.player-card').forEach(c=>c.style.filter='');
   const rel=(G.current-HUMAN+2+4)%4;
@@ -7176,7 +7176,7 @@ import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/
 import { getFirestore, doc, onSnapshot, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
 const ROOM_SESSION='dg_domino_v29_room',COLLECTION='dominoRooms';
-let app=null,auth=null,db=null,uid='',roomCode='',unsub=null,currentRoom=null,localSeat=2,lastAppliedVersion=0,syncTimer=null,initializing=false,ready=false;
+let app=null,auth=null,db=null,uid='',roomCode='',unsub=null,currentRoom=null,localSeat=2,lastAppliedVersion=0,syncTimer=null,initializing=false,ready=false,syncBusy=false,pendingSyncState=null,inFlightVersion=0,queuedRemoteRoom=null;
 const $=id=>document.getElementById(id);
 function addBadge(){if($('dgV30Badge'))return;const b=document.createElement('div');b.id='dgV30Badge';b.textContent='V30';document.body.appendChild(b)}
 function statePill(text,kind=''){let e=$('dgV30SyncState');if(!e){const f=$('dgFirebaseState');if(!f)return;e=document.createElement('span');e.id='dgV30SyncState';f.insertAdjacentElement('afterend',e)}e.textContent=text;e.className=kind}
@@ -7203,32 +7203,202 @@ function decodeState(state){
 }
 function roomRef(code){return doc(db,COLLECTION,code)}
 function waitEngine(){return new Promise((resolve,reject)=>{let n=0;const t=setInterval(()=>{if(window.DG_ENGINE){clearInterval(t);resolve(window.DG_ENGINE)}else if(++n>200){clearInterval(t);reject(new Error('game engine timeout'))}},25)})}
-async function applyRoom(room){
-  currentRoom=room;window.DG_V30_ROOM=room;window.dispatchEvent(new CustomEvent('dg-v30-room',{detail:room}));const me=(room.players||[]).find(p=>p.uid===uid);if(!me)return;
-  localSeat=Number(me.seat);window.DG_ONLINE_MULTIPLAYER=true;const eng=await waitEngine();eng.setGameMode?.(Number(room.gameMode)===2?2:4);eng.setHumanSeat(localSeat);
-  if(room.status!=='playing'){statePill('● მატჩი ელოდება','wait');return}
-  activeMode();const version=Number(room.gameVersion||0);
-  if(room.gameState&&version>lastAppliedVersion){lastAppliedVersion=version;eng.loadState(decodeState(room.gameState));eng.setHumanSeat(localSeat);statePill('● თამაში სინქრონში','');return}
-  if(!room.gameState&&room.hostUid===uid&&!initializing){
-    initializing=true;statePill('● პარტია იქმნება','wait');
-    try{
-      const state=eng.createOnlineMatch(Number(room.gameMode)===2?2:4);
-      await runTransaction(db,async tx=>{const ref=roomRef(room.code),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const data=snap.data();if(data.gameState)return;tx.update(ref,{gameState:encodeState(state),gameVersion:1,gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()})});
-      lastAppliedVersion=Math.max(lastAppliedVersion,1);statePill('● თამაში სინქრონში','');
-    }catch(e){console.error('V30 init',e);statePill('● სინქრონიზაციის შეცდომა','err')}finally{initializing=false}
-  }else if(!room.gameState){statePill('● HOST ქმნის პარტიას','wait')}
+/* V86 ONLINE SYNC STABILITY
+   Serialize local writes and avoid loading the same Firestore state twice.
+   This prevents tiles from disappearing/changing while a move is syncing. */
+function setV86SyncLock(on){
+  document.documentElement.classList.toggle('dg-v86-sync-lock',!!on);
+  document.body?.classList.toggle('dg-v86-sync-lock',!!on);
 }
-async function pushState(state){
+async function applyRemoteState(room,eng){
+  const version=Number(room?.gameVersion||0);
+  if(!room?.gameState||version<=lastAppliedVersion)return false;
+  lastAppliedVersion=version;
+  eng.loadState(decodeState(room.gameState));
+  if(eng.getHumanSeat?.()!==localSeat)eng.setHumanSeat(localSeat);
+  return true;
+}
+async function applyRoom(room){
+  currentRoom=room;
+  window.DG_V30_ROOM=room;
+  window.dispatchEvent(new CustomEvent('dg-v30-room',{detail:room}));
+  const me=(room.players||[]).find(p=>p.uid===uid);
+  if(!me)return;
+
+  localSeat=Number(me.seat);
+  window.DG_ONLINE_MULTIPLAYER=true;
+
+  const eng=await waitEngine();
+  const wantedMode=Number(room.gameMode)===2?2:4;
+
+  if(eng.getGameMode?.()!==wantedMode)eng.setGameMode?.(wantedMode);
+  if(eng.getHumanSeat?.()!==localSeat)eng.setHumanSeat(localSeat);
+
+  if(room.status!=='playing'){
+    statePill('● მატჩი ელოდება','wait');
+    return;
+  }
+
+  activeMode();
+  const version=Number(room.gameVersion||0);
+
+  if(room.gameState&&version>lastAppliedVersion){
+    /* Our own server echo is only an acknowledgement; do not redraw the hand. */
+    if(room.gameUpdatedBy===uid&&syncBusy&&(!inFlightVersion||version===inFlightVersion)){
+      lastAppliedVersion=version;
+      statePill('● თამაში სინქრონში','');
+      return;
+    }
+
+    /* If a remote move arrives while our local transaction is in flight,
+       keep only the newest remote snapshot and apply it after the write settles. */
+    if(syncBusy){
+      if(!queuedRemoteRoom||version>Number(queuedRemoteRoom.gameVersion||0)){
+        queuedRemoteRoom=room;
+      }
+      return;
+    }
+
+    await applyRemoteState(room,eng);
+    statePill('● თამაში სინქრონში','');
+    return;
+  }
+
+  if(!room.gameState&&room.hostUid===uid&&!initializing){
+    initializing=true;
+    statePill('● პარტია იქმნება','wait');
+    try{
+      const state=eng.createOnlineMatch(wantedMode);
+      const initVersion=await runTransaction(db,async tx=>{
+        const ref=roomRef(room.code);
+        const snap=await tx.get(ref);
+        if(!snap.exists())throw new Error('room closed');
+        const data=snap.data();
+        if(data.gameState)return Number(data.gameVersion||1);
+        tx.update(ref,{
+          gameState:encodeState(state),
+          gameVersion:1,
+          gameUpdatedBy:uid,
+          gameUpdatedAt:serverTimestamp()
+        });
+        return 1;
+      });
+      lastAppliedVersion=Math.max(lastAppliedVersion,Number(initVersion||1));
+      statePill('● თამაში სინქრონში','');
+    }catch(e){
+      console.error('V86 init',e);
+      statePill('● სინქრონიზაციის შეცდომა','err');
+    }finally{
+      initializing=false;
+    }
+  }else if(!room.gameState){
+    statePill('● HOST ქმნის პარტიას','wait');
+  }
+}
+
+async function flushPendingState(){
+  if(syncBusy||!pendingSyncState||!ready||!roomCode||!currentRoom||currentRoom.status!=='playing')return;
+
+  const state=pendingSyncState;
+  pendingSyncState=null;
+  const expected=lastAppliedVersion;
+
+  syncBusy=true;
+  inFlightVersion=0;
+  setV86SyncLock(true);
+
+  try{
+    const result=await runTransaction(db,async tx=>{
+      const ref=roomRef(roomCode);
+      const snap=await tx.get(ref);
+      if(!snap.exists())throw new Error('room closed');
+
+      const room=snap.data();
+      const serverVersion=Number(room.gameVersion||0);
+
+      /* Do not push a move that was based on an older state. */
+      if(serverVersion!==expected){
+        return {
+          ok:false,
+          version:serverVersion,
+          state:room.gameState||null
+        };
+      }
+
+      const nextVersion=serverVersion+1;
+      inFlightVersion=nextVersion;
+
+      tx.update(ref,{
+        gameState:encodeState(state),
+        gameVersion:nextVersion,
+        gameUpdatedBy:uid,
+        gameUpdatedAt:serverTimestamp()
+      });
+
+      return {ok:true,version:nextVersion};
+    });
+
+    if(result?.ok){
+      lastAppliedVersion=Math.max(lastAppliedVersion,Number(result.version||expected+1));
+      statePill('● თამაში სინქრონში','');
+    }else{
+      /* Server is newer: discard the stale local move and accept server truth. */
+      pendingSyncState=null;
+      const version=Number(result?.version||0);
+
+      if(result?.state&&version>lastAppliedVersion){
+        const eng=await waitEngine();
+        lastAppliedVersion=version;
+        eng.loadState(decodeState(result.state));
+        if(eng.getHumanSeat?.()!==localSeat)eng.setHumanSeat(localSeat);
+      }
+
+      statePill('● განახლება მოვიდა','wait');
+    }
+  }catch(e){
+    console.error('V86 push',e);
+    statePill('● სინქრონიზაციის შეცდომა','err');
+  }finally{
+    syncBusy=false;
+    inFlightVersion=0;
+    setV86SyncLock(false);
+
+    if(queuedRemoteRoom){
+      const queued=queuedRemoteRoom;
+      queuedRemoteRoom=null;
+
+      if(Number(queued.gameVersion||0)>lastAppliedVersion&&queued.gameState){
+        try{
+          const eng=await waitEngine();
+          await applyRemoteState(queued,eng);
+          statePill('● თამაში სინქრონში','');
+        }catch(e){
+          console.error('V86 queued remote',e);
+        }
+      }
+    }
+
+    if(pendingSyncState){
+      clearTimeout(syncTimer);
+      syncTimer=setTimeout(flushPendingState,45);
+    }
+  }
+}
+
+function pushState(state){
   if(!ready||!roomCode||!currentRoom||currentRoom.status!=='playing'||window.DG_ENGINE_APPLYING_REMOTE)return;
-  clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{const expected=lastAppliedVersion;try{
-    await runTransaction(db,async tx=>{const ref=roomRef(roomCode),snap=await tx.get(ref);if(!snap.exists())throw new Error('room closed');const room=snap.data(),serverVersion=Number(room.gameVersion||0);if(serverVersion!==expected)throw new Error('stale-state');tx.update(ref,{gameState:encodeState(state),gameVersion:serverVersion+1,gameUpdatedBy:uid,gameUpdatedAt:serverTimestamp()});lastAppliedVersion=serverVersion+1});statePill('● თამაში სინქრონში','');
-  }catch(e){if(e?.message!=='stale-state')console.error('V30 push',e);statePill(e?.message==='stale-state'?'● განახლება მოვიდა':'● სინქრონიზაციის შეცდომა',e?.message==='stale-state'?'wait':'err')}},90)
+
+  /* Keep only the newest local state. */
+  pendingSyncState=clone(state);
+
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(flushPendingState,130);
 }
 window.DG_ENGINE_STATE_CHANGED=pushState;
 function attach(code){if(code===roomCode&&unsub)return;unsub?.();unsub=null;roomCode=code||'';currentRoom=null;lastAppliedVersion=0;if(!roomCode){lobbyMode();return}unsub=onSnapshot(roomRef(roomCode),snap=>{if(!snap.exists()){window.dispatchEvent(new CustomEvent('dg-v30-room-closed',{detail:{code:roomCode}}));statePill('● ოთახი დაიხურა','err');return}const room={code:snap.id,...snap.data()};applyRoom(room).catch(e=>{console.error(e);statePill('● სინქრონიზაციის შეცდომა','err')})},e=>{console.error(e);statePill('● Firebase შეცდომა','err')})}
 function watchRoomCode(){const code=sessionStorage.getItem(ROOM_SESSION)||'';if(code!==roomCode)attach(code)}
 async function boot(){
-  addBadge();const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V32 · Real-time multiplayer · reconnect protection · temporary BOT takeover.';
+  addBadge();const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V87 · Stable real-time multiplayer · reconnect protection · temporary BOT takeover.';
   try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});ready=true;watchRoomCode();setInterval(watchRoomCode,350)}catch(e){console.error('V30 boot',e);statePill('● V30 ვერ ჩაირთო','err')}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
@@ -7248,8 +7418,30 @@ body.dg-v31-offline #dgV31Net{display:block}
 (()=>{
   window.DG_V31_ACTIVE=true;
   const SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup';
-  const saved=localStorage.getItem(BACKUP)||'';
-  if(!sessionStorage.getItem(SESSION)&&/^\d{4}$/.test(saved))sessionStorage.setItem(SESSION,saved);
+  const AWAY_KEY='dg_domino_v87_away_at';
+  const awayAt=Number(localStorage.getItem(AWAY_KEY)||0);
+
+  /* V87: a fresh app entry must stay in the lobby.
+     If the app was away for 5+ minutes, also forget the active room session,
+     so a BOT-finished old game cannot force the player back to the table. */
+  if(!sessionStorage.getItem(SESSION)){
+    localStorage.removeItem(BACKUP);
+  }else if(awayAt&&Date.now()-awayAt>=300000){
+    sessionStorage.removeItem(SESSION);
+    localStorage.removeItem(BACKUP);
+  }
+
+  localStorage.removeItem(AWAY_KEY);
+
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='hidden'){
+      localStorage.setItem(AWAY_KEY,String(Date.now()));
+    }
+  });
+
+  window.addEventListener('pagehide',()=>{
+    localStorage.setItem(AWAY_KEY,String(Date.now()));
+  });
   function lobby(){
     document.body.classList.remove('dg-match-mode','dg-game-active');document.body.classList.add('dg-lobby-mode');
     const entry=document.getElementById('dgEntryOverlay');if(entry)entry.classList.remove('hidden');
@@ -7283,14 +7475,107 @@ const SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup',COLLECTION
 let app,auth,db,uid='',room=null,lastVersion=-1,lastVersionAt=Date.now(),recoveredVersion=-1,beating=false;
 const $=id=>document.getElementById(id);
 function badge(){if($('dgV31Badge'))return;const b=document.createElement('div');b.id='dgV31Badge';b.textContent='V31';document.body.appendChild(b);const n=document.createElement('div');n.id='dgV31Net';n.textContent='ინტერნეტი გაითიშა — დაბრუნებისას თამაში აღდგება';document.body.appendChild(n)}
-function code(){return sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||''}
+function code(){return sessionStorage.getItem(SESSION)||''}
 function setNet(){document.body.classList.toggle('dg-v31-offline',!navigator.onLine)}
 function waitEngine(){return new Promise((resolve,reject)=>{let n=0;const t=setInterval(()=>{if(window.DG_ENGINE){clearInterval(t);resolve(window.DG_ENGINE)}else if(++n>240){clearInterval(t);reject(new Error('engine timeout'))}},25)})}
+let v87FinishedTimer=null,v87FinishedCode='';
+
+function v87ForceLobby(){
+  clearTimeout(v87FinishedTimer);
+  v87FinishedTimer=null;
+  v87FinishedCode='';
+
+  sessionStorage.removeItem(SESSION);
+  localStorage.removeItem(BACKUP);
+
+  window.DG_MATCH_ALLOWED=false;
+  window.DG_ONLINE_MULTIPLAYER=false;
+
+  document.body.classList.remove('dg-match-mode','dg-game-active');
+  document.body.classList.add('dg-lobby-mode');
+
+  document.getElementById('dgWinOverlay')?.classList.remove('show');
+  document.getElementById('dgV46TimeoutOverlay')?.classList.remove('show');
+  document.getElementById('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
+
+  const entry=document.getElementById('dgEntryOverlay');
+  if(entry)entry.classList.remove('hidden');
+
+  document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));
+  document.getElementById('dgChoiceStep')?.classList.add('active');
+}
+
+function v87PlayerIsAway(me){
+  return !!(
+    me?.botActive ||
+    me?.timedOut ||
+    document.visibilityState!=='visible'
+  );
+}
+
+function v87ScheduleFinishedLobby(r,me){
+  const shouldWaitForLobby=!!r?.gameState?.matchOver && v87PlayerIsAway(me);
+
+  if(!shouldWaitForLobby){
+    if(v87FinishedTimer){
+      clearTimeout(v87FinishedTimer);
+      v87FinishedTimer=null;
+      v87FinishedCode='';
+    }
+    return;
+  }
+
+  if(v87FinishedTimer&&v87FinishedCode===r.code)return;
+  if(v87FinishedTimer)clearTimeout(v87FinishedTimer);
+
+  v87FinishedCode=r.code;
+
+  /* Five minutes after the finished match, an absent player is returned
+     to the lobby automatically. */
+  v87FinishedTimer=setTimeout(()=>{
+    const live=room;
+    const mine=(live?.players||[]).find(p=>p.uid===uid);
+
+    if(
+      live?.code===v87FinishedCode &&
+      live?.gameState?.matchOver &&
+      v87PlayerIsAway(mine)
+    ){
+      v87ForceLobby();
+    }else{
+      v87FinishedTimer=null;
+      v87FinishedCode='';
+    }
+  },300000);
+}
+
 function onRoom(r){
-  room=r;if(!r)return;const me=(r.players||[]).find(p=>p.uid===uid);if(!me)return;
+  room=r;
+  if(!r)return;
+
+  const me=(r.players||[]).find(p=>p.uid===uid);
+  if(!me)return;
+
   localStorage.setItem(BACKUP,r.code);
-  const v=Number(r.gameVersion||0);if(v!==lastVersion){lastVersion=v;lastVersionAt=Date.now();recoveredVersion=-1}
-  if(r.gameState?.matchOver)setTimeout(async()=>{try{(await waitEngine()).showSyncedResult?.()}catch(e){}},120);
+
+  const v=Number(r.gameVersion||0);
+  if(v!==lastVersion){
+    lastVersion=v;
+    lastVersionAt=Date.now();
+    recoveredVersion=-1;
+  }
+
+  v87ScheduleFinishedLobby(r,me);
+
+  if(r.gameState?.matchOver){
+    /* Only a player who is actually present sees the result overlay.
+       An absent/BOT-controlled player stays out and is sent to lobby by V87. */
+    if(!v87PlayerIsAway(me)){
+      setTimeout(async()=>{
+        try{(await waitEngine()).showSyncedResult?.()}catch(e){}
+      },120);
+    }
+  }
 }
 window.addEventListener('dg-v30-room',e=>onRoom(e.detail));
 window.addEventListener('dg-v30-room-closed',()=>{localStorage.removeItem(BACKUP);sessionStorage.removeItem(SESSION);room=null});
@@ -7310,7 +7595,7 @@ async function recoverStalledHand(){
   recoveredVersion=v;try{(await waitEngine()).recoverOnlineTransition?.()}catch(e){recoveredVersion=-1}
 }
 async function boot(){
-  badge();setNet();const note=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(note)note.textContent='V32 · Firebase real-time room + synchronized match + reconnect + temporary BOT.';
+  badge();setNet();const note=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(note)note.textContent='V87 · Firebase real-time room + stable synchronized match + reconnect + temporary BOT.';
   try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,900);setInterval(heartbeat,20000);setInterval(maybePromoteHost,15000);setInterval(recoverStalledHand,1800)}catch(e){console.error('V31 boot',e)}
 }
 window.addEventListener('online',()=>{setNet();setTimeout(heartbeat,250)});window.addEventListener('offline',setNet);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(heartbeat,250)});window.addEventListener('pageshow',()=>setTimeout(heartbeat,400));
@@ -7339,16 +7624,16 @@ let app,auth,db,uid='',room=null,busy=false,lastBotKey='',installPrompt=null;
 const $=id=>document.getElementById(id);
 function badge(){if($('dgV32Badge'))return;const b=document.createElement('div');b.id='dgV32Badge';b.textContent='V32';document.body.appendChild(b)}
 function toast(text){let t=$('dgV32Toast');if(!t){t=document.createElement('div');t.id='dgV32Toast';document.body.appendChild(t)}t.textContent=text;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),4200)}
-function currentCode(){return sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||''}
+function currentCode(){return sessionStorage.getItem(SESSION)||''}
 function addInstallButton(){const card=document.querySelector('#dgEntryOverlay .dg-entry-card');if(!card||$('dgInstallApp'))return;const b=document.createElement('button');b.id='dgInstallApp';b.type='button';b.textContent='⬇ Install / Download App';b.addEventListener('click',async()=>{if(installPrompt){installPrompt.prompt();try{await installPrompt.userChoice}catch(e){}installPrompt=null;return}toast('Desktop: open the browser menu and choose “Install DOMINO GEORGIA” or “Create shortcut”. On Android, choose “Add to Home screen”.')});card.appendChild(b)}
 async function registerPWA(){if(!('serviceWorker' in navigator))return;try{await navigator.serviceWorker.register('./service-worker.js',{scope:'./'})}catch(e){console.warn('V32 SW',e)}}
-function restoreRoomCode(){const backup=localStorage.getItem(BACKUP)||'';if(!sessionStorage.getItem(SESSION)&&/^\d{4}$/.test(backup))sessionStorage.setItem(SESSION,backup)}
+function restoreRoomCode(){/* V87: never reopen an old room automatically. */}
 async function heartbeat(){const c=currentCode();if(!uid||!db||!navigator.onLine||!/^\d{4}$/.test(c))return;try{await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data(),players=[...(data.players||[])],i=players.findIndex(p=>p.uid===uid);if(i<0)return;players[i]={...players[i],lastSeen:Date.now(),botActive:false};tx.update(ref,{players,presenceUpdatedAt:serverTimestamp()})})}catch(e){}}
 function onRoom(r){room=r||null;if(!room)return;const me=(room.players||[]).find(p=>p.uid===uid);if(me)localStorage.setItem(BACKUP,room.code)}
 window.addEventListener('dg-v30-room',e=>onRoom(e.detail));
 async function markBot(seat,expectedVersion,targetUid){const c=room?.code;if(!c)return false;let ok=false;await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data();if(data.status!=='playing'||Number(data.gameVersion||0)!==expectedVersion||Number(data.gameState?.current)!==seat)return;const players=[...(data.players||[])],i=players.findIndex(p=>p.uid===targetUid);if(i<0)return;const seen=Number(players[i].lastSeen||players[i].joinedAt||0);if(Date.now()-seen<STALE_MS)return;players[i]={...players[i],botActive:true};tx.update(ref,{players,botSeat:seat,botUpdatedAt:serverTimestamp()});ok=true});return ok}
 async function botController(){if(window.DG_V35_LOCAL_TEST||busy||!room||room.status!=='playing'||!room.gameState||!uid||!navigator.onLine)return;const seat=Number(room.gameState.current),version=Number(room.gameVersion||0);if(!Number.isInteger(seat)||seat<0||seat>3)return;const target=(room.players||[]).find(p=>Number(p.seat)===seat);if(!target||target.uid===uid)return;const seen=Number(target.lastSeen||target.joinedAt||0);if(!seen||Date.now()-seen<STALE_MS)return;const now=Date.now();const active=(room.players||[]).filter(p=>p.uid!==target.uid&&now-Number(p.lastSeen||p.joinedAt||0)<STALE_MS).sort((a,b)=>Number(a.seat)-Number(b.seat));if(!active.length||active[0].uid!==uid)return;const key=`${room.code}:${version}:${seat}`;if(key===lastBotKey)return;busy=true;try{const locked=await markBot(seat,version,target.uid);if(!locked)return;const eng=window.DG_ENGINE;if(!eng?.botTakeTurn)return;lastBotKey=key;eng.message?.(`BOT is playing for ${target.name||'player'}…`,1200);await new Promise(r=>setTimeout(r,450));eng.botTakeTurn(seat)}catch(e){console.error('V32 bot',e)}finally{busy=false}}
-function updateGlobalEnglish(){document.documentElement.lang='en';const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V32 · Global multiplayer · choose your language · temporary BOT takes over disconnected players.';const roomNote=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(roomNote)roomNote.textContent='V32 · Firebase real-time room + synchronized match + reconnect + temporary BOT.'}
+function updateGlobalEnglish(){document.documentElement.lang='en';const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V32 · Global multiplayer · choose your language · temporary BOT takes over disconnected players.';const roomNote=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(roomNote)roomNote.textContent='V87 · Firebase real-time room + stable synchronized match + reconnect + temporary BOT.'}
 async function boot(){badge();restoreRoomCode();addInstallButton();updateGlobalEnglish();window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;addInstallButton()});window.addEventListener('appinstalled',()=>toast('DOMINO GEORGIA installed successfully.'));setTimeout(registerPWA,1800);try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,700);setInterval(heartbeat,20000);setInterval(botController,1300)}catch(e){console.error('V32 boot',e)}}
 window.addEventListener('online',()=>setTimeout(heartbeat,300));window.addEventListener('pageshow',()=>{restoreRoomCode();setTimeout(heartbeat,500)});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 </script>
@@ -8630,9 +8915,9 @@ const $=id=>document.getElementById(id);
 let app,auth,busy=false;
 
 const TXT={
-  ka:{or:'ან დაიცავი პროფილი Google ანგარიშით',google:'Google-ით რეგისტრაცია',facebook:'Facebook-ით რეგისტრაცია',ready:'Firebase ანგარიში მზადაა',guest:'სტუმრის პროფილი',connected:'დაკავშირებულია',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 გამოსვლა',working:'მიმდინარეობს ავტორიზაცია…',ok:'ანგარიში წარმატებით დაუკავშირდა',rules:'ანგარიში დაკავშირებულია — მონიშნე წესები და გააგრძელე რეგისტრაცია.',disabled:'ეს ავტორიზაციის მეთოდი ჯერ Firebase-ში ჩართული არ არის.',popup:'ავტორიზაციის ფანჯარა დაიხურა ან დაიბლოკა.',logoutAsk:'ანგარიშიდან გამოხვიდე და დაბრუნდე რეგისტრაციის გვერდზე?'},
-  en:{or:'or secure your profile with Google',google:'Register with Google',facebook:'Register with Facebook',ready:'Firebase account ready',guest:'Guest profile',connected:'connected',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Log out',working:'Signing in…',ok:'Account connected successfully',rules:'Account connected — accept the rules and continue registration.',disabled:'This sign-in provider is not enabled in Firebase yet.',popup:'The sign-in window was closed or blocked.',logoutAsk:'Log out and return to the registration screen?'},
-  ru:{or:'или сохраните профиль через Google',google:'Регистрация через Google',facebook:'Регистрация через Facebook',ready:'Аккаунт Firebase готов',guest:'Гостевой профиль',connected:'подключено',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Выйти',working:'Авторизация…',ok:'Аккаунт успешно подключён',rules:'Аккаунт подключён — примите правила и продолжите регистрацию.',disabled:'Этот способ входа ещё не включён в Firebase.',popup:'Окно авторизации закрыто или заблокировано.',logoutAsk:'Выйти из аккаунта и вернуться к регистрации?'},
+  ka:{or:'ან დაიცავი პროფილი Google ანგარიშით',google:'Google-ით რეგისტრაცია',facebook:'Facebook-ით რეგისტრაცია',ready:'Firebase ანგარიში მზადაა',guest:'სტუმრის პროფილი',connected:'დაკავშირებულია',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 გამოსვლა',working:'მიმდინარეობს ავტორიზაცია…',ok:'ანგარიში წარმატებით დაუკავშირდა',rules:'ანგარიში დაკავშირებულია — მონიშნე წესები და გააგრძელე რეგისტრაცია.',disabled:'ეს ავტორიზაციის მეთოდი ჯერ Firebase-ში ჩართული არ არის.',popup:'ავტორიზაციის ფანჯარა დაიხურა ან დაიბლოკა.',logoutAsk:'ნამდვილად გინდა გასვლა?'},
+  en:{or:'or secure your profile with Google',google:'Register with Google',facebook:'Register with Facebook',ready:'Firebase account ready',guest:'Guest profile',connected:'connected',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Log out',working:'Signing in…',ok:'Account connected successfully',rules:'Account connected — accept the rules and continue registration.',disabled:'This sign-in provider is not enabled in Firebase yet.',popup:'The sign-in window was closed or blocked.',logoutAsk:'Are you sure you want to log out?'},
+  ru:{or:'или сохраните профиль через Google',google:'Регистрация через Google',facebook:'Регистрация через Facebook',ready:'Аккаунт Firebase готов',guest:'Гостевой профиль',connected:'подключено',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Выйти',working:'Авторизация…',ok:'Аккаунт успешно подключён',rules:'Аккаунт подключён — примите правила и продолжите регистрацию.',disabled:'Этот способ входа ещё не включён в Firebase.',popup:'Окно авторизации закрыто или заблокировано.',logoutAsk:'Вы действительно хотите выйти?'},
   tr:{or:'veya profilini Google hesabıyla koru',google:'Google ile kayıt ol',facebook:'Facebook ile kayıt ol',ready:'Firebase hesabı hazır',guest:'Misafir profil',connected:'bağlı',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Çıkış',working:'Giriş yapılıyor…',ok:'Hesap başarıyla bağlandı',rules:'Hesap bağlandı — kuralları kabul edip kaydı tamamla.',disabled:'Bu giriş yöntemi Firebase içinde henüz etkin değil.',popup:'Giriş penceresi kapatıldı veya engellendi.',logoutAsk:'Hesaptan çıkıp kayıt ekranına dönülsün mü?'},
   de:{or:'oder Profil mit Google sichern',google:'Mit Google registrieren',facebook:'Mit Facebook registrieren',ready:'Firebase-Konto bereit',guest:'Gastprofil',connected:'verbunden',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 Abmelden',working:'Anmeldung läuft…',ok:'Konto erfolgreich verbunden',rules:'Konto verbunden — Regeln akzeptieren und Registrierung fortsetzen.',disabled:'Diese Anmeldemethode ist in Firebase noch nicht aktiviert.',popup:'Das Anmeldefenster wurde geschlossen oder blockiert.',logoutAsk:'Abmelden und zur Registrierung zurückkehren?'},
   ar:{or:'أو احفظ ملفك بحساب Google',google:'التسجيل عبر Google',facebook:'التسجيل عبر Facebook',ready:'حساب Firebase جاهز',guest:'حساب ضيف',connected:'متصل',googleShort:'Google',facebookShort:'Facebook',logout:'🚪 تسجيل الخروج',working:'جارٍ تسجيل الدخول…',ok:'تم ربط الحساب بنجاح',rules:'تم ربط الحساب — وافق على القواعد وأكمل التسجيل.',disabled:'طريقة تسجيل الدخول هذه غير مفعّلة في Firebase بعد.',popup:'تم إغلاق نافذة تسجيل الدخول أو حظرها.',logoutAsk:'تسجيل الخروج والعودة إلى شاشة التسجيل؟'}
@@ -10921,6 +11206,108 @@ html.dg-v82-native-full #dgV69FullBtn{color:#fff1b2!important;border-color:#d9b4
 
 
 <!-- DG V85: stable timeout return + compact higher lobby + market background to felt -->
+
+<!-- DG V86 ONLINE SYNC STABILITY START -->
+<style id="dg-v86-sync-stability-css">
+#dgV82Badge{display:none!important}
+#dgV86Badge{
+  position:fixed;
+  right:10px;
+  top:10px;
+  z-index:130000;
+  padding:5px 8px;
+  border-radius:999px;
+  background:rgba(0,0,0,.58);
+  border:1px solid rgba(233,184,76,.55);
+  color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;
+  letter-spacing:.08em;
+  pointer-events:none;
+  box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV86Badge{display:none!important}
+
+/* While a local move is being written, block another fast tap. */
+html.dg-v86-sync-lock #playerHand .domino,
+body.dg-v86-sync-lock #playerHand .domino,
+html.dg-v86-sync-lock #dgV62MarketDraw,
+body.dg-v86-sync-lock #dgV62MarketDraw{
+  pointer-events:none!important;
+}
+</style>
+<script id="dg-v86-badge-js">
+(()=>{
+  function init(){
+    document.querySelectorAll('[id^="dgV"][id$="Badge"]:not(#dgV86Badge)').forEach(x=>{
+      x.style.setProperty('display','none','important');
+    });
+    if(document.getElementById('dgV86Badge'))return;
+    const b=document.createElement('div');
+    b.id='dgV86Badge';
+    b.textContent='V86';
+    document.body.appendChild(b);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
+<!-- DG V86 ONLINE SYNC STABILITY END -->
+
+
+<!-- DG V87 LOBBY RECOVERY + CLEAN LOBBY START -->
+<style id="dg-v87-lobby-recovery-css">
+#dgV86Badge{display:none!important}
+
+/* Remove the old technical development/Firebase note from the lobby. */
+#dgEntryOverlay .dg-entry-note{
+  display:none!important;
+}
+
+/* Small V87 badge is visible only outside an active match. */
+#dgV87Badge{
+  position:fixed;
+  right:10px;
+  top:10px;
+  z-index:131000;
+  padding:5px 8px;
+  border-radius:999px;
+  background:rgba(0,0,0,.58);
+  border:1px solid rgba(233,184,76,.55);
+  color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;
+  letter-spacing:.08em;
+  pointer-events:none;
+  box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV87Badge{
+  display:none!important;
+}
+</style>
+
+<script id="dg-v87-badge-js">
+(()=>{
+  function init(){
+    document.querySelectorAll('[id^="dgV"][id$="Badge"]:not(#dgV87Badge)').forEach(x=>{
+      x.style.setProperty('display','none','important');
+    });
+
+    if(document.getElementById('dgV87Badge'))return;
+
+    const b=document.createElement('div');
+    b.id='dgV87Badge';
+    b.textContent='V87';
+    document.body.appendChild(b);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',init,{once:true});
+  }else{
+    init();
+  }
+})();
+</script>
+<!-- DG V87 LOBBY RECOVERY + CLEAN LOBBY END -->
+
 </body>
 </html>
 
