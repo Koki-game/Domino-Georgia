@@ -7239,7 +7239,21 @@ async function applyRoom(room){
     return;
   }
 
-  activeMode();
+  const v88LobbyView=window.DG_V88_LOBBY_VIEW||sessionStorage.getItem('dg_domino_v88_lobby_view')==='1';
+  const v88FinishedAway=!!room.gameState?.matchOver&&(
+    v88LobbyView ||
+    window.DG_V88_COLD_RESTORE ||
+    document.visibilityState!=='visible'
+  );
+
+  if(v88FinishedAway){
+    window.dispatchEvent(new CustomEvent('dg-v88-match-finished-away',{detail:room}));
+    return;
+  }
+
+  if(!v88LobbyView)activeMode();
+  else window.dispatchEvent(new CustomEvent('dg-v88-room-available',{detail:room}));
+
   const version=Number(room.gameVersion||0);
 
   if(room.gameState&&version>lastAppliedVersion){
@@ -7398,7 +7412,7 @@ window.DG_ENGINE_STATE_CHANGED=pushState;
 function attach(code){if(code===roomCode&&unsub)return;unsub?.();unsub=null;roomCode=code||'';currentRoom=null;lastAppliedVersion=0;if(!roomCode){lobbyMode();return}unsub=onSnapshot(roomRef(roomCode),snap=>{if(!snap.exists()){window.dispatchEvent(new CustomEvent('dg-v30-room-closed',{detail:{code:roomCode}}));statePill('● ოთახი დაიხურა','err');return}const room={code:snap.id,...snap.data()};applyRoom(room).catch(e=>{console.error(e);statePill('● სინქრონიზაციის შეცდომა','err')})},e=>{console.error(e);statePill('● Firebase შეცდომა','err')})}
 function watchRoomCode(){const code=sessionStorage.getItem(ROOM_SESSION)||'';if(code!==roomCode)attach(code)}
 async function boot(){
-  addBadge();const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V87 · Stable real-time multiplayer · reconnect protection · temporary BOT takeover.';
+  addBadge();const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V88 · Stable real-time multiplayer · reconnect protection · temporary BOT takeover.';
   try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});ready=true;watchRoomCode();setInterval(watchRoomCode,350)}catch(e){console.error('V30 boot',e);statePill('● V30 ვერ ჩაირთო','err')}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
@@ -7418,30 +7432,23 @@ body.dg-v31-offline #dgV31Net{display:block}
 (()=>{
   window.DG_V31_ACTIVE=true;
   const SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup';
-  const AWAY_KEY='dg_domino_v87_away_at';
-  const awayAt=Number(localStorage.getItem(AWAY_KEY)||0);
+  const LOBBY_VIEW='dg_domino_v88_lobby_view';
+  const saved=localStorage.getItem(BACKUP)||'';
 
-  /* V87: a fresh app entry must stay in the lobby.
-     If the app was away for 5+ minutes, also forget the active room session,
-     so a BOT-finished old game cannot force the player back to the table. */
-  if(!sessionStorage.getItem(SESSION)){
-    localStorage.removeItem(BACKUP);
-  }else if(awayAt&&Date.now()-awayAt>=300000){
-    sessionStorage.removeItem(SESSION);
-    localStorage.removeItem(BACKUP);
+  /* V88:
+     - Never forget an unfinished online match just because the app was closed.
+     - On a fresh app start restore the room listener, but stay in the lobby.
+     - The player can explicitly press "Return to game".
+     - If the restored room is already finished, V88 removes it and stays lobby. */
+  if(!sessionStorage.getItem(SESSION)&&/^\d{4}$/.test(saved)){
+    sessionStorage.setItem(SESSION,saved);
+    sessionStorage.setItem(LOBBY_VIEW,'1');
+    window.DG_V88_COLD_RESTORE=true;
+    window.DG_V88_LOBBY_VIEW=true;
+  }else{
+    window.DG_V88_COLD_RESTORE=false;
+    window.DG_V88_LOBBY_VIEW=sessionStorage.getItem(LOBBY_VIEW)==='1';
   }
-
-  localStorage.removeItem(AWAY_KEY);
-
-  document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='hidden'){
-      localStorage.setItem(AWAY_KEY,String(Date.now()));
-    }
-  });
-
-  window.addEventListener('pagehide',()=>{
-    localStorage.setItem(AWAY_KEY,String(Date.now()));
-  });
   function lobby(){
     document.body.classList.remove('dg-match-mode','dg-game-active');document.body.classList.add('dg-lobby-mode');
     const entry=document.getElementById('dgEntryOverlay');if(entry)entry.classList.remove('hidden');
@@ -7475,7 +7482,7 @@ const SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup',COLLECTION
 let app,auth,db,uid='',room=null,lastVersion=-1,lastVersionAt=Date.now(),recoveredVersion=-1,beating=false;
 const $=id=>document.getElementById(id);
 function badge(){if($('dgV31Badge'))return;const b=document.createElement('div');b.id='dgV31Badge';b.textContent='V31';document.body.appendChild(b);const n=document.createElement('div');n.id='dgV31Net';n.textContent='ინტერნეტი გაითიშა — დაბრუნებისას თამაში აღდგება';document.body.appendChild(n)}
-function code(){return sessionStorage.getItem(SESSION)||''}
+function code(){return sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||''}
 function setNet(){document.body.classList.toggle('dg-v31-offline',!navigator.onLine)}
 function waitEngine(){return new Promise((resolve,reject)=>{let n=0;const t=setInterval(()=>{if(window.DG_ENGINE){clearInterval(t);resolve(window.DG_ENGINE)}else if(++n>240){clearInterval(t);reject(new Error('engine timeout'))}},25)})}
 let v87FinishedTimer=null,v87FinishedCode='';
@@ -7507,6 +7514,7 @@ function v87ForceLobby(){
 
 function v87PlayerIsAway(me){
   return !!(
+    window.DG_V88_LOBBY_VIEW ||
     me?.botActive ||
     me?.timedOut ||
     document.visibilityState!=='visible'
@@ -7580,7 +7588,7 @@ function onRoom(r){
 window.addEventListener('dg-v30-room',e=>onRoom(e.detail));
 window.addEventListener('dg-v30-room-closed',()=>{localStorage.removeItem(BACKUP);sessionStorage.removeItem(SESSION);room=null});
 async function heartbeat(){
-  if(beating||!navigator.onLine||!uid)return;const c=code();if(!/^\d{4}$/.test(c))return;beating=true;
+  if(beating||!navigator.onLine||!uid||window.DG_V88_LOBBY_VIEW||document.visibilityState!=='visible')return;const c=code();if(!/^\d{4}$/.test(c))return;beating=true;
   try{await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data(),players=[...(data.players||[])],i=players.findIndex(p=>p.uid===uid);if(i<0)return;players[i]={...players[i],lastSeen:Date.now()};tx.update(ref,{players,presenceUpdatedAt:serverTimestamp()})})}catch(e){}finally{beating=false}
 }
 async function maybePromoteHost(){
@@ -7595,7 +7603,7 @@ async function recoverStalledHand(){
   recoveredVersion=v;try{(await waitEngine()).recoverOnlineTransition?.()}catch(e){recoveredVersion=-1}
 }
 async function boot(){
-  badge();setNet();const note=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(note)note.textContent='V87 · Firebase real-time room + stable synchronized match + reconnect + temporary BOT.';
+  badge();setNet();const note=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(note)note.textContent='V88 · Firebase real-time room + stable synchronized match + reconnect + temporary BOT.';
   try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,900);setInterval(heartbeat,20000);setInterval(maybePromoteHost,15000);setInterval(recoverStalledHand,1800)}catch(e){console.error('V31 boot',e)}
 }
 window.addEventListener('online',()=>{setNet();setTimeout(heartbeat,250)});window.addEventListener('offline',setNet);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(heartbeat,250)});window.addEventListener('pageshow',()=>setTimeout(heartbeat,400));
@@ -7624,16 +7632,24 @@ let app,auth,db,uid='',room=null,busy=false,lastBotKey='',installPrompt=null;
 const $=id=>document.getElementById(id);
 function badge(){if($('dgV32Badge'))return;const b=document.createElement('div');b.id='dgV32Badge';b.textContent='V32';document.body.appendChild(b)}
 function toast(text){let t=$('dgV32Toast');if(!t){t=document.createElement('div');t.id='dgV32Toast';document.body.appendChild(t)}t.textContent=text;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),4200)}
-function currentCode(){return sessionStorage.getItem(SESSION)||''}
+function currentCode(){return sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||''}
 function addInstallButton(){const card=document.querySelector('#dgEntryOverlay .dg-entry-card');if(!card||$('dgInstallApp'))return;const b=document.createElement('button');b.id='dgInstallApp';b.type='button';b.textContent='⬇ Install / Download App';b.addEventListener('click',async()=>{if(installPrompt){installPrompt.prompt();try{await installPrompt.userChoice}catch(e){}installPrompt=null;return}toast('Desktop: open the browser menu and choose “Install DOMINO GEORGIA” or “Create shortcut”. On Android, choose “Add to Home screen”.')});card.appendChild(b)}
 async function registerPWA(){if(!('serviceWorker' in navigator))return;try{await navigator.serviceWorker.register('./service-worker.js',{scope:'./'})}catch(e){console.warn('V32 SW',e)}}
-function restoreRoomCode(){/* V87: never reopen an old room automatically. */}
-async function heartbeat(){const c=currentCode();if(!uid||!db||!navigator.onLine||!/^\d{4}$/.test(c))return;try{await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data(),players=[...(data.players||[])],i=players.findIndex(p=>p.uid===uid);if(i<0)return;players[i]={...players[i],lastSeen:Date.now(),botActive:false};tx.update(ref,{players,presenceUpdatedAt:serverTimestamp()})})}catch(e){}}
+function restoreRoomCode(){
+  const backup=localStorage.getItem(BACKUP)||'';
+  if(!sessionStorage.getItem(SESSION)&&/^\d{4}$/.test(backup)){
+    sessionStorage.setItem(SESSION,backup);
+    sessionStorage.setItem('dg_domino_v88_lobby_view','1');
+    window.DG_V88_COLD_RESTORE=true;
+    window.DG_V88_LOBBY_VIEW=true;
+  }
+}
+async function heartbeat(){const c=currentCode();if(!uid||!db||!navigator.onLine||window.DG_V88_LOBBY_VIEW||document.visibilityState!=='visible'||!/^\d{4}$/.test(c))return;try{await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data(),players=[...(data.players||[])],i=players.findIndex(p=>p.uid===uid);if(i<0)return;players[i]={...players[i],lastSeen:Date.now(),botActive:false};tx.update(ref,{players,presenceUpdatedAt:serverTimestamp()})})}catch(e){}}
 function onRoom(r){room=r||null;if(!room)return;const me=(room.players||[]).find(p=>p.uid===uid);if(me)localStorage.setItem(BACKUP,room.code)}
 window.addEventListener('dg-v30-room',e=>onRoom(e.detail));
 async function markBot(seat,expectedVersion,targetUid){const c=room?.code;if(!c)return false;let ok=false;await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data();if(data.status!=='playing'||Number(data.gameVersion||0)!==expectedVersion||Number(data.gameState?.current)!==seat)return;const players=[...(data.players||[])],i=players.findIndex(p=>p.uid===targetUid);if(i<0)return;const seen=Number(players[i].lastSeen||players[i].joinedAt||0);if(Date.now()-seen<STALE_MS)return;players[i]={...players[i],botActive:true};tx.update(ref,{players,botSeat:seat,botUpdatedAt:serverTimestamp()});ok=true});return ok}
 async function botController(){if(window.DG_V35_LOCAL_TEST||busy||!room||room.status!=='playing'||!room.gameState||!uid||!navigator.onLine)return;const seat=Number(room.gameState.current),version=Number(room.gameVersion||0);if(!Number.isInteger(seat)||seat<0||seat>3)return;const target=(room.players||[]).find(p=>Number(p.seat)===seat);if(!target||target.uid===uid)return;const seen=Number(target.lastSeen||target.joinedAt||0);if(!seen||Date.now()-seen<STALE_MS)return;const now=Date.now();const active=(room.players||[]).filter(p=>p.uid!==target.uid&&now-Number(p.lastSeen||p.joinedAt||0)<STALE_MS).sort((a,b)=>Number(a.seat)-Number(b.seat));if(!active.length||active[0].uid!==uid)return;const key=`${room.code}:${version}:${seat}`;if(key===lastBotKey)return;busy=true;try{const locked=await markBot(seat,version,target.uid);if(!locked)return;const eng=window.DG_ENGINE;if(!eng?.botTakeTurn)return;lastBotKey=key;eng.message?.(`BOT is playing for ${target.name||'player'}…`,1200);await new Promise(r=>setTimeout(r,450));eng.botTakeTurn(seat)}catch(e){console.error('V32 bot',e)}finally{busy=false}}
-function updateGlobalEnglish(){document.documentElement.lang='en';const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V32 · Global multiplayer · choose your language · temporary BOT takes over disconnected players.';const roomNote=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(roomNote)roomNote.textContent='V87 · Firebase real-time room + stable synchronized match + reconnect + temporary BOT.'}
+function updateGlobalEnglish(){document.documentElement.lang='en';const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V32 · Global multiplayer · choose your language · temporary BOT takes over disconnected players.';const roomNote=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(roomNote)roomNote.textContent='V88 · Firebase real-time room + stable synchronized match + reconnect + temporary BOT.'}
 async function boot(){badge();restoreRoomCode();addInstallButton();updateGlobalEnglish();window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;addInstallButton()});window.addEventListener('appinstalled',()=>toast('DOMINO GEORGIA installed successfully.'));setTimeout(registerPWA,1800);try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,700);setInterval(heartbeat,20000);setInterval(botController,1300)}catch(e){console.error('V32 boot',e)}}
 window.addEventListener('online',()=>setTimeout(heartbeat,300));window.addEventListener('pageshow',()=>{restoreRoomCode();setTimeout(heartbeat,500)});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 </script>
@@ -7855,6 +7871,7 @@ body.dg-game-active #dgLobbyHome{display:block}
   const LANG_CHOSEN='dg_domino_v35_language_selected';
   const SESSION='dg_domino_v29_room';
   const BACKUP='dg_domino_v31_room_backup';
+  const LOBBY_VIEW='dg_domino_v88_lobby_view';
   const $=id=>document.getElementById(id);
   let startingTest=false;
   window.DG_V35_LOCAL_TEST=false;
@@ -7875,24 +7892,49 @@ body.dg-game-active #dgLobbyHome{display:block}
     ((p&&p.nickname&&p.acceptedRules)?$('dgChoiceStep'):$('dgRegisterStep'))?.classList.add('active');
   }
   function forceLobby(){
-    window.DG_V31_LEAVING=true;
-    sessionStorage.removeItem(SESSION);localStorage.removeItem(BACKUP);
-    /* Keep the local engine from continuing BOT turns under the lobby. */
+    const savedCode=sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||'';
+    const keepOnline=/^\d{4}$/.test(savedCode)&&!window.DG_V35_LOCAL_TEST;
+
+    if(keepOnline){
+      if(!sessionStorage.getItem(SESSION))sessionStorage.setItem(SESSION,savedCode);
+      localStorage.setItem(BACKUP,savedCode);
+      sessionStorage.setItem(LOBBY_VIEW,'1');
+      window.DG_V88_LOBBY_VIEW=true;
+      window.DG_V31_LEAVING=false;
+      document.documentElement.classList.add('dg-v88-lobby-view');
+    }else{
+      window.DG_V31_LEAVING=true;
+      sessionStorage.removeItem(SESSION);
+      localStorage.removeItem(BACKUP);
+      sessionStorage.removeItem(LOBBY_VIEW);
+      window.DG_V88_LOBBY_VIEW=false;
+      document.documentElement.classList.remove('dg-v88-lobby-view');
+    }
+
+    /* Keep the local engine from taking local turns while the lobby is visible. */
     window.DG_ONLINE_MULTIPLAYER=true;
     window.DG_MATCH_ALLOWED=false;
     document.body.classList.remove('dg-game-active','dg-match-mode');
     document.body.classList.add('dg-lobby-mode');
     $('dgWinOverlay')?.classList.remove('show');
     $('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
-    const entry=$('dgEntryOverlay');if(entry)entry.classList.remove('hidden');
+    $('dgV46TimeoutOverlay')?.classList.remove('show');
+
+    const entry=$('dgEntryOverlay');
+    if(entry)entry.classList.remove('hidden');
     showChoiceOrRegister();
     addLobbyButton();
+
+    window.dispatchEvent(new CustomEvent('dg-v88-lobby-view'));
+
     setTimeout(()=>{
       document.body.classList.remove('dg-game-active','dg-match-mode');
       document.body.classList.add('dg-lobby-mode');
       $('dgEntryOverlay')?.classList.remove('hidden');
       $('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
+      $('dgV46TimeoutOverlay')?.classList.remove('show');
       showChoiceOrRegister();
+      window.dispatchEvent(new CustomEvent('dg-v88-lobby-view'));
     },650);
   }
   function setTestNames(){
@@ -7937,12 +7979,9 @@ body.dg-game-active #dgLobbyHome{display:block}
       const lobby=e.target?.closest?.('#dgLobbyHome');
       if(lobby){
         e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-        const hasOnlineRoom=/^\d{4}$/.test(sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||'');
-        if(hasOnlineRoom&&!window.DG_V35_LOCAL_TEST){
-          window.DG_V31_LEAVING=true;
-          document.getElementById('dgOnlineLeave')?.click();
-          setTimeout(forceLobby,380);
-        }else forceLobby();
+        /* V88: Lobby does not abandon an unfinished online match.
+           It only hides the table; the player can return later. */
+        forceLobby();
         return
       }
       if(e.target?.closest?.('#dgChangeLanguage'))setTimeout(addLobbyButton,40);
@@ -11307,6 +11346,365 @@ body.dg-game-active #dgV87Badge{
 })();
 </script>
 <!-- DG V87 LOBBY RECOVERY + CLEAN LOBBY END -->
+
+
+<!-- DG V88 LIVE-MATCH RETURN + FINISHED-MATCH LOBBY FIX START -->
+<style id="dg-v88-return-fix-css">
+#dgV87Badge{display:none!important}
+
+/* While intentionally viewing lobby, timeout overlay must not cover the lobby. */
+html.dg-v88-lobby-view #dgV46TimeoutOverlay{
+  display:none!important;
+}
+
+/* Return-to-running-game button in the main lobby. */
+#dgV88ReturnGame{
+  display:none;
+  width:100%;
+  min-height:58px;
+  margin:12px 0 15px;
+  padding:12px 16px;
+  border-radius:16px;
+  border:2px solid #45c86f;
+  background:linear-gradient(180deg,#18a34f,#087437);
+  color:#fff;
+  font:1000 17px/1.2 Arial,"Noto Sans Georgian",sans-serif;
+  box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18);
+  cursor:pointer;
+}
+#dgV88ReturnGame.show{display:block}
+#dgV88ReturnGame:disabled{opacity:.72;cursor:wait}
+
+/* Do not show raw auth cancellation/debug text in the lobby. */
+#dgEntryMsg.dg-v88-quiet-auth-error{display:none!important}
+
+#dgV88Badge{
+  position:fixed;right:10px;top:10px;z-index:132000;
+  padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);
+  border:1px solid rgba(233,184,76,.55);color:#f0c85c;
+  font:800 10px/1 Arial,sans-serif;letter-spacing:.08em;
+  pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+body.dg-game-active #dgV88Badge{display:none!important}
+</style>
+
+<script type="module" id="dg-v88-return-fix-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig={
+  apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',
+  authDomain:'koki-game.firebaseapp.com',
+  projectId:'koki-game',
+  storageBucket:'koki-game.firebasestorage.app',
+  messagingSenderId:'926136206820',
+  appId:'1:926136206820:web:b346733b1268bed7f2b3f1'
+};
+
+const SESSION='dg_domino_v29_room';
+const BACKUP='dg_domino_v31_room_backup';
+const LOBBY_VIEW='dg_domino_v88_lobby_view';
+const ROOMS='dominoRooms';
+const LANG_KEY='dg_domino_v26_language';
+
+let auth=null,db=null,uid='',room=window.DG_V30_ROOM||null;
+let resumeBusy=false,finishedTimer=null;
+
+const $=id=>document.getElementById(id);
+
+const TXT={
+  ka:{back:'🎮 თამაშში დაბრუნება',returning:'თამაშში დაბრუნება…'},
+  en:{back:'🎮 Return to game',returning:'Returning to game…'},
+  ru:{back:'🎮 Вернуться в игру',returning:'Возвращение в игру…'},
+  tr:{back:'🎮 Oyuna dön',returning:'Oyuna dönülüyor…'},
+  de:{back:'🎮 Zurück ins Spiel',returning:'Zurück zum Spiel…'},
+  ar:{back:'🎮 العودة إلى اللعبة',returning:'جارٍ العودة إلى اللعبة…'}
+};
+function tr(){return TXT[localStorage.getItem(LANG_KEY)||'ka']||TXT.ka}
+
+function activeCode(){
+  return sessionStorage.getItem(SESSION)||localStorage.getItem(BACKUP)||'';
+}
+
+function ensureButton(){
+  const step=$('dgChoiceStep');
+  if(!step)return null;
+  let b=$('dgV88ReturnGame');
+  if(!b){
+    b=document.createElement('button');
+    b.id='dgV88ReturnGame';
+    b.type='button';
+    b.addEventListener('click',resumeGame);
+    const firstPanel=step.querySelector('#dgV76Root,.dg-v76-root,#dgV76ModeRoot');
+    if(firstPanel)step.insertBefore(b,firstPanel);
+    else step.insertBefore(b,step.firstChild);
+  }
+  b.textContent=resumeBusy?tr().returning:tr().back;
+  b.disabled=resumeBusy;
+  return b;
+}
+
+function showLobby(){
+  window.DG_V88_LOBBY_VIEW=true;
+  sessionStorage.setItem(LOBBY_VIEW,'1');
+  document.documentElement.classList.add('dg-v88-lobby-view');
+
+  window.DG_MATCH_ALLOWED=false;
+  window.DG_ONLINE_MULTIPLAYER=true;
+
+  document.body.classList.remove('dg-game-active','dg-match-mode');
+  document.body.classList.add('dg-lobby-mode');
+
+  $('dgWinOverlay')?.classList.remove('show');
+  $('dgV46TimeoutOverlay')?.classList.remove('show');
+  $('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
+
+  const entry=$('dgEntryOverlay');
+  if(entry)entry.classList.remove('hidden');
+
+  const profile=(()=>{try{return JSON.parse(localStorage.getItem('dg_domino_v25_profile')||'{}')}catch(e){return {}}})();
+  document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));
+  ((profile?.nickname&&profile?.acceptedRules)?$('dgChoiceStep'):$('dgRegisterStep'))?.classList.add('active');
+}
+
+function clearFinishedRoom(){
+  clearTimeout(finishedTimer);finishedTimer=null;
+  sessionStorage.removeItem(SESSION);
+  localStorage.removeItem(BACKUP);
+  sessionStorage.removeItem(LOBBY_VIEW);
+
+  window.DG_V88_COLD_RESTORE=false;
+  window.DG_V88_LOBBY_VIEW=false;
+  document.documentElement.classList.remove('dg-v88-lobby-view');
+
+  const b=ensureButton();
+  b?.classList.remove('show');
+
+  showLobby();
+  /* showLobby sets lobby-view because it is a UI state. For a finished room
+     there is no resumable room, so immediately remove only the room-view flag. */
+  sessionStorage.removeItem(LOBBY_VIEW);
+  window.DG_V88_LOBBY_VIEW=false;
+  document.documentElement.classList.remove('dg-v88-lobby-view');
+}
+
+function renderReturn(){
+  const b=ensureButton();
+  if(!b)return;
+
+  const code=activeCode();
+  const running=/^\d{4}$/.test(code)&&room?.status==='playing'&&!room?.gameState?.matchOver;
+
+  b.classList.toggle('show',running);
+  b.textContent=resumeBusy?tr().returning:tr().back;
+  b.disabled=resumeBusy;
+}
+
+async function clearBotTakeover(){
+  if(!db||!uid||!room?.code)return;
+  try{
+    await runTransaction(db,async tx=>{
+      const ref=doc(db,ROOMS,room.code);
+      const snap=await tx.get(ref);
+      if(!snap.exists())return;
+
+      const r=snap.data();
+      if(r.gameState?.matchOver)return;
+
+      const players=[...(r.players||[])];
+      const i=players.findIndex(p=>p.uid===uid);
+      if(i<0)return;
+
+      const seat=Number(players[i].seat);
+      players[i]={
+        ...players[i],
+        botActive:false,
+        timedOut:false,
+        returnChanceUsed:false,
+        lastSeen:Date.now(),
+        returnedAt:Date.now()
+      };
+
+      const patch={players};
+      if(Number(r.gameState?.current)===seat&&Number(r.turnTimer?.seat)===seat&&r.turnTimer?.expired===true){
+        patch.turnTimer=null;
+      }
+      tx.update(ref,patch);
+    });
+  }catch(e){
+    console.warn('V88 clear bot takeover',e);
+  }
+}
+
+async function resumeGame(){
+  if(resumeBusy)return;
+
+  const live=room||window.DG_V30_ROOM;
+  if(!live||live.status!=='playing'||live.gameState?.matchOver){
+    clearFinishedRoom();
+    return;
+  }
+
+  resumeBusy=true;
+  renderReturn();
+
+  try{
+    sessionStorage.removeItem(LOBBY_VIEW);
+    window.DG_V88_LOBBY_VIEW=false;
+    window.DG_V88_COLD_RESTORE=false;
+    document.documentElement.classList.remove('dg-v88-lobby-view');
+
+    await clearBotTakeover();
+
+    window.DG_MATCH_ALLOWED=true;
+    window.DG_ONLINE_MULTIPLAYER=true;
+
+    document.body.classList.remove('dg-lobby-mode');
+    document.body.classList.add('dg-match-mode','dg-game-active');
+
+    $('dgEntryOverlay')?.classList.add('hidden');
+    $('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');
+    $('dgV46TimeoutOverlay')?.classList.remove('show');
+
+    /* The engine has been kept synchronized while the lobby was visible.
+       If the old timeout overlay reappears for one frame, V55 can clear it. */
+    setTimeout(()=>{
+      const timeout=$('dgV46TimeoutOverlay');
+      if(timeout?.classList.contains('show'))$('dgV46ReturnBtn')?.click();
+    },120);
+  }finally{
+    resumeBusy=false;
+    renderReturn();
+  }
+}
+
+function finishedAway(r){
+  room=r||room;
+  showLobby();
+  renderReturn();
+
+  /* Fresh app opening + already finished match: clean it immediately.
+     If the user was already away/lobby when the match ended, keep the room
+     record for 5 minutes, then forget it automatically. */
+  if(window.DG_V88_COLD_RESTORE){
+    clearFinishedRoom();
+    return;
+  }
+
+  clearTimeout(finishedTimer);
+  finishedTimer=setTimeout(clearFinishedRoom,300000);
+}
+
+function onRoom(r){
+  room=r||null;
+  if(!room){renderReturn();return}
+
+  if(room.gameState?.matchOver){
+    const away=window.DG_V88_LOBBY_VIEW||document.visibilityState!=='visible'||window.DG_V88_COLD_RESTORE;
+    if(away)finishedAway(room);
+    else renderReturn();
+    return;
+  }
+
+  if(window.DG_V88_COLD_RESTORE){
+    /* A restored unfinished match stays in lobby with Return-to-game available. */
+    window.DG_V88_COLD_RESTORE=false;
+    showLobby();
+  }
+
+  renderReturn();
+}
+
+function quietAuthError(){
+  const e=$('dgEntryMsg');
+  if(!e)return;
+  const s=String(e.textContent||'').toLowerCase();
+  const harmless=
+    s.includes('auth/popup-closed-by-user') ||
+    s.includes('popup-closed-by-user') ||
+    (s.includes('firebase')&&s.includes('popup'));
+  e.classList.toggle('dg-v88-quiet-auth-error',harmless);
+  if(harmless)e.textContent='';
+}
+
+function badge(){
+  document.querySelectorAll('[id^="dgV"][id$="Badge"]:not(#dgV88Badge)').forEach(x=>{
+    x.style.setProperty('display','none','important');
+  });
+  if($('dgV88Badge'))return;
+  const b=document.createElement('div');
+  b.id='dgV88Badge';
+  b.textContent='V88';
+  document.body.appendChild(b);
+}
+
+async function boot(){
+  badge();
+  ensureButton();
+  quietAuthError();
+
+  if(sessionStorage.getItem(LOBBY_VIEW)==='1'){
+    window.DG_V88_LOBBY_VIEW=true;
+    document.documentElement.classList.add('dg-v88-lobby-view');
+    showLobby();
+  }
+
+  try{
+    const app=getApps().length?getApp():initializeApp(firebaseConfig);
+    auth=getAuth(app);
+    db=getFirestore(app);
+    uid=auth.currentUser?.uid||await new Promise(resolve=>{
+      const stop=onAuthStateChanged(auth,u=>{
+        if(u){stop();resolve(u.uid)}
+      });
+    });
+  }catch(e){
+    console.warn('V88 init',e);
+  }
+
+  if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);
+
+  const msg=$('dgEntryMsg');
+  if(msg)new MutationObserver(quietAuthError).observe(msg,{childList:true,characterData:true,subtree:true});
+
+  window.addEventListener('dg-v30-room',e=>onRoom(e.detail));
+  window.addEventListener('dg-v30-room-closed',()=>{
+    room=null;
+    sessionStorage.removeItem(LOBBY_VIEW);
+    window.DG_V88_LOBBY_VIEW=false;
+    document.documentElement.classList.remove('dg-v88-lobby-view');
+    renderReturn();
+  });
+  window.addEventListener('dg-v88-lobby-view',()=>{
+    showLobby();
+    room=window.DG_V30_ROOM||room;
+    renderReturn();
+  });
+  window.addEventListener('dg-v88-room-available',e=>{
+    room=e.detail||room;
+    renderReturn();
+  });
+  window.addEventListener('dg-v88-match-finished-away',e=>finishedAway(e.detail));
+
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'){
+      room=window.DG_V30_ROOM||room;
+      if(room?.gameState?.matchOver&&(window.DG_V88_LOBBY_VIEW||window.DG_V88_COLD_RESTORE)){
+        finishedAway(room);
+      }
+      renderReturn();
+    }
+  });
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});
+}else{
+  setTimeout(boot,0);
+}
+</script>
+<!-- DG V88 LIVE-MATCH RETURN + FINISHED-MATCH LOBBY FIX END -->
 
 </body>
 </html>
