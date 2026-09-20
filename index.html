@@ -11706,6 +11706,161 @@ if(document.readyState==='loading'){
 </script>
 <!-- DG V88 LIVE-MATCH RETURN + FINISHED-MATCH LOBBY FIX END -->
 
+
+<!-- DG ONLINE USERS COUNTER (KEEP V88 BADGE) START -->
+<style id="dg-online-users-css">
+#dgOnlineUsersCount{
+  position:fixed;
+  right:10px;
+  top:40px;
+  z-index:132001;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 9px;
+  border-radius:999px;
+  background:rgba(0,0,0,.58);
+  border:1px solid rgba(69,200,111,.58);
+  color:#dfffe8;
+  font:900 11px/1 Arial,"Noto Sans Georgian",sans-serif;
+  letter-spacing:.01em;
+  box-shadow:0 2px 10px rgba(0,0,0,.35);
+  pointer-events:none;
+}
+#dgOnlineUsersCount .dg-online-dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#42e477;
+  box-shadow:0 0 8px rgba(66,228,119,.85);
+  flex:0 0 auto;
+}
+body.dg-game-active #dgOnlineUsersCount,
+body.dg-match-mode #dgOnlineUsersCount{
+  display:none!important;
+}
+</style>
+
+<script type="module" id="dg-online-users-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,collection,doc,setDoc,deleteDoc,onSnapshot,query,where } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig={
+  apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',
+  authDomain:'koki-game.firebaseapp.com',
+  projectId:'koki-game',
+  storageBucket:'koki-game.firebasestorage.app',
+  messagingSenderId:'926136206820',
+  appId:'1:926136206820:web:b346733b1268bed7f2b3f1'
+};
+
+const LANG_KEY='dg_domino_v26_language';
+const ROOMS='dominoRooms';
+const FRESH_MS=70000;
+const HEARTBEAT_MS=25000;
+let db=null,auth=null,uid='',presenceRef=null,unsub=null;
+let latest=[];
+
+const LABELS={
+  ka:'ონლაინ',
+  en:'Online',
+  ru:'Онлайн',
+  tr:'Çevrimiçi',
+  de:'Online',
+  ar:'متصل'
+};
+
+function label(){
+  const lang=localStorage.getItem(LANG_KEY)||'ka';
+  return LABELS[lang]||LABELS.en;
+}
+
+function ensureCounter(){
+  let el=document.getElementById('dgOnlineUsersCount');
+  if(el)return el;
+  el=document.createElement('div');
+  el.id='dgOnlineUsersCount';
+  el.innerHTML='<span class="dg-online-dot"></span><span id="dgOnlineUsersText">'+label()+': …</span>';
+  document.body.appendChild(el);
+  return el;
+}
+
+function render(){
+  ensureCounter();
+  const now=Date.now();
+  const count=latest.filter(x=>Number(x.lastSeenMs||0)>=now-FRESH_MS).length;
+  const text=document.getElementById('dgOnlineUsersText');
+  if(text)text.textContent=label()+': '+count;
+}
+
+async function heartbeat(){
+  if(!db||!uid)return;
+  presenceRef=doc(db,ROOMS,'__online__'+uid);
+  try{
+    await setDoc(presenceRef,{
+      kind:'onlinePresence',
+      uid,
+      lastSeenMs:Date.now()
+    },{merge:true});
+  }catch(e){
+    console.warn('online presence heartbeat',e);
+  }
+}
+
+async function removePresence(){
+  if(!presenceRef)return;
+  try{await deleteDoc(presenceRef)}catch(e){}
+}
+
+async function bootOnlineCounter(){
+  ensureCounter();
+  try{
+    const app=getApps().length?getApp():initializeApp(firebaseConfig);
+    auth=getAuth(app);
+    db=getFirestore(app);
+    uid=auth.currentUser?.uid||await new Promise(resolve=>{
+      const stop=onAuthStateChanged(auth,u=>{
+        if(u){stop();resolve(u.uid)}
+      });
+    });
+
+    await heartbeat();
+    setInterval(heartbeat,HEARTBEAT_MS);
+    setInterval(render,10000);
+
+    const q=query(collection(db,ROOMS),where('kind','==','onlinePresence'));
+    unsub=onSnapshot(q,snap=>{
+      latest=snap.docs.map(d=>d.data()||{});
+      render();
+    },err=>{
+      console.warn('online presence watch',err);
+      const text=document.getElementById('dgOnlineUsersText');
+      if(text)text.textContent=label()+': —';
+    });
+
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState==='visible')heartbeat();
+      render();
+    });
+    window.addEventListener('pagehide',removePresence);
+    window.addEventListener('beforeunload',removePresence);
+    window.addEventListener('storage',render);
+  }catch(e){
+    console.warn('online counter init',e);
+    const text=document.getElementById('dgOnlineUsersText');
+    if(text)text.textContent=label()+': —';
+  }
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(bootOnlineCounter,0),{once:true});
+}else{
+  setTimeout(bootOnlineCounter,0);
+}
+</script>
+<!-- DG ONLINE USERS COUNTER (KEEP V88 BADGE) END -->
+
 </body>
 </html>
 
