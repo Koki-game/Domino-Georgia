@@ -11861,7 +11861,215 @@ if(document.readyState==='loading'){
 </script>
 <!-- DG ONLINE USERS COUNTER (KEEP V88 BADGE) END -->
 
-</body>
+</bod
+<!-- DG V89 1V1 TOURNAMENT START -->
+<style id="dg-v89-tournament-css">
+#dgV88Badge{display:none!important}
+#dgV89Badge{position:fixed;right:10px;top:10px;z-index:133500;padding:5px 8px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(233,184,76,.62);color:#f4cf69;font:900 10px/1 Arial,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+body.dg-game-active #dgV89Badge,body.dg-match-mode #dgV89Badge{display:none}
+#dgV89TournamentBtn{background:linear-gradient(145deg,#8b5b12,#4e2f06)!important;border-color:#e0b84f!important;color:#fff2b7!important}
+#dgV89TournamentBtn small{color:#e7d7a5!important}
+#dgV89TournamentOverlay{position:fixed;inset:0;z-index:150500;display:none;align-items:center;justify-content:center;padding:12px;background:radial-gradient(circle at 50% 12%,rgba(93,63,13,.28),rgba(2,8,10,.96) 58%);backdrop-filter:blur(6px)}
+#dgV89TournamentOverlay.show{display:flex}
+.dg-v89-card{width:min(760px,96vw);max-height:94vh;overflow:auto;border:2px solid #b88a2d;border-radius:18px;background:linear-gradient(160deg,#162229,#071015 66%,#130d03);color:#eef4f4;box-shadow:0 22px 70px rgba(0,0,0,.82),inset 0 0 0 1px rgba(255,224,143,.08);padding:16px;box-sizing:border-box}
+.dg-v89-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}.dg-v89-cup{font-size:32px}.dg-v89-head h2{margin:0;color:#ffd96a;font:1000 22px/1.1 Arial,"Noto Sans Georgian",sans-serif}.dg-v89-head small{display:block;margin-top:4px;color:#aebfc6;font:800 11px/1.35 Arial,"Noto Sans Georgian",sans-serif}
+.dg-v89-status{padding:10px 12px;margin:8px 0 12px;border:1px solid #35505c;border-radius:12px;background:#08171e;color:#dcebee;font:900 12px/1.45 Arial,"Noto Sans Georgian",sans-serif}.dg-v89-status strong{color:#ffd86a}
+.dg-v89-progress{height:8px;border-radius:999px;background:#071015;border:1px solid #273d47;overflow:hidden;margin-top:8px}.dg-v89-progress i{display:block;height:100%;background:linear-gradient(90deg,#c18b1c,#f2cf62);width:0%}
+.dg-v89-bracket{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}.dg-v89-round{min-width:0}.dg-v89-round h3{margin:0 0 7px;text-align:center;color:#e7c966;font:1000 11px/1.2 Arial,"Noto Sans Georgian",sans-serif;text-transform:uppercase;letter-spacing:.05em}.dg-v89-match{padding:9px;border:1px solid #2d4550;border-radius:10px;background:#09151b;margin-bottom:8px;min-height:54px;box-sizing:border-box}.dg-v89-match.me{border-color:#c99a31;box-shadow:0 0 0 1px rgba(231,191,84,.14) inset}.dg-v89-player{display:flex;align-items:center;justify-content:space-between;gap:7px;min-width:0;color:#cbd9de;font:800 10px/1.25 Arial,"Noto Sans Georgian",sans-serif}.dg-v89-player+.dg-v89-player{margin-top:5px;padding-top:5px;border-top:1px solid rgba(70,91,100,.32)}.dg-v89-player b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dg-v89-player.win{color:#77eda2}.dg-v89-player.lose{opacity:.58}.dg-v89-player .mark{flex:0 0 auto}.dg-v89-empty{color:#677e88;font-weight:800}.dg-v89-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}.dg-v89-btn{min-height:42px;padding:0 15px;border-radius:10px;border:1px solid #405966;background:#10232b;color:#edf4f5;font:1000 11px/1 Arial,"Noto Sans Georgian",sans-serif;cursor:pointer}.dg-v89-btn.primary{border-color:#d0a33a;background:linear-gradient(#9a6813,#674107);color:#fff0b0}.dg-v89-btn.danger{border-color:#7f4541;background:#351513;color:#ffb2aa}.dg-v89-champion{text-align:center;padding:14px;margin:10px 0;border:1px solid #b99131;border-radius:13px;background:radial-gradient(circle at 50% 0,rgba(210,161,42,.23),rgba(29,20,3,.74));color:#ffe17a;font:1000 18px/1.4 Arial,"Noto Sans Georgian",sans-serif}.dg-v89-champion .big{display:block;font-size:38px;margin-bottom:2px}.dg-v89-you{color:#74eda0!important}
+#dgV89Toast{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:151000;width:min(92vw,460px);padding:10px 13px;border-radius:12px;border:1px solid #6d5a29;background:rgba(15,14,8,.97);color:#fff0b6;font:900 11px/1.4 Arial,"Noto Sans Georgian",sans-serif;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.55)}#dgV89Toast.show{display:block}
+@media(max-width:640px){.dg-v89-card{padding:12px}.dg-v89-bracket{grid-template-columns:1fr}.dg-v89-round{border-top:1px solid rgba(70,91,100,.28);padding-top:8px}.dg-v89-round:first-child{border-top:0;padding-top:0}.dg-v89-head h2{font-size:19px}}
+</style>
+<script type="module" id="dg-v89-tournament-js">
+import { getApps,getApp,initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore,doc,getDoc,onSnapshot,runTransaction,serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig={apiKey:'AIzaSyDOB6XzlbbtifNjy4fgdKqCaFn1wMg1N5o',authDomain:'koki-game.firebaseapp.com',projectId:'koki-game',storageBucket:'koki-game.firebasestorage.app',messagingSenderId:'926136206820',appId:'1:926136206820:web:b346733b1268bed7f2b3f1'};
+const ROOMS='dominoRooms',CONTROL='__tournament_1v1__';
+const PROFILE_KEY='dg_domino_v25_profile',LANG_KEY='dg_domino_v26_language',MODE_KEY='dg_domino_v61_mode';
+const SESSION='dg_domino_v29_room',BACKUP='dg_domino_v31_room_backup',LOBBY_VIEW='dg_domino_v88_lobby_view';
+const MAX_PLAYERS=8,WAIT_STALE=120000;
+let app=null,auth=null,db=null,uid='',unsub=null,tournament=null,currentTournamentRoom=null,joining=false,reporting=false,dismissed=false;
+const locks=new Set();
+const $=id=>document.getElementById(id);
+
+const TXT={
+ ka:{btn:'🏆 1v1 ტურნირი',sub:'8 მოთამაშე · მეოთხედფინალი → ნახევარფინალი → ფინალი',title:'1v1 ტურნირი',waiting:'ველოდებით მოთამაშეებს',full:'ტურნირი დაიწყო',qf:'მეოთხედფინალი',sf:'ნახევარფინალი',final:'ფინალი',champ:'ტურნირის ჩემპიონი',you:'შენ',vs:'VS',leave:'ტურნირიდან გასვლა',lobby:'ლობი',stay:'ველოდებით შემდეგ ეტაპს…',eliminated:'ტურნირი დასრულდა შენთვის',starting:'მატჩი იწყება…',busy:'მიმდინარე ტურნირი უკვე შევსებულია. შემდეგ ტურნირს დაელოდე.',joined:'ტურნირში დარეგისტრირდი.',need8:'ტურნირი 8 მოთამაშის შევსებისთანავე დაიწყება.',winner:'გამარჯვებული',open:'ტურნირის ნახვა'},
+ en:{btn:'🏆 1v1 Tournament',sub:'8 players · Quarterfinal → Semifinal → Final',title:'1v1 Tournament',waiting:'Waiting for players',full:'Tournament started',qf:'Quarterfinal',sf:'Semifinal',final:'Final',champ:'Tournament Champion',you:'You',vs:'VS',leave:'Leave tournament',lobby:'Lobby',stay:'Waiting for the next round…',eliminated:'Your tournament run has ended',starting:'Match starting…',busy:'The current tournament is already full. Wait for the next tournament.',joined:'You joined the tournament.',need8:'The tournament starts as soon as 8 players join.',winner:'Winner',open:'View tournament'},
+ ru:{btn:'🏆 Турнир 1v1',sub:'8 игроков · Четвертьфинал → Полуфинал → Финал',title:'Турнир 1v1',waiting:'Ждём игроков',full:'Турнир начался',qf:'Четвертьфинал',sf:'Полуфинал',final:'Финал',champ:'Чемпион турнира',you:'Вы',vs:'VS',leave:'Покинуть турнир',lobby:'Лобби',stay:'Ожидаем следующий этап…',eliminated:'Ваш турнир завершён',starting:'Матч начинается…',busy:'Текущий турнир уже заполнен. Дождитесь следующего.',joined:'Вы зарегистрированы в турнире.',need8:'Турнир начнётся, когда наберётся 8 игроков.',winner:'Победитель',open:'Открыть турнир'},
+ tr:{btn:'🏆 1v1 Turnuva',sub:'8 oyuncu · Çeyrek final → Yarı final → Final',title:'1v1 Turnuva',waiting:'Oyuncular bekleniyor',full:'Turnuva başladı',qf:'Çeyrek final',sf:'Yarı final',final:'Final',champ:'Turnuva Şampiyonu',you:'Sen',vs:'VS',leave:'Turnuvadan ayrıl',lobby:'Lobi',stay:'Sonraki tur bekleniyor…',eliminated:'Turnuvan sona erdi',starting:'Maç başlıyor…',busy:'Mevcut turnuva dolu. Sonraki turnuvayı bekleyin.',joined:'Turnuvaya katıldınız.',need8:'Turnuva 8 oyuncu katılınca başlar.',winner:'Kazanan',open:'Turnuvayı gör'},
+ de:{btn:'🏆 1v1 Turnier',sub:'8 Spieler · Viertelfinale → Halbfinale → Finale',title:'1v1 Turnier',waiting:'Warte auf Spieler',full:'Turnier gestartet',qf:'Viertelfinale',sf:'Halbfinale',final:'Finale',champ:'Turniersieger',you:'Du',vs:'VS',leave:'Turnier verlassen',lobby:'Lobby',stay:'Warte auf die nächste Runde…',eliminated:'Dein Turnier ist beendet',starting:'Match startet…',busy:'Das laufende Turnier ist bereits voll. Warte auf das nächste.',joined:'Du bist im Turnier.',need8:'Das Turnier startet bei 8 Spielern.',winner:'Sieger',open:'Turnier ansehen'},
+ ar:{btn:'🏆 بطولة 1v1',sub:'8 لاعبين · ربع النهائي ← نصف النهائي ← النهائي',title:'بطولة 1v1',waiting:'بانتظار اللاعبين',full:'بدأت البطولة',qf:'ربع النهائي',sf:'نصف النهائي',final:'النهائي',champ:'بطل البطولة',you:'أنت',vs:'VS',leave:'مغادرة البطولة',lobby:'الردهة',stay:'بانتظار الدور التالي…',eliminated:'انتهت مشاركتك في البطولة',starting:'تبدأ المباراة…',busy:'البطولة الحالية ممتلئة. انتظر البطولة التالية.',joined:'تم تسجيلك في البطولة.',need8:'تبدأ البطولة عند اكتمال 8 لاعبين.',winner:'الفائز',open:'عرض البطولة'}
+};
+function lang(){return localStorage.getItem(LANG_KEY)||'ka'}
+function tr(){return TXT[lang()]||TXT.ka}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return {}}}
+function nick(){return (profile().nickname||document.getElementById('myNickname')?.textContent||'Player').trim().slice(0,18)||'Player'}
+function country(){return (profile().country||'GE').toUpperCase().slice(0,2)}
+function flag(c){if(!c||String(c).length!==2)return '🌐';return String.fromCodePoint(...[...String(c).toUpperCase()].map(x=>127397+x.charCodeAt()))}
+function toast(text){let e=$('dgV89Toast');if(!e){e=document.createElement('div');e.id='dgV89Toast';document.body.appendChild(e)}e.textContent=text;e.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),3800)}
+function badge(){if($('dgV89Badge'))return;const b=document.createElement('div');b.id='dgV89Badge';b.textContent='V89';document.body.appendChild(b)}
+function controlRef(){return doc(db,ROOMS,CONTROL)}
+function meIn(t=tournament){return (t?.players||[]).find(p=>p.uid===uid)||null}
+function playerByUid(t,id){return (t?.players||[]).find(p=>p.uid===id)||null}
+function currentMode2(){localStorage.setItem(MODE_KEY,'2');window.DG_SELECTED_GAME_MODE=2;document.body.classList.add('dg-v61-two');document.querySelectorAll('.dg-v61-mode').forEach(b=>b.classList.toggle('active',Number(b.dataset.mode)===2))}
+function makeTournamentPlayer(slot){const p=profile();return {uid,name:nick(),country:country(),slot,joinedAtMs:Date.now(),lastSeenMs:Date.now(),hearts:Number(p.hearts||0),level:Number(p.level||1)}}
+function makeRoomPlayer(p,seat){return {uid:p.uid,name:p.name||'Player',country:p.country||'GE',seat,joinedAt:Date.now(),lastSeen:Date.now(),hearts:Number(p.hearts||0),level:Number(p.level||1),wins:0,games:0,botActive:false}}
+function randomId(){return 'tr_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7)}
+function matchId(){return 'tm_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7)}
+function roundKeys(round){return round==='qf'?['qf0','qf1','qf2','qf3']:round==='sf'?['sf0','sf1']:['f0']}
+function roundMatches(t,round){return roundKeys(round).map(k=>t?.matches?.[k]).filter(Boolean)}
+function roundComplete(t,round){const m=roundMatches(t,round),need=round==='qf'?4:round==='sf'?2:1;return m.length===need&&m.every(x=>!!x.winnerUid)}
+function roundExists(t,round){const need=round==='qf'?4:round==='sf'?2:1;return roundMatches(t,round).length===need}
+function pairsFor(t,round){
+  const players=[...(t.players||[])].sort((a,b)=>Number(a.slot)-Number(b.slot));
+  if(round==='qf'){if(players.length<8)return null;return [[players[0].uid,players[1].uid],[players[2].uid,players[3].uid],[players[4].uid,players[5].uid],[players[6].uid,players[7].uid]]}
+  if(round==='sf'){if(!roundComplete(t,'qf'))return null;return [[t.matches.qf0.winnerUid,t.matches.qf1.winnerUid],[t.matches.qf2.winnerUid,t.matches.qf3.winnerUid]]}
+  if(round==='f'){if(!roundComplete(t,'sf'))return null;return [[t.matches.sf0.winnerUid,t.matches.sf1.winnerUid]]}
+  return null;
+}
+async function uniqueCodes(n){
+  for(let attempt=0;attempt<20;attempt++){
+    const out=[];while(out.length<n){const c=String(Math.floor(1000+Math.random()*9000));if(!out.includes(c))out.push(c)}
+    const snaps=await Promise.all(out.map(c=>getDoc(doc(db,ROOMS,c))));if(snaps.every(s=>!s.exists()))return out;
+  }
+  throw new Error('Could not reserve tournament room codes');
+}
+function addLaunchButton(){
+  const list=document.querySelector('#dgV76TwoPanel .dg-v76-list');if(!list)return false;
+  let b=$('dgV89TournamentBtn');if(!b){b=document.createElement('button');b.id='dgV89TournamentBtn';b.type='button';b.className='dg-v76-option dg-v89-tournament-launch';const online=$('dgV76TwoOnline');online?.insertAdjacentElement('afterend',b);if(!b.isConnected)list.prepend(b);b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();joinTournament()})}
+  const t=tr();b.innerHTML=`<span><b>${t.btn}</b><small>${t.sub}</small></span>`;return true;
+}
+function ensureOverlay(){
+  let o=$('dgV89TournamentOverlay');if(o)return o;
+  o=document.createElement('div');o.id='dgV89TournamentOverlay';o.innerHTML=`<div class="dg-v89-card"><div class="dg-v89-head"><div class="dg-v89-cup">🏆</div><div><h2 id="dgV89Title"></h2><small id="dgV89Sub"></small></div></div><div id="dgV89Status" class="dg-v89-status"></div><div id="dgV89Champion"></div><div id="dgV89Bracket" class="dg-v89-bracket"></div><div class="dg-v89-actions" id="dgV89Actions"></div></div>`;document.body.appendChild(o);return o;
+}
+function personLine(t,id,winnerUid){
+  const p=id?playerByUid(t,id):null;if(!p)return `<div class="dg-v89-player dg-v89-empty"><b>—</b><span class="mark">…</span></div>`;
+  const isMe=p.uid===uid,cls=winnerUid?(p.uid===winnerUid?' win':' lose'):'';return `<div class="dg-v89-player ${cls} ${isMe?'dg-v89-you':''}"><b>${flag(p.country)} ${esc(p.name)}${isMe?' · '+esc(tr().you):''}</b><span class="mark">${winnerUid?(p.uid===winnerUid?'✓':''):'•'}</span></div>`;
+}
+function matchCard(t,key){const m=t?.matches?.[key];if(!m)return `<div class="dg-v89-match"><div class="dg-v89-player dg-v89-empty"><b>—</b><span>…</span></div><div class="dg-v89-player dg-v89-empty"><b>—</b><span>…</span></div></div>`;const mine=m.p1Uid===uid||m.p2Uid===uid;return `<div class="dg-v89-match ${mine?'me':''}">${personLine(t,m.p1Uid,m.winnerUid)}${personLine(t,m.p2Uid,m.winnerUid)}</div>`}
+function userEliminated(t){
+  if(!meIn(t))return false;if(t.championUid)return t.championUid!==uid;
+  for(const m of Object.values(t.matches||{})){if(m?.winnerUid&&(m.p1Uid===uid||m.p2Uid===uid)&&m.winnerUid!==uid)return true}return false;
+}
+function activeMatchFor(t){
+  const order=['f0','sf0','sf1','qf0','qf1','qf2','qf3'];for(const k of order){const m=t?.matches?.[k];if(m&&!m.winnerUid&&(m.p1Uid===uid||m.p2Uid===uid))return {key:k,...m}}return null;
+}
+function renderTournament(t=tournament){
+  const o=ensureOverlay(),mine=meIn(t);if(!t||!mine){o.classList.remove('show');return}
+  const x=tr(),count=(t.players||[]).length,waiting=t.status==='waiting';o.classList.add('show');$('dgV89Title').textContent=x.title;$('dgV89Sub').textContent=x.sub;
+  const pct=Math.min(100,Math.round(count/MAX_PLAYERS*100));
+  let status=waiting?`<strong>${x.waiting}: ${count}/${MAX_PLAYERS}</strong><br>${x.need8}<div class="dg-v89-progress"><i style="width:${pct}%"></i></div>`:`<strong>${x.full}</strong>`;
+  if(!waiting&&!t.championUid){if(userEliminated(t))status+=`<br>${x.eliminated}`;else if(!activeMatchFor(t))status+=`<br>${x.stay}`;else status+=`<br>${x.starting}`}
+  $('dgV89Status').innerHTML=status;
+  $('dgV89Bracket').innerHTML=`<div class="dg-v89-round"><h3>${x.qf}</h3>${['qf0','qf1','qf2','qf3'].map(k=>matchCard(t,k)).join('')}</div><div class="dg-v89-round"><h3>${x.sf}</h3>${['sf0','sf1'].map(k=>matchCard(t,k)).join('')}</div><div class="dg-v89-round"><h3>${x.final}</h3>${matchCard(t,'f0')}</div>`;
+  const champ=playerByUid(t,t.championUid);$('dgV89Champion').innerHTML=champ?`<div class="dg-v89-champion"><span class="big">🏆</span>${esc(x.champ)}<br>${flag(champ.country)} ${esc(champ.name)}${champ.uid===uid?' · '+esc(x.you):''}</div>`:'';
+  const a=$('dgV89Actions');a.innerHTML='';
+  if(waiting){const b=document.createElement('button');b.className='dg-v89-btn danger';b.textContent=x.leave;b.onclick=leaveWaiting;a.appendChild(b)}
+  else if(userEliminated(t)||t.championUid){const b=document.createElement('button');b.className='dg-v89-btn primary';b.textContent=x.lobby;b.onclick=closeTournamentToLobby;a.appendChild(b)}
+}
+function forceTournamentLobby(){
+  sessionStorage.removeItem(SESSION);localStorage.removeItem(BACKUP);sessionStorage.setItem(LOBBY_VIEW,'1');window.DG_V88_LOBBY_VIEW=true;window.DG_ONLINE_MULTIPLAYER=false;document.body.classList.remove('dg-game-active','dg-match-mode');document.body.classList.add('dg-lobby-mode');$('dgWinOverlay')?.classList.remove('show');$('dgOnlineOverlay')?.classList.remove('show','dg-public-mode');$('dgEntryOverlay')?.classList.add('hidden');
+}
+function closeTournamentToLobby(){
+  dismissed=true;ensureOverlay().classList.remove('show');sessionStorage.removeItem(SESSION);localStorage.removeItem(BACKUP);sessionStorage.setItem(LOBBY_VIEW,'1');window.DG_V88_LOBBY_VIEW=true;document.body.classList.remove('dg-game-active','dg-match-mode');document.body.classList.add('dg-lobby-mode');$('dgWinOverlay')?.classList.remove('show');$('dgEntryOverlay')?.classList.remove('hidden');document.querySelectorAll('#dgEntryOverlay .dg-entry-step').forEach(x=>x.classList.remove('active'));$('dgChoiceStep')?.classList.add('active');
+}
+async function joinTournament(){
+  if(joining||!db||!uid)return;joining=true;currentMode2();
+  try{
+    const result=await runTransaction(db,async tx=>{
+      const ref=controlRef(),snap=await tx.get(ref),now=Date.now();let d=snap.exists()?snap.data():null;
+      if(d?.status==='playing'){
+        if((d.players||[]).some(p=>p.uid===uid))return {ok:true,existing:true};
+        return {ok:false,busy:true};
+      }
+      let players=[];let tournamentId='';
+      if(d?.status==='waiting'){
+        players=(d.players||[]).filter(p=>now-Number(p.lastSeenMs||p.joinedAtMs||0)<WAIT_STALE);tournamentId=d.tournamentId||randomId();
+      }else{tournamentId=randomId()}
+      let me=players.find(p=>p.uid===uid);
+      if(!me){const used=new Set(players.map(p=>Number(p.slot)));let slot=0;while(used.has(slot)&&slot<MAX_PLAYERS)slot++;if(players.length>=MAX_PLAYERS)return {ok:false,busy:true};players.push(makeTournamentPlayer(slot))}else{me.lastSeenMs=now;me.name=nick();me.country=country()}
+      players.sort((a,b)=>Number(a.slot)-Number(b.slot));
+      const full=players.length===MAX_PLAYERS;
+      const next={kind:'tournament1v1',tournamentId,status:full?'playing':'waiting',stage:full?'quarterfinal':'waiting',players,matches:full?{}:(d?.tournamentId===tournamentId?d?.matches||{}:{}),championUid:null,createdAtMs:d?.tournamentId===tournamentId?Number(d.createdAtMs||now):now,updatedAtMs:now};
+      tx.set(ref,next);
+      return {ok:true,full,count:players.length};
+    });
+    if(!result?.ok){toast(tr().busy);return}dismissed=false;toast(result.existing?tr().open:tr().joined);subscribeTournament();
+  }catch(e){console.error('V89 join tournament',e);toast('Tournament error: '+(e?.message||e))}finally{joining=false}
+}
+async function leaveWaiting(){
+  if(!db||!uid)return;try{await runTransaction(db,async tx=>{const ref=controlRef(),snap=await tx.get(ref);if(!snap.exists())return;const d=snap.data();if(d.status!=='waiting')return;const players=(d.players||[]).filter(p=>p.uid!==uid);tx.update(ref,{players,updatedAtMs:Date.now()})});ensureOverlay().classList.remove('show');closeTournamentToLobby()}catch(e){console.warn('V89 leave',e)}
+}
+async function heartbeat(){
+  if(!db||!uid||tournament?.status!=='waiting'||!meIn())return;try{await runTransaction(db,async tx=>{const ref=controlRef(),snap=await tx.get(ref);if(!snap.exists())return;const d=snap.data();if(d.status!=='waiting')return;const players=[...(d.players||[])],i=players.findIndex(p=>p.uid===uid);if(i<0)return;players[i]={...players[i],lastSeenMs:Date.now()};tx.update(ref,{players,updatedAtMs:Date.now()})})}catch(e){}
+}
+async function createRound(round){
+  if(locks.has(round)||!db||!tournament)return;locks.add(round);
+  try{
+    const n=round==='qf'?4:round==='sf'?2:1,codes=await uniqueCodes(n);
+    const result=await runTransaction(db,async tx=>{
+      const tref=controlRef(),ts=await tx.get(tref);if(!ts.exists())return 'gone';const d=ts.data();if(d.status!=='playing'||roundExists(d,round))return 'exists';const pairs=pairsFor(d,round);if(!pairs||pairs.length!==n)return 'notready';
+      const roomRefs=codes.map(c=>doc(db,ROOMS,c)),roomSnaps=[];for(const r of roomRefs)roomSnaps.push(await tx.get(r));if(roomSnaps.some(s=>s.exists()))return 'collision';
+      const matches={...(d.matches||{})};
+      for(let i=0;i<n;i++){
+        const [u1,u2]=pairs[i],p1=playerByUid(d,u1),p2=playerByUid(d,u2);if(!p1||!p2)return 'players';const key=round==='qf'?`qf${i}`:round==='sf'?`sf${i}`:'f0',code=codes[i];
+        matches[key]={key,round,index:i,code,p1Uid:u1,p2Uid:u2,winnerUid:null,createdAtMs:Date.now()};
+        tx.set(roomRefs[i],{code,mode:'tournament',kind:'tournamentMatch',gameMode:2,ratingMode:'none',tournamentId:d.tournamentId,tournamentControl:CONTROL,tournamentMatchKey:key,tournamentRound:round,hostUid:u1,status:'playing',matchId:matchId(),createdAt:serverTimestamp(),updatedAt:serverTimestamp(),players:[makeRoomPlayer(p1,2),makeRoomPlayer(p2,0)],ratingProcessed:[]});
+      }
+      tx.update(tref,{matches,stage:round==='qf'?'quarterfinal':round==='sf'?'semifinal':'final',updatedAtMs:Date.now()});return 'created';
+    });
+    if(result==='collision')setTimeout(()=>createRound(round),120);
+  }catch(e){console.error('V89 create round',round,e)}finally{locks.delete(round)}
+}
+async function finalizeTournament(){
+  if(locks.has('finish')||!db)return;locks.add('finish');try{await runTransaction(db,async tx=>{const ref=controlRef(),snap=await tx.get(ref);if(!snap.exists())return;const d=snap.data();if(d.status!=='playing'||!roundComplete(d,'f'))return;tx.update(ref,{status:'complete',stage:'complete',championUid:d.matches.f0.winnerUid,completedAtMs:Date.now(),updatedAtMs:Date.now()})})}catch(e){console.warn('V89 finish',e)}finally{locks.delete('finish')}
+}
+async function advance(t){
+  if(!t||t.status!=='playing')return;if(!roundExists(t,'qf'))return createRound('qf');if(roundComplete(t,'qf')&&!roundExists(t,'sf'))return createRound('sf');if(roundComplete(t,'sf')&&!roundExists(t,'f'))return createRound('f');if(roundComplete(t,'f')&&!t.championUid)return finalizeTournament();
+}
+function startTournamentMatch(m){
+  if(!m?.code||sessionStorage.getItem(SESSION)===m.code)return;currentMode2();sessionStorage.removeItem(LOBBY_VIEW);window.DG_V88_LOBBY_VIEW=false;document.documentElement.classList.remove('dg-v88-lobby-view');sessionStorage.setItem(SESSION,m.code);localStorage.setItem(BACKUP,m.code);$('dgWinOverlay')?.classList.remove('show');ensureOverlay().classList.remove('show');$('dgEntryOverlay')?.classList.add('hidden');toast(tr().starting);
+}
+function maybeEnterMatch(t){
+  if(!meIn(t)||t.status!=='playing'||userEliminated(t))return;const m=activeMatchFor(t);if(!m)return;if(currentTournamentRoom?.code===m.code&&!currentTournamentRoom?.gameState?.matchOver)return;const current=sessionStorage.getItem(SESSION)||'';if(current===m.code)return;setTimeout(()=>startTournamentMatch(m),280);
+}
+function computeWinnerUid(room){
+  const s=room?.gameState?.scores||[];if(!room?.gameState?.matchOver||s.length<2||Number(s[0])===Number(s[1]))return null;const team=Number(s[0])>Number(s[1])?0:1;const winnerSeat=team===0?2:0;return (room.players||[]).find(p=>Number(p.seat)===winnerSeat)?.uid||null;
+}
+async function reportWinner(room){
+  if(reporting||!db||!uid||room?.mode!=='tournament'||!room?.gameState?.matchOver)return;const winnerUid=computeWinnerUid(room),key=room.tournamentMatchKey;if(!winnerUid||!key)return;reporting=true;
+  try{await runTransaction(db,async tx=>{const ref=controlRef(),snap=await tx.get(ref);if(!snap.exists())return;const d=snap.data();if(d.tournamentId!==room.tournamentId)return;const matches={...(d.matches||{})},m=matches[key];if(!m||m.code!==room.code||m.winnerUid)return;matches[key]={...m,winnerUid,finishedAtMs:Date.now()};tx.update(ref,{matches,updatedAtMs:Date.now()})});forceTournamentLobby();renderTournament(tournament)}catch(e){console.error('V89 report winner',e)}finally{reporting=false}
+}
+function onRoom(room){
+  if(room?.mode!=='tournament')return;currentTournamentRoom=room;if(room.gameState?.matchOver)setTimeout(()=>reportWinner(room),80);
+}
+function onTournament(t){
+  tournament=t;const mine=meIn(t);if(!mine){if(t?.status!=='playing')ensureOverlay().classList.remove('show');return}
+  advance(t);
+  const active=activeMatchFor(t),sessionCode=sessionStorage.getItem(SESSION)||'';
+  const live=!!active&&sessionCode===active.code&&currentTournamentRoom?.code===active.code&&!currentTournamentRoom?.gameState?.matchOver;
+  if(live){ensureOverlay().classList.remove('show');return}
+  if(dismissed&&(userEliminated(t)||t.status==='complete')){ensureOverlay().classList.remove('show');return}
+  renderTournament(t);if(t.status==='playing'&&!t.championUid)maybeEnterMatch(t);
+}
+function subscribeTournament(){
+  if(!db||unsub)return;unsub=onSnapshot(controlRef(),snap=>{if(!snap.exists()){tournament=null;ensureOverlay().classList.remove('show');return}onTournament({id:snap.id,...snap.data()})},e=>console.warn('V89 tournament watch',e));
+}
+function interceptWinButtons(){
+  document.addEventListener('click',e=>{if(!currentTournamentRoom||currentTournamentRoom.mode!=='tournament')return;const b=e.target?.closest?.('#dgWinAgain,#dgWinOther,#dgWinExit');if(!b)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();forceTournamentLobby();renderTournament(tournament)},true);
+}
+function bootUI(){badge();addLaunchButton();ensureOverlay();setInterval(addLaunchButton,900);document.addEventListener('click',e=>{if(e.target?.closest?.('.dg-language-btn,#dgChangeLanguage'))setTimeout(()=>{addLaunchButton();renderTournament(tournament)},160)},true);interceptWinButtons();window.addEventListener('dg-v30-room',e=>onRoom(e.detail));window.addEventListener('dg-v30-room-closed',()=>{currentTournamentRoom=null});}
+async function boot(){
+  bootUI();try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});subscribeTournament();if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setInterval(heartbeat,30000)}catch(e){console.error('V89 boot',e)}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+</script>
+<!-- DG V89 1V1 TOURNAMENT END -->
+
+y>
 </html>
 
 <!-- DG V83: Georgian-only custom MOURIE artwork reaction -->
