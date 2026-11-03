@@ -1,0 +1,17 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.dominogeorgia.game",
+      "sha256_cert_fingerprints": [
+        "CD:04:5E:EF:20:67:AA:48:47:03:C8:E9:BC:70:61:40:BA:6C:CB:9B:F7:FB:32:49:AB:4F:0D:A0:BC:BE:F8:2E",
+        "23:BA:89:3D:68:B6:2E:63:A5:43:83:B5:3F:FA:E1:50:47:4D:E6:A2:A6:FB:EC:54:D6:E9:45:8B:A1:0A:BC:88",
+        "F2:33:C1:0B:4C:09:A6:91:2A:1F:21:9A:F7:EF:FA:D9:9B:92:48:21:40:12:1D:08:2A:03:90:A0:E0:D2:15:E9",
+        "68:40:9F:5F:6A:87:66:ED:01:5B:6D:75:52:3E:28:CF:79:EB:A5:2D:E8:21:15:2F:7F:58:F7:31:25:5C:04:D3"
+      ]
+    }
+  }
+]
