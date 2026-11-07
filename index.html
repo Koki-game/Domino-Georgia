@@ -6,7 +6,16 @@
 <meta name="viewport"
 content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 
-<link rel="manifest" href="./manifest.json?v=79">
+<link rel="manifest" href="./manifest.json?v=90">
+<!-- Stable app shell: register independently from Firebase/network-dependent modules. -->
+<script id="dg-pwa-stable-registration">
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+      .catch(function (error) { console.warn('DOMINO GEORGIA: offline shell unavailable', error); });
+  }, { once: true });
+}
+</script>
 
 <meta name="theme-color" content="#2b1208">
 <meta name="mobile-web-app-capable" content="yes">
@@ -5557,7 +5566,7 @@ function boot(){
     startRound();
   };
   if(window.DG_ENTRY_READY===true)window.dgStartDominoMatch();
-  if('serviceWorker'in navigator)window.addEventListener('load',async()=>{try{const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}catch(e){}});
+  // The current service worker is kept active for cached app-shell navigation.
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
@@ -6826,19 +6835,8 @@ body.dg-match-mode #dgV28Badge{display:none}
 (()=>{
   const VERSION='28';
   async function clearLegacyCachesOnce(){
-    const key='dg_cache_reset_v'+VERSION;
-    if(sessionStorage.getItem(key))return;
-    sessionStorage.setItem(key,'1');
-    try{
-      if('caches' in window){
-        const keys=await caches.keys();
-        await Promise.all(keys.filter(k=>k!=='domino-georgia-v28').map(k=>caches.delete(k)));
-      }
-      if('serviceWorker' in navigator){
-        const regs=await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r=>r.update().catch(()=>{})));
-      }
-    }catch(e){}
+    // Legacy startup cache purge is intentionally disabled.
+    // service-worker.js handles app-cache version upgrades safely.
   }
   function badge(){
     if(document.getElementById('dgV28Badge'))return;
@@ -7118,16 +7116,8 @@ body.dg-lobby-mode #dgEntryOverlay{display:flex}
   }
 
   async function purgeLegacyCache(){
-    try{
-      if('caches' in window){
-        const keys=await caches.keys();
-        await Promise.all(keys.map(k=>caches.delete(k)));
-      }
-      if('serviceWorker' in navigator){
-        const regs=await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r=>r.unregister()));
-      }
-    }catch(e){}
+    // Do not purge all caches or unregister the service worker on startup.
+    // Old versions are removed by the current service worker's activate handler.
   }
 
   function init(){
@@ -7650,7 +7640,7 @@ window.addEventListener('dg-v30-room',e=>onRoom(e.detail));
 async function markBot(seat,expectedVersion,targetUid){const c=room?.code;if(!c)return false;let ok=false;await runTransaction(db,async tx=>{const ref=doc(db,COLLECTION,c),snap=await tx.get(ref);if(!snap.exists())return;const data=snap.data();if(data.status!=='playing'||Number(data.gameVersion||0)!==expectedVersion||Number(data.gameState?.current)!==seat)return;const players=[...(data.players||[])],i=players.findIndex(p=>p.uid===targetUid);if(i<0)return;const seen=Number(players[i].lastSeen||players[i].joinedAt||0);if(Date.now()-seen<STALE_MS)return;players[i]={...players[i],botActive:true};tx.update(ref,{players,botSeat:seat,botUpdatedAt:serverTimestamp()});ok=true});return ok}
 async function botController(){if(window.DG_V35_LOCAL_TEST||busy||!room||room.status!=='playing'||!room.gameState||!uid||!navigator.onLine)return;const seat=Number(room.gameState.current),version=Number(room.gameVersion||0);if(!Number.isInteger(seat)||seat<0||seat>3)return;const target=(room.players||[]).find(p=>Number(p.seat)===seat);if(!target||target.uid===uid)return;const seen=Number(target.lastSeen||target.joinedAt||0);if(!seen||Date.now()-seen<STALE_MS)return;const now=Date.now();const active=(room.players||[]).filter(p=>p.uid!==target.uid&&now-Number(p.lastSeen||p.joinedAt||0)<STALE_MS).sort((a,b)=>Number(a.seat)-Number(b.seat));if(!active.length||active[0].uid!==uid)return;const key=`${room.code}:${version}:${seat}`;if(key===lastBotKey)return;busy=true;try{const locked=await markBot(seat,version,target.uid);if(!locked)return;const eng=window.DG_ENGINE;if(!eng?.botTakeTurn)return;lastBotKey=key;eng.message?.(`BOT is playing for ${target.name||'player'}…`,1200);await new Promise(r=>setTimeout(r,450));eng.botTakeTurn(seat)}catch(e){console.error('V32 bot',e)}finally{busy=false}}
 function updateGlobalEnglish(){document.documentElement.lang='en';const note=document.querySelector('#dgEntryOverlay .dg-entry-note');if(note)note.textContent='V32 · Global multiplayer · choose your language · temporary BOT takes over disconnected players.';const roomNote=document.querySelector('#dgOnlineOverlay .dg-v29-note');if(roomNote)roomNote.textContent='V88 · Firebase real-time room + stable synchronized match + reconnect + temporary BOT.'}
-async function boot(){badge();restoreRoomCode();addInstallButton();updateGlobalEnglish();window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;addInstallButton()});window.addEventListener('appinstalled',()=>toast('DOMINO GEORGIA installed successfully.'));setTimeout(registerPWA,1800);try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,700);setInterval(heartbeat,20000);setInterval(botController,1300)}catch(e){console.error('V32 boot',e)}}
+async function boot(){badge();restoreRoomCode();addInstallButton();updateGlobalEnglish();window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;addInstallButton()});window.addEventListener('appinstalled',()=>toast('DOMINO GEORGIA installed successfully.'));/* PWA shell registers in <head> independently. */try{app=getApps().length?getApp():initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);uid=auth.currentUser?.uid||await new Promise(resolve=>{const stop=onAuthStateChanged(auth,u=>{if(u){stop();resolve(u.uid)}})});if(window.DG_V30_ROOM)onRoom(window.DG_V30_ROOM);setTimeout(heartbeat,700);setInterval(heartbeat,20000);setInterval(botController,1300)}catch(e){console.error('V32 boot',e)}}
 window.addEventListener('online',()=>setTimeout(heartbeat,300));window.addEventListener('pageshow',()=>{restoreRoomCode();setTimeout(heartbeat,500)});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 </script>
 <!-- DG V32 TEMP BOT + GLOBAL ENGLISH + INSTALL END -->
